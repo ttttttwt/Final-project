@@ -49,5 +49,3 @@ Google Gemini API
 - [API Specification](/docs/00_context/04_API-SPECIFICATION.md)  
 - [Code Standards](/docs/00_context/05_CODE-STANDARDS.md)
 ```
-
-Bạn có muốn tôi viết thêm phần **mục tiêu kỹ thuật (Technical Objectives)** hoặc **project setup instructions** (cách khởi chạy nhanh) để phần “Quick Start” đúng nghĩa hơn không?
