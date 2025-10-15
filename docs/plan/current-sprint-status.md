@@ -16,7 +16,7 @@
 | Story | Status | Owner | %Complete | Notes |
 |-------|--------|-------|-----------|-------|
 | Setup Spring Boot Project | ✅ Done | You | 100% | All dependencies installed |
-| Implement JWT Provider | 🟡 In Progress | You | 60% | Token generation done, validation next |
+| Implement JWT Provider | 🟡 In Progress | You | 0% |  |
 | User Registration Endpoint | 🔵 Todo | You | 0% | Blocked: waiting JWT done |
 | User Login Endpoint | 🔵 Todo | You | 0% | Depends on registration |
 | Unit Tests | 🔵 Todo | You | 0% | Will write after endpoints |
