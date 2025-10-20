@@ -17,15 +17,15 @@
 
 ## Story Breakdown
 
-| Story                      | Status         | Owner | %Complete | Notes                                                                           |
-| -------------------------- | -------------- | ----- | --------- | ------------------------------------------------------------------------------- |
-| Setup Spring Boot Project  | ✅ Done        | You   | 100%      | All dependencies installed                                                      |
-| Database Schema Migration  | ✅ Done        | You   | 100%      | Flyway scripts created and configured                                           |
-| JPA Entities               | ✅ Done        | You   | 100%      | User, UserProfile, Role, UserRole, RefreshToken with validation & relationships |
-| Repository Interfaces      | ✅ Done        | You   | 100%      | All repositories with custom queries for business logic                         |
-| Implement JWT Provider     | 🟡 In Progress | You   | 0%        |                                                                                 |
-| User Registration Endpoint | 🔵 Todo        | You   | 0%        | Blocked: waiting JWT done                                                       |
-| User Login Endpoint        | 🔵 Todo        | You   | 0%        | Depends on registration                                                         |
-| Unit Tests                 | 🔵 Todo        | You   | 0%        | Will write after endpoints                                                      |
+| Story                      | Status  | Owner | %Complete | Notes                                                                           |
+| -------------------------- | ------- | ----- | --------- | ------------------------------------------------------------------------------- |
+| Setup Spring Boot Project  | ✅ Done | You   | 100%      | All dependencies installed                                                      |
+| Database Schema Migration  | ✅ Done | You   | 100%      | Flyway scripts created and configured                                           |
+| JPA Entities               | ✅ Done | You   | 100%      | User, UserProfile, Role, UserRole, RefreshToken with validation & relationships |
+| Repository Interfaces      | ✅ Done | You   | 100%      | All repositories with custom queries for business logic                         |
+| Implement JWT Provider     | ✅ Done | You   | 100%      | JwtTokenProvider service with token generation, validation, and hashing         |
+| User Registration Endpoint | 🔵 Todo | You   | 0%        | Blocked: waiting JWT done                                                       |
+| User Login Endpoint        | 🔵 Todo | You   | 0%        | Depends on registration                                                         |
+| Unit Tests                 | 🔵 Todo | You   | 0%        | Will write after endpoints                                                      |
 
 ## Daily Standup Log
