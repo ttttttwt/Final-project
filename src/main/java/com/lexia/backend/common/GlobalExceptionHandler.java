@@ -76,7 +76,8 @@ public class GlobalExceptionHandler {
         Set<ConstraintViolation<?>> violations = ex.getConstraintViolations();
         for (ConstraintViolation<?> violation : violations) {
             String fieldName = violation.getPropertyPath().toString();
-            // Extract field name from property path (e.g., "registerUser.registerDTO.email" -> "email")
+            // Extract field name from property path (e.g., "registerUser.registerDTO.email"
+            // -> "email")
             if (fieldName.contains(".")) {
                 fieldName = fieldName.substring(fieldName.lastIndexOf('.') + 1);
             }

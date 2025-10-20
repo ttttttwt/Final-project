@@ -17,14 +17,15 @@
 
 ## Story Breakdown
 
-| Story                      | Status  | Owner | %Complete | Notes                                                                           |
-| -------------------------- | ------- | ----- | --------- | ------------------------------------------------------------------------------- |
-| Setup Spring Boot Project  | ✅ Done | You   | 100%      | All dependencies installed                                                      |
-| Database Schema Migration  | ✅ Done | You   | 100%      | Flyway scripts created and configured                                           |
-| JPA Entities               | ✅ Done | You   | 100%      | User, UserProfile, Role, UserRole, RefreshToken with validation & relationships |
-| Repository Interfaces      | ✅ Done | You   | 100%      | All repositories with custom queries for business logic                         |
-| Implement JWT Provider     | ✅ Done | You   | 100%      | JwtTokenProvider service with token generation, validation, and hashing         |
-| Implement AuthService      | ✅ Done | You   | 100%      | BCrypt password hashing (cost 12), user registration, authentication            |
+| Story                     | Status  | Owner | %Complete | Notes                                                                           |
+| ------------------------- | ------- | ----- | --------- | ------------------------------------------------------------------------------- |
+| Setup Spring Boot Project | ✅ Done | You   | 100%      | All dependencies installed                                                      |
+| Database Schema Migration | ✅ Done | You   | 100%      | Flyway scripts created and configured                                           |
+| JPA Entities              | ✅ Done | You   | 100%      | User, UserProfile, Role, UserRole, RefreshToken with validation & relationships |
+| Repository Interfaces     | ✅ Done | You   | 100%      | All repositories with custom queries for business logic                         |
+| Implement JWT Provider    | ✅ Done | You   | 100%      | JwtTokenProvider service with token generation, validation, and hashing         |
+| Implement AuthService     | ✅ Done | You   | 100%      | BCrypt password hashing (cost 12), user registration, authentication            |
+
 | ### User Registration Endpoint Implementation ✅
 
 - **Task**: Create REST controller endpoint for user registration with validation and error handling
@@ -67,8 +68,8 @@
   - Security-conscious error messages (no sensitive data exposure)
 - **Benefits**: Centralized error handling, consistent API responses, better client experience, improved maintainability
 - **Testing**: All tests pass with updated exception handling
-- **Time Spent**: 45 minutes       |
-| User Login Endpoint        | 🔵 Todo | You   | 0%        | Depends on registration                                                         |
-| Unit Tests                 | 🔵 Todo | You   | 0%        | Will write after endpoints                                                      |
+- **Time Spent**: 45 minutes |
+  | User Login Endpoint | 🔵 Todo | You | 0% | Depends on registration |
+  | Unit Tests | 🔵 Todo | You | 0% | Will write after endpoints |
 
 ## Daily Standup Log
