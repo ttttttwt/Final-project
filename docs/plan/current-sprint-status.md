@@ -11,7 +11,7 @@
 - [x] JPA entities complete
 - [x] Repository interfaces complete
 - [ ] JWT authentication complete
-- [ ] User registration API
+- [x] User registration API
 - [ ] User login API
 - [ ] Unit tests (70%+ coverage)
 
@@ -25,7 +25,7 @@
 | Repository Interfaces      | ✅ Done | You   | 100%      | All repositories with custom queries for business logic                         |
 | Implement JWT Provider     | ✅ Done | You   | 100%      | JwtTokenProvider service with token generation, validation, and hashing         |
 | Implement AuthService      | ✅ Done | You   | 100%      | BCrypt password hashing (cost 12), user registration, authentication            |
-| User Registration Endpoint | 🔵 Todo | You   | 0%        | Blocked: waiting AuthService complete                                           |
+| User Registration Endpoint | ✅ Done | You   | 100%      | POST /auth/register with validation, error handling, and UserDTO response       |
 | User Login Endpoint        | 🔵 Todo | You   | 0%        | Depends on registration                                                         |
 | Unit Tests                 | 🔵 Todo | You   | 0%        | Will write after endpoints                                                      |
 
