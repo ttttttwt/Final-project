@@ -3,6 +3,7 @@ package com.lexia.backend.auth;
 import com.lexia.backend.dto.RegisterDTO;
 import com.lexia.backend.entity.Role;
 import com.lexia.backend.entity.User;
+import com.lexia.backend.exception.UserAlreadyExistsException;
 import com.lexia.backend.repository.RoleRepository;
 import com.lexia.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +91,7 @@ class AuthServiceTest {
         when(userRepository.existsByEmail("test@lexia.com")).thenReturn(true);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class, () -> {
             authService.register(validRegisterDTO);
         });
 

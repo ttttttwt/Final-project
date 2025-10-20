@@ -50,9 +50,31 @@ Authentication Service Implementation - Password Hashing & User Registration
 - **Testing**: All tests pass, endpoint compiles successfully
 - **Time Spent**: 25 minutes
 
+### Enhanced Input Validation and Error Handling ✅
+
+- **Task**: Add comprehensive input validation and centralized error handling
+- **Details**:
+  - Created ErrorResponse and ValidationError DTOs for consistent error formatting
+  - Implemented GlobalExceptionHandler with @ControllerAdvice for centralized error management
+  - Handles MethodArgumentNotValidException for @Valid validation errors with detailed field messages
+  - Handles ConstraintViolationException for additional validation constraints
+  - Custom exception handling for UserAlreadyExistsException (409 Conflict) and ResourceNotFoundException (404)
+  - Authentication and access denied exception handling for future endpoints
+  - Removed try-catch from AuthController since global handler manages all errors
+  - Updated AuthService to throw UserAlreadyExistsException instead of generic IllegalArgumentException
+  - Updated unit tests to expect the new exception types
+- **Error Response Format**:
+  - Consistent JSON structure with timestamp, status, error type, message, and path
+  - Field-specific validation errors included for client-side error display
+  - Security-conscious error messages (no sensitive data exposure)
+- **Benefits**: Centralized error handling, consistent API responses, better client experience, improved maintainability
+- **Testing**: All tests pass with updated exception handling
+- **Time Spent**: 45 minutes
+
 ## 🔄 Current Status
 
-- **Authentication Infrastructure**: ✅ Complete (JWT Provider + AuthService + AuthController ready)
+- **Authentication Infrastructure**: ✅ Complete (JWT Provider + AuthService + AuthController + Global Error Handling)
+- **Input Validation & Error Handling**: ✅ Complete (Centralized exception handling, consistent error responses)
 - **Next Priority**: User Login Endpoint implementation
 - **Blockers**: None
 

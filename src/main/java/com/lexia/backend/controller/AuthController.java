@@ -11,9 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Authentication Controller for LEXIA.
  * Handles user registration, login, and token management endpoints.
@@ -39,40 +36,18 @@ public class AuthController {
      * @return ResponseEntity with user data or error message
      */
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterDTO registerDTO) {
+    public ResponseEntity<UserDTO> registerUser(@Valid @RequestBody RegisterDTO registerDTO) {
         LOG.info("Received registration request for email: {}", registerDTO.getEmail());
 
-        try {
-            // Register the user using AuthService
-            User registeredUser = authService.register(registerDTO);
+        // Register the user using AuthService
+        User registeredUser = authService.register(registerDTO);
 
-            // Convert to DTO for response (excludes sensitive data)
-            UserDTO userDTO = UserDTO.fromEntity(registeredUser);
+        // Convert to DTO for response (excludes sensitive data)
+        UserDTO userDTO = UserDTO.fromEntity(registeredUser);
 
-            LOG.info("User registered successfully with ID: {}", registeredUser.getId());
+        LOG.info("User registered successfully with ID: {}", registeredUser.getId());
 
-            // Return 201 Created with user data
-            return ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
-
-        } catch (IllegalArgumentException e) {
-            // Handle validation errors (email already exists, etc.)
-            LOG.warn("Registration failed for email {}: {}", registerDTO.getEmail(), e.getMessage());
-
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Registration failed");
-            errorResponse.put("message", e.getMessage());
-
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-
-        } catch (Exception e) {
-            // Handle unexpected errors
-            LOG.error("Unexpected error during user registration for email: {}", registerDTO.getEmail(), e);
-
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Internal server error");
-            errorResponse.put("message", "An unexpected error occurred during registration");
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
+        // Return 201 Created with user data
+        return ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
     }
 }

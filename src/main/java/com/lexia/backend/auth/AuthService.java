@@ -5,6 +5,7 @@ import com.lexia.backend.entity.Role;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.entity.UserProfile;
 import com.lexia.backend.entity.UserRole;
+import com.lexia.backend.exception.UserAlreadyExistsException;
 import com.lexia.backend.repository.RoleRepository;
 import com.lexia.backend.repository.UserRepository;
 import org.slf4j.Logger;
@@ -46,7 +47,7 @@ public class AuthService {
      *
      * @param registerDTO the registration data
      * @return the created user entity (without sensitive data)
-     * @throws IllegalArgumentException if email already exists or validation fails
+     * @throws UserAlreadyExistsException if email already exists
      */
     @Transactional
     public User register(RegisterDTO registerDTO) {
@@ -55,7 +56,7 @@ public class AuthService {
         // Check if email already exists
         if (userRepository.existsByEmail(registerDTO.getEmail())) {
             LOG.warn("Registration failed: Email already exists: {}", registerDTO.getEmail());
-            throw new IllegalArgumentException("Email already registered");
+            throw new UserAlreadyExistsException("Email already registered");
         }
 
         // Hash the password using BCrypt with cost factor 12
