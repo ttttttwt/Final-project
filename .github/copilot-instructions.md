@@ -1,6 +1,7 @@
 # GitHub Copilot Instructions - LEXIA Backend
 
 ## 🎯 Project Identity
+
 **LEXIA** - AI English Learning Platform for Working Professionals  
 **Stack**: Spring Boot 3.x | Java 17 | PostgreSQL | JWT | Gemini API
 
@@ -9,10 +10,13 @@
 ## 📚 Context Documents (Read First Each Session)
 
 **Mandatory**:
+
 1. `docs/context/QUICK-START.md` - Project overview & rules
 2. `docs/plan/current-sprint-status.md` - Current tasks
+3. `docs/implement/sprint-X/session-X-*.md` - Previous session summaries
 
 **Reference**:
+
 - `docs/context/ARCHITECTURE.md` - System design
 - `docs/context/DATABASE-SCHEMA.md` - Database structure
 - `docs/context/API-SPECIFICATION.md` - API contracts
@@ -24,12 +28,14 @@
 
 ```
 1. Read current-sprint-status.md
-2. Pick ONE task
-3. Implement + Tests (70%+ coverage)
-4. Run: ./gradlew test (must PASS)
-5. Update daily-log.md
-6. Commit (conventional format)
-7. Update sprint status
+2. Read previous session summaries (docs/implement/sprint-X/session-X-*.md)
+3. Pick ONE task
+4. Implement + Tests (70%+ coverage)
+5. Run: ./gradlew test (must PASS)
+6. Update daily-log.md
+7. Create session summary (session-X-*.md)
+8. Commit (conventional format)
+9. Update sprint status
 ```
 
 ---
@@ -49,6 +55,7 @@
 ## 💻 Code Standards
 
 ### Package Structure
+
 ```
 com.lexia.api/
 ├── auth/         # JWT, login
@@ -63,6 +70,7 @@ com.lexia.api/
 ```
 
 ### Security Rules (CRITICAL)
+
 ```java
 // ✅ DO
 @PostMapping("/register")
@@ -81,12 +89,14 @@ public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterDTO dto) {
 ```
 
 ### JWT Token Handling
+
 - Access: 15 min, Refresh: 7 days
 - Hash tokens before DB (SHA-256)
 - Family-based rotation for multi-device
 - Never log tokens
 
 ### Gemini API Integration
+
 ```java
 @Retryable(maxAttempts = 3)
 public RolePlayDTO generateRolePlay(String context) {
@@ -101,16 +111,17 @@ public RolePlayDTO generateRolePlay(String context) {
 ```
 
 ### Testing Requirements
+
 ```java
 // Unit Test
 @Test
 void testRegisterUser_WithValidEmail_Success() {
     // Arrange
     RegisterDTO dto = new RegisterDTO("test@lexia.com", "Pass123!");
-    
+
     // Act
     User result = userService.register(dto);
-    
+
     // Assert
     assertNotNull(result);
     assertTrue(passwordEncoder.matches("Pass123!", result.getPasswordHash()));
@@ -148,6 +159,7 @@ void testLogin_WithValidCredentials_ReturnsToken() throws Exception {
 - ✅ Use DTOs for APIs
 - ✅ Handle Gemini timeouts
 - ✅ Update daily-log.md
+- ✅ Create session summary (session-X-\*.md)
 - ✅ Conventional commits
 
 ---
@@ -155,19 +167,23 @@ void testLogin_WithValidCredentials_ReturnsToken() throws Exception {
 ## 📌 Daily Checklist
 
 **Start Session**:
+
 1. Read `docs/plan/current-sprint-status.md`
 2. Check `docs/implement/sprint-X/daily-log.md`
 3. Pick next task
 
 **During Dev**:
+
 1. Code + Tests
 2. `./gradlew test` (pass)
 3. Update daily-log.md
 
 **End Session**:
+
 1. Commit changes
 2. Update sprint status
-3. Save AI session log (if used AI)
+3. Create session summary (session-X-\*.md)
+4. Save AI session log (if used AI)
 
 ---
 
@@ -178,6 +194,32 @@ void testLogin_WithValidCredentials_ReturnsToken() throws Exception {
 - ✅ No security issues
 - ✅ API response < 500ms
 - ✅ Docs updated
+
+---
+
+## 📝 Session Documentation
+
+### Session Summary Requirements
+
+Each development session must create a comprehensive summary in `docs/implement/sprint-X/session-X-topic.md` with:
+
+**Required Sections**:
+
+1. **What We Accomplished** - Detailed task completion list
+2. **Code Generated** - Files created/modified with LOC metrics
+3. **Key Decisions** - Top 3 architectural decisions made
+4. **Challenges Faced** - Problems and solutions implemented
+5. **Quality Assessment** - 1-10 rating with detailed explanation
+6. **Best Prompts Used** - Effective prompts for future reuse
+7. **Next Steps** - Clear roadmap for subsequent session
+
+**Why Required**:
+
+- **Knowledge Preservation**: Document decisions and solutions for team reference
+- **Progress Tracking**: Maintain clear development history
+- **Quality Assurance**: Ensure comprehensive implementation coverage
+- **Learning Tool**: Capture challenges and solutions for future sessions
+- **Onboarding Aid**: Help new developers understand project evolution
 
 ---
 
@@ -201,6 +243,7 @@ void testLogin_WithValidCredentials_ReturnsToken() throws Exception {
 ---
 
 **Quick Start**:
+
 1. `docs/plan/current-sprint-status.md`
 2. Pick task
 3. Code + Test + Document
