@@ -73,6 +73,8 @@ User Login Infrastructure - JWT Token Generation & Password Verification
 - **AuthService.login() Method**: ✅ Complete (Full login flow)
 - **JWT Infrastructure**: ✅ Complete (Token generation, hashing, storage)
 - **POST /auth/login Endpoint**: ✅ Complete (Controller endpoint implemented)
+- **Token Refresh Infrastructure**: ✅ Complete (Token rotation with family tracking)
+- **POST /auth/refresh Endpoint**: ✅ Complete (Secure token refresh implemented)
 - **Next Priority**: Comprehensive testing (70%+ coverage)
 - **Blockers**: None
 
@@ -114,6 +116,45 @@ User Login Infrastructure - JWT Token Generation & Password Verification
   - Audit logging for all login attempts
 - **Testing**: All tests pass (5/5), zero compilation errors
 - **Time Spent**: 15 minutes
+
+### POST /auth/refresh Endpoint Implementation ✅
+
+- **Task**: Implement token refresh endpoint with secure token rotation
+- **Details**:
+  - Created RefreshTokenDTO for refresh token requests
+  - Created RefreshTokenResponseDTO for refresh responses with new tokens
+  - Created InvalidTokenException for token validation errors
+  - Added exception handler to GlobalExceptionHandler for 401 responses
+  - Implemented AuthService.refreshToken() with comprehensive logic:
+    - Validates refresh token format (JWT validation)
+    - Hashes refresh token for database lookup
+    - Checks token existence in database
+    - Validates token not revoked (detects token theft)
+    - Validates token not expired
+    - Validates user account is active
+    - Revokes old refresh token (security best practice)
+    - Generates new access token (15 min expiry)
+    - Generates new refresh token (7 days expiry)
+    - Stores new refresh token with same family for rotation tracking
+    - Implements token theft detection via family tracking
+  - Added POST /auth/refresh endpoint to AuthController
+  - HTTP 200 OK with new tokens on success
+  - HTTP 401 Unauthorized for invalid/expired/revoked tokens
+- **Endpoint Details**:
+  - URL: POST /api/v1/auth/refresh
+  - Request Body: RefreshTokenDTO (refreshToken)
+  - Response: 200 OK with RefreshTokenResponseDTO
+  - Returns: new accessToken, new refreshToken, tokenType, expiresIn
+  - Error Responses: 401 (invalid/expired/revoked token), 500 (server error)
+- **Security Features**:
+  - Token rotation: old token revoked, new token issued
+  - Token family tracking for multi-device support
+  - Token theft detection: revokes entire family if suspicious activity
+  - Refresh token hashing in database (SHA-256)
+  - User account status validation
+  - Comprehensive audit logging
+- **Testing**: All tests pass (5/5), zero compilation errors
+- **Time Spent**: 25 minutes
 
 ## 📝 Previous Sessions
 
