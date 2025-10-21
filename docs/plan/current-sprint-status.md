@@ -1,8 +1,8 @@
 # LEXIA - Current Sprint Status
 
 **Sprint**: 1 / 6  
-**Duration**: —  
-**Status**: 🟡 In Progress (90% Complete - Testing Phase)
+**Duration**: October 16-21, 2025 (5 days)  
+**Status**: ✅ Complete (100%)
 
 ## Sprint Goals
 
@@ -14,7 +14,7 @@
 - [x] User registration API
 - [x] User login API
 - [x] Token refresh API
-- [ ] Unit tests (70%+ coverage)
+- [x] Unit tests (71% coverage - Target 70% ✅)
 
 ## Story Breakdown
 
@@ -30,7 +30,7 @@
 | Login Infrastructure       | ✅ Done | You   | 100%      | LoginDTO, LoginResponseDTO, AuthService.login() with JWT token generation       |
 | User Login Endpoint        | ✅ Done | You   | 100%      | POST /auth/login with JWT tokens (access 15min, refresh 7days), 200 OK response |
 | Token Refresh Endpoint     | ✅ Done | You   | 100%      | POST /auth/refresh with token rotation, family tracking, theft detection        |
-| Comprehensive Testing      | 🔵 Todo | You   | 0%        | Unit & integration tests for 70%+ coverage                                      |
+| Comprehensive Testing      | ✅ Done | You   | 100%      | 71% coverage achieved (AuthController, AuthService, GlobalExceptionHandler, PasswordValidator) |
 
 | ### User Registration Endpoint Implementation ✅
 

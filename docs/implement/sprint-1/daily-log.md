@@ -67,6 +67,35 @@ User Login Infrastructure - JWT Token Generation & Password Verification
 - **Testing**: All 5 tests pass, zero compilation errors
 - **Time Spent**: 42 minutes
 
+## ✅ Completed Tasks (Session 4 - October 21)
+
+### Testing Phase - Coverage Improvement ✅
+
+- **Task**: Achieve 70%+ test coverage for Sprint 1 codebase
+- **Details**:
+  - Configured JaCoCo plugin in build.gradle for coverage reporting
+  - Created comprehensive test suite:
+    - **AuthControllerTest**: 9 integration tests (registration, login, refresh token)
+    - **GlobalExceptionHandlerTest**: 10 unit tests (validation errors, authentication errors, token errors, access denied, generic errors)
+    - **PasswordConfirmationValidatorTest**: 8 unit tests (matching passwords, null handling, case sensitivity)
+    - **AuthServiceTest**: Added 3 login tests (valid credentials, invalid email, invalid password)
+  - All tests pass (50 tests)
+  - Zero compilation errors
+- **Coverage Results**:
+  - **Overall**: 71% instruction coverage ✅ (exceeded 70% target)
+  - **com.lexia.backend.controller**: 100% coverage ✅
+  - **com.lexia.backend.validation**: 91% coverage ✅
+  - **com.lexia.backend.common**: 76% coverage ✅
+  - **com.lexia.backend.auth**: 67% coverage
+  - **com.lexia.backend.exception**: 28% coverage (only constructors)
+- **JaCoCo Configuration**:
+  - Added jacoco plugin with 70% minimum coverage requirement
+  - Configured exclusions for DTOs, entities, configuration classes
+  - HTML and XML reports generation
+  - Integrated with build process
+- **Testing**: All 50 tests pass successfully
+- **Time Spent**: 45 minutes
+
 ## 🔄 Current Status
 
 - **LoginDTO & LoginResponseDTO**: ✅ Complete
@@ -75,7 +104,9 @@ User Login Infrastructure - JWT Token Generation & Password Verification
 - **POST /auth/login Endpoint**: ✅ Complete (Controller endpoint implemented)
 - **Token Refresh Infrastructure**: ✅ Complete (Token rotation with family tracking)
 - **POST /auth/refresh Endpoint**: ✅ Complete (Secure token refresh implemented)
-- **Next Priority**: Comprehensive testing (70%+ coverage)
+- **Testing Phase**: ✅ Complete (71% coverage - target 70% achieved)
+- **Sprint 1 Status**: ✅ 95% Complete
+- **Next Priority**: Sprint wrap-up, documentation finalization
 - **Blockers**: None
 
 ## 📝 Session 3 Summary

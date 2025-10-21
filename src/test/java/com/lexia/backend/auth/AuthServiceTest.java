@@ -4,6 +4,7 @@ import com.lexia.backend.dto.RegisterDTO;
 import com.lexia.backend.entity.Role;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.exception.UserAlreadyExistsException;
+import com.lexia.backend.repository.RefreshTokenRepository;
 import com.lexia.backend.repository.RoleRepository;
 import com.lexia.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,12 @@ class AuthServiceTest {
 
     @Mock
     private RoleRepository roleRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
 
     @InjectMocks
     private AuthService authService;
@@ -251,5 +258,98 @@ class AuthServiceTest {
         String hash = result.getPasswordHash();
         assertTrue(hash.startsWith("$2a$12$"), "Password hash should use BCrypt with cost factor 12");
         assertTrue(hash.length() > 50, "BCrypt hash should be sufficiently long");
+    }
+
+    // ========== Login Tests ==========
+
+    @Test
+    void testLogin_WithValidCredentials_ReturnsLoginResponse() {
+        // Arrange
+        String email = "test@lexia.com";
+        String password = "Password123";
+        String hashedPassword = passwordEncoder.encode(password);
+
+        User user = User.builder()
+                .id("550e8400-e29b-41d4-a716-446655440000")
+                .email(email)
+                .passwordHash(hashedPassword)
+                .isActive(true)
+                .build();
+
+        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(user));
+        when(jwtTokenProvider.generateAccessToken(any(java.util.UUID.class))).thenReturn("mock.access.token");
+        when(jwtTokenProvider.generateRefreshToken(any(java.util.UUID.class))).thenReturn("mock.refresh.token");
+        when(jwtTokenProvider.hashToken(anyString())).thenReturn("hashed.token");
+        when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        var loginDTO = com.lexia.backend.dto.LoginDTO.builder()
+                .email(email)
+                .password(password)
+                .build();
+
+        var result = authService.login(loginDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertNotNull(result.getAccessToken());
+        assertNotNull(result.getRefreshToken());
+        assertEquals("Bearer", result.getTokenType());
+        assertEquals(900000L, result.getExpiresIn()); // 15 minutes
+        assertEquals(email, result.getUser().getEmail());
+        
+        // Verify refresh token was stored
+        verify(refreshTokenRepository).save(any());
+    }
+
+    @Test
+    void testLogin_WithInvalidEmail_ThrowsException() {
+        // Arrange
+        String email = "nonexistent@lexia.com";
+        String password = "Password123";
+
+        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+
+        var loginDTO = com.lexia.backend.dto.LoginDTO.builder()
+                .email(email)
+                .password(password)
+                .build();
+
+        // Act & Assert
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class, () -> {
+            authService.login(loginDTO);
+        });
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void testLogin_WithInvalidPassword_ThrowsException() {
+        // Arrange
+        String email = "test@lexia.com";
+        String correctPassword = "Password123";
+        String wrongPassword = "WrongPassword123";
+        String hashedPassword = passwordEncoder.encode(correctPassword);
+
+        User user = User.builder()
+                .id("test-uuid")
+                .email(email)
+                .passwordHash(hashedPassword)
+                .isActive(true)
+                .build();
+
+        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(user));
+
+        var loginDTO = com.lexia.backend.dto.LoginDTO.builder()
+                .email(email)
+                .password(wrongPassword)
+                .build();
+
+        // Act & Assert
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class, () -> {
+            authService.login(loginDTO);
+        });
+
+        assertEquals("Invalid email or password", exception.getMessage());
     }
 }

@@ -203,11 +203,14 @@ public class AuthService {
 
     /**
      * Refreshes access token using a valid refresh token.
-     * Implements token rotation: invalidates old refresh token and creates a new one.
+     * Implements token rotation: invalidates old refresh token and creates a new
+     * one.
      *
      * @param refreshTokenDTO the refresh token request
-     * @return RefreshTokenResponseDTO containing new access token and new refresh token
-     * @throws InvalidTokenException if refresh token is invalid, expired, or revoked
+     * @return RefreshTokenResponseDTO containing new access token and new refresh
+     *         token
+     * @throws InvalidTokenException if refresh token is invalid, expired, or
+     *                               revoked
      */
     @Transactional
     public RefreshTokenResponseDTO refreshToken(RefreshTokenDTO refreshTokenDTO) {
@@ -235,7 +238,7 @@ public class AuthService {
 
         // Check if token is revoked
         if (storedToken.isRevoked()) {
-            LOG.warn("Refresh token is revoked. Possible token theft detected. Invalidating token family: {}", 
+            LOG.warn("Refresh token is revoked. Possible token theft detected. Invalidating token family: {}",
                     storedToken.getFamily());
             // Revoke all tokens in the same family (security measure against token theft)
             refreshTokenRepository.deleteByFamily(storedToken.getFamily());
