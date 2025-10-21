@@ -1,13 +1,98 @@
 # LEXIA Sprint 1 - Daily Log
 
-**Date**: October 20, 2025
-**Sprint Day**: 2/10
+**Date**: October 21, 2025 (Updated)
+**Sprint Day**: 3/10
 
 ## 🎯 Today's Focus
 
-Authentication Service Implementation - Password Hashing & User Registration
+User Login Infrastructure - JWT Token Generation & Password Verification
 
-## ✅ Completed Tasks
+## ✅ Completed Tasks (Session 3 - October 21)
+
+### LoginDTO Creation with Validation ✅
+
+- **Task**: Create LoginDTO with validation rules
+- **Details**:
+  - Created LoginDTO.java with email and password fields
+  - Email validation: `@Email`, `@NotBlank`, `@Size(max=255)`
+  - Password validation: `@NotBlank`, `@Size(8-255)`
+  - Simple design (no password confirmation needed for login)
+  - Consistent with RegisterDTO structure
+  - Full JavaDoc documentation
+- **Features**:
+  - Jakarta Validation annotations compatible with Spring Boot 3.x
+  - Lombok annotations for reducing boilerplate
+  - Security-conscious minimal field set
+- **Testing**: Compiles successfully, integrated with AuthService
+- **Time Spent**: 10 minutes
+
+### LoginResponseDTO Creation ✅
+
+- **Task**: Create response DTO for successful login
+- **Details**:
+  - Created LoginResponseDTO.java with comprehensive token information
+  - Fields: accessToken, refreshToken, user, tokenType, expiresIn
+  - Includes UserDTO to return authenticated user information
+  - tokenType set to "Bearer" for OAuth2 compliance
+  - expiresIn provides milliseconds for client-side token management
+- **Features**:
+  - Excludes sensitive data (password hashes via UserDTO)
+  - Ready for OAuth2/OIDC compliance
+  - Complete information for client implementation
+- **Testing**: Compiles successfully
+- **Time Spent**: 8 minutes
+
+### AuthService.login() Method Implementation ✅
+
+- **Task**: Implement complete login flow with JWT token generation
+- **Details**:
+  - Created login() method accepting LoginDTO
+  - Authenticates user credentials using existing authenticateUser() method
+  - Generates JWT access token (15 min expiry) via JwtTokenProvider
+  - Generates JWT refresh token (7 days expiry) via JwtTokenProvider
+  - Hashes refresh token for secure storage (SHA-256)
+  - Stores refresh token in database
+  - Returns comprehensive LoginResponseDTO
+  - Transactional for data consistency
+  - Security logging for audit trail
+- **Method Signature**: `LoginResponseDTO login(LoginDTO loginDTO)`
+- **Security Features**:
+  - BCrypt password verification
+  - Token family concept for attack detection
+  - Exception handling prevents email enumeration
+  - Comprehensive audit logging
+- **Constructor Update**:
+  - Added RefreshTokenRepository dependency
+  - Added JwtTokenProvider dependency
+- **Testing**: All 5 tests pass, zero compilation errors
+- **Time Spent**: 42 minutes
+
+## 🔄 Current Status
+
+- **LoginDTO & LoginResponseDTO**: ✅ Complete
+- **AuthService.login() Method**: ✅ Complete (Full login flow)
+- **JWT Infrastructure**: ✅ Complete (Token generation, hashing, storage)
+- **Next Priority**: POST /auth/login endpoint
+- **Blockers**: None
+
+## 📝 Session 3 Summary
+
+- **New Files Created**: LoginDTO.java, LoginResponseDTO.java
+- **Modified Files**: AuthService.java (added login method)
+- **Code Quality**: High (follows all standards)
+- **Tests**: 5/5 pass
+- **Compilation**: Zero errors
+- **Duration**: ~1 hour
+
+## 📝 Previous Sessions
+
+### Session 2 (October 20) - User Registration Endpoint ✅
+
+- POST /auth/register endpoint implementation
+- GlobalExceptionHandler with @ControllerAdvice
+- ErrorResponse and ValidationError DTOs
+
+### Session 1 (October 16) - Database Setup ✅
 
 ### AuthService.register() Method Implementation ✅
 

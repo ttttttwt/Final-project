@@ -1,11 +1,16 @@
 package com.lexia.backend.auth;
 
+import com.lexia.backend.dto.LoginDTO;
+import com.lexia.backend.dto.LoginResponseDTO;
 import com.lexia.backend.dto.RegisterDTO;
+import com.lexia.backend.dto.UserDTO;
+import com.lexia.backend.entity.RefreshToken;
 import com.lexia.backend.entity.Role;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.entity.UserProfile;
 import com.lexia.backend.entity.UserRole;
 import com.lexia.backend.exception.UserAlreadyExistsException;
+import com.lexia.backend.repository.RefreshTokenRepository;
 import com.lexia.backend.repository.RoleRepository;
 import com.lexia.backend.repository.UserRepository;
 import org.slf4j.Logger;
@@ -14,7 +19,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Authentication Service for LEXIA.
@@ -30,14 +37,20 @@ import java.util.Optional;
 public class AuthService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthService.class);
+    private static final long ACCESS_TOKEN_EXPIRATION_MS = 15 * 60 * 1000; // 15 minutes
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtTokenProvider jwtTokenProvider;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository) {
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository,
+                      RefreshTokenRepository refreshTokenRepository, JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
         // BCrypt with cost factor 12 for strong password hashing
         this.passwordEncoder = new BCryptPasswordEncoder(12);
     }
@@ -131,5 +144,56 @@ public class AuthService {
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Handles user login flow.
+     * Authenticates user credentials and generates JWT tokens.
+     *
+     * @param loginDTO the login credentials
+     * @return LoginResponseDTO containing access token, refresh token, and user data
+     * @throws UserAlreadyExistsException if user not found or credentials invalid
+     */
+    @Transactional
+    public LoginResponseDTO login(LoginDTO loginDTO) {
+        LOG.info("Attempting to login user with email: {}", loginDTO.getEmail());
+
+        // Authenticate user
+        Optional<User> userOpt = authenticateUser(loginDTO.getEmail(), loginDTO.getPassword());
+        if (userOpt.isEmpty()) {
+            LOG.warn("Login failed: Invalid credentials for email: {}", loginDTO.getEmail());
+            throw new UserAlreadyExistsException("Invalid email or password");
+        }
+
+        User user = userOpt.get();
+
+        // Generate JWT tokens
+        String accessToken = jwtTokenProvider.generateAccessToken(UUID.fromString(user.getId()));
+        String refreshToken = jwtTokenProvider.generateRefreshToken(UUID.fromString(user.getId()));
+        String refreshTokenHash = jwtTokenProvider.hashToken(refreshToken);
+
+        // Store refresh token in database
+        RefreshToken storedRefreshToken = RefreshToken.builder()
+                .user(user)
+                .tokenHash(refreshTokenHash)
+                .family(UUID.randomUUID().toString()) // Token family for rotation
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(storedRefreshToken);
+        LOG.debug("Refresh token stored for user: {}", loginDTO.getEmail());
+
+        // Build response
+        LoginResponseDTO response = LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(UserDTO.fromEntity(user))
+                .tokenType("Bearer")
+                .expiresIn(ACCESS_TOKEN_EXPIRATION_MS)
+                .build();
+
+        LOG.info("User logged in successfully: {}", loginDTO.getEmail());
+        return response;
     }
 }
