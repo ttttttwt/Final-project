@@ -1,6 +1,8 @@
 package com.lexia.backend.controller;
 
 import com.lexia.backend.auth.AuthService;
+import com.lexia.backend.dto.LoginDTO;
+import com.lexia.backend.dto.LoginResponseDTO;
 import com.lexia.backend.dto.RegisterDTO;
 import com.lexia.backend.dto.UserDTO;
 import com.lexia.backend.entity.User;
@@ -49,5 +51,24 @@ public class AuthController {
 
         // Return 201 Created with user data
         return ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
+    }
+
+    /**
+     * Authenticate user and generate JWT tokens.
+     *
+     * @param loginDTO the login credentials (email and password)
+     * @return ResponseEntity with access token, refresh token, and user data
+     */
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> loginUser(@Valid @RequestBody LoginDTO loginDTO) {
+        LOG.info("Received login request for email: {}", loginDTO.getEmail());
+
+        // Authenticate user and generate tokens
+        LoginResponseDTO loginResponse = authService.login(loginDTO);
+
+        LOG.info("User logged in successfully: {}", loginDTO.getEmail());
+
+        // Return 200 OK with tokens and user data
+        return ResponseEntity.ok(loginResponse);
     }
 }

@@ -46,7 +46,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository, RoleRepository roleRepository,
-                      RefreshTokenRepository refreshTokenRepository, JwtTokenProvider jwtTokenProvider) {
+            RefreshTokenRepository refreshTokenRepository, JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -151,7 +151,8 @@ public class AuthService {
      * Authenticates user credentials and generates JWT tokens.
      *
      * @param loginDTO the login credentials
-     * @return LoginResponseDTO containing access token, refresh token, and user data
+     * @return LoginResponseDTO containing access token, refresh token, and user
+     *         data
      * @throws UserAlreadyExistsException if user not found or credentials invalid
      */
     @Transactional
