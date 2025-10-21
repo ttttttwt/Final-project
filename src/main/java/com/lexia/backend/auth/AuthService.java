@@ -2,6 +2,8 @@ package com.lexia.backend.auth;
 
 import com.lexia.backend.dto.LoginDTO;
 import com.lexia.backend.dto.LoginResponseDTO;
+import com.lexia.backend.dto.RefreshTokenDTO;
+import com.lexia.backend.dto.RefreshTokenResponseDTO;
 import com.lexia.backend.dto.RegisterDTO;
 import com.lexia.backend.dto.UserDTO;
 import com.lexia.backend.entity.RefreshToken;
@@ -9,6 +11,7 @@ import com.lexia.backend.entity.Role;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.entity.UserProfile;
 import com.lexia.backend.entity.UserRole;
+import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
 import com.lexia.backend.repository.RefreshTokenRepository;
 import com.lexia.backend.repository.RoleRepository;
@@ -195,6 +198,95 @@ public class AuthService {
                 .build();
 
         LOG.info("User logged in successfully: {}", loginDTO.getEmail());
+        return response;
+    }
+
+    /**
+     * Refreshes access token using a valid refresh token.
+     * Implements token rotation: invalidates old refresh token and creates a new one.
+     *
+     * @param refreshTokenDTO the refresh token request
+     * @return RefreshTokenResponseDTO containing new access token and new refresh token
+     * @throws InvalidTokenException if refresh token is invalid, expired, or revoked
+     */
+    @Transactional
+    public RefreshTokenResponseDTO refreshToken(RefreshTokenDTO refreshTokenDTO) {
+        String refreshTokenValue = refreshTokenDTO.getRefreshToken();
+        LOG.info("Attempting to refresh access token");
+
+        // Validate refresh token format
+        if (!jwtTokenProvider.validateToken(refreshTokenValue)) {
+            LOG.warn("Invalid refresh token format");
+            throw new InvalidTokenException("Invalid or expired refresh token");
+        }
+
+        // Extract user ID from refresh token
+        UUID userId = jwtTokenProvider.getUserIdFromToken(refreshTokenValue);
+
+        // Hash the refresh token to look it up in database
+        String tokenHash = jwtTokenProvider.hashToken(refreshTokenValue);
+
+        // Find refresh token in database
+        RefreshToken storedToken = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> {
+                    LOG.warn("Refresh token not found in database");
+                    return new InvalidTokenException("Invalid refresh token");
+                });
+
+        // Check if token is revoked
+        if (storedToken.isRevoked()) {
+            LOG.warn("Refresh token is revoked. Possible token theft detected. Invalidating token family: {}", 
+                    storedToken.getFamily());
+            // Revoke all tokens in the same family (security measure against token theft)
+            refreshTokenRepository.deleteByFamily(storedToken.getFamily());
+            throw new InvalidTokenException("Refresh token has been revoked");
+        }
+
+        // Check if token is expired
+        if (storedToken.isExpired()) {
+            LOG.warn("Refresh token is expired");
+            throw new InvalidTokenException("Refresh token has expired");
+        }
+
+        // Get user from database
+        User user = storedToken.getUser();
+        if (!user.getIsActive()) {
+            LOG.warn("User account is inactive: {}", user.getEmail());
+            throw new InvalidTokenException("User account is inactive");
+        }
+
+        // Revoke old refresh token
+        refreshTokenRepository.revokeToken(tokenHash, LocalDateTime.now());
+        LOG.debug("Old refresh token revoked for user: {}", user.getEmail());
+
+        // Generate new access token
+        String newAccessToken = jwtTokenProvider.generateAccessToken(UUID.fromString(user.getId()));
+
+        // Generate new refresh token (token rotation)
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(UUID.fromString(user.getId()));
+        String newRefreshTokenHash = jwtTokenProvider.hashToken(newRefreshToken);
+
+        // Store new refresh token in database (same family for rotation tracking)
+        RefreshToken newStoredToken = RefreshToken.builder()
+                .user(user)
+                .tokenHash(newRefreshTokenHash)
+                .family(storedToken.getFamily()) // Keep same family for rotation tracking
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(newStoredToken);
+        LOG.debug("New refresh token stored for user: {}", user.getEmail());
+
+        // Build response
+        RefreshTokenResponseDTO response = RefreshTokenResponseDTO.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .tokenType("Bearer")
+                .expiresIn(ACCESS_TOKEN_EXPIRATION_MS)
+                .build();
+
+        LOG.info("Access token refreshed successfully for user: {}", user.getEmail());
         return response;
     }
 }

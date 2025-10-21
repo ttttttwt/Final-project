@@ -3,6 +3,8 @@ package com.lexia.backend.controller;
 import com.lexia.backend.auth.AuthService;
 import com.lexia.backend.dto.LoginDTO;
 import com.lexia.backend.dto.LoginResponseDTO;
+import com.lexia.backend.dto.RefreshTokenDTO;
+import com.lexia.backend.dto.RefreshTokenResponseDTO;
 import com.lexia.backend.dto.RegisterDTO;
 import com.lexia.backend.dto.UserDTO;
 import com.lexia.backend.entity.User;
@@ -70,5 +72,25 @@ public class AuthController {
 
         // Return 200 OK with tokens and user data
         return ResponseEntity.ok(loginResponse);
+    }
+
+    /**
+     * Refresh access token using a valid refresh token.
+     * Implements token rotation for security.
+     *
+     * @param refreshTokenDTO the refresh token request
+     * @return ResponseEntity with new access token and new refresh token
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponseDTO> refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
+        LOG.info("Received token refresh request");
+
+        // Refresh access token and rotate refresh token
+        RefreshTokenResponseDTO refreshResponse = authService.refreshToken(refreshTokenDTO);
+
+        LOG.info("Access token refreshed successfully");
+
+        // Return 200 OK with new tokens
+        return ResponseEntity.ok(refreshResponse);
     }
 }

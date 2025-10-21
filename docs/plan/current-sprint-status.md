@@ -17,18 +17,18 @@
 
 ## Story Breakdown
 
-| Story                      | Status  | Owner | %Complete | Notes                                                                                 |
-| -------------------------- | ------- | ----- | --------- | ------------------------------------------------------------------------------------- |
-| Setup Spring Boot Project  | ✅ Done | You   | 100%      | All dependencies installed                                                            |
-| Database Schema Migration  | ✅ Done | You   | 100%      | Flyway scripts created and configured                                                 |
-| JPA Entities               | ✅ Done | You   | 100%      | User, UserProfile, Role, UserRole, RefreshToken with validation & relationships       |
-| Repository Interfaces      | ✅ Done | You   | 100%      | All repositories with custom queries for business logic                               |
-| Implement JWT Provider     | ✅ Done | You   | 100%      | JwtTokenProvider service with token generation, validation, and hashing               |
-| Implement AuthService      | ✅ Done | You   | 100%      | BCrypt password hashing (cost 12), register, login, token management                  |
-| User Registration Endpoint | ✅ Done | You   | 100%      | POST /auth/register with validation, error handling, 201 Created response             |
-| Login Infrastructure       | ✅ Done | You   | 100%      | LoginDTO, LoginResponseDTO, AuthService.login() with JWT token generation             |
-| User Login Endpoint        | ✅ Done | You   | 100%      | POST /auth/login with JWT tokens (access 15min, refresh 7days), 200 OK response       |
-| Comprehensive Testing      | 🔵 Todo | You   | 0%        | Unit & integration tests for 70%+ coverage                                            |
+| Story                      | Status  | Owner | %Complete | Notes                                                                           |
+| -------------------------- | ------- | ----- | --------- | ------------------------------------------------------------------------------- |
+| Setup Spring Boot Project  | ✅ Done | You   | 100%      | All dependencies installed                                                      |
+| Database Schema Migration  | ✅ Done | You   | 100%      | Flyway scripts created and configured                                           |
+| JPA Entities               | ✅ Done | You   | 100%      | User, UserProfile, Role, UserRole, RefreshToken with validation & relationships |
+| Repository Interfaces      | ✅ Done | You   | 100%      | All repositories with custom queries for business logic                         |
+| Implement JWT Provider     | ✅ Done | You   | 100%      | JwtTokenProvider service with token generation, validation, and hashing         |
+| Implement AuthService      | ✅ Done | You   | 100%      | BCrypt password hashing (cost 12), register, login, token management            |
+| User Registration Endpoint | ✅ Done | You   | 100%      | POST /auth/register with validation, error handling, 201 Created response       |
+| Login Infrastructure       | ✅ Done | You   | 100%      | LoginDTO, LoginResponseDTO, AuthService.login() with JWT token generation       |
+| User Login Endpoint        | ✅ Done | You   | 100%      | POST /auth/login with JWT tokens (access 15min, refresh 7days), 200 OK response |
+| Comprehensive Testing      | 🔵 Todo | You   | 0%        | Unit & integration tests for 70%+ coverage                                      |
 
 | ### User Registration Endpoint Implementation ✅
 

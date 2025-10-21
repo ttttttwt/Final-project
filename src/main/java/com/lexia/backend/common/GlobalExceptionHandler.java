@@ -1,5 +1,6 @@
 package com.lexia.backend.common;
 
+import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -136,6 +137,25 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    /**
+     * Handle invalid token exceptions.
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTokenException(
+            InvalidTokenException ex, HttpServletRequest request) {
+
+        LOG.warn("Invalid token: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Invalid Token")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
     /**
