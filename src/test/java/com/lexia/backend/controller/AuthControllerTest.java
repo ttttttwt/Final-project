@@ -104,9 +104,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRegisterDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRegisterDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(mockUser.getId()))
                 .andExpect(jsonPath("$.email").value(mockUser.getEmail()))
@@ -126,9 +126,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidDTO)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -141,9 +141,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRegisterDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRegisterDTO)))
                 .andExpect(status().isConflict());
     }
 
@@ -157,9 +157,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validLoginDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validLoginDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("mock.access.token"))
                 .andExpect(jsonPath("$.refreshToken").value("mock.refresh.token"))
@@ -176,9 +176,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validLoginDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validLoginDTO)))
                 .andExpect(status().isConflict());
     }
 
@@ -192,9 +192,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidDTO)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -208,9 +208,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRefreshTokenDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRefreshTokenDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("new.access.token"))
                 .andExpect(jsonPath("$.refreshToken").value("new.refresh.token"))
@@ -226,9 +226,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRefreshTokenDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRefreshTokenDTO)))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -240,9 +240,9 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidDTO)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidDTO)))
                 .andExpect(status().isBadRequest());
     }
 }

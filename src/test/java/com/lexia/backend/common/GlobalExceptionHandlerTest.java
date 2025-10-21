@@ -42,10 +42,10 @@ class GlobalExceptionHandlerTest {
         // Given
         MethodArgumentNotValidException exception = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);
-        
+
         FieldError emailError = new FieldError("registerDTO", "email", "must be a valid email");
         FieldError passwordError = new FieldError("registerDTO", "password", "must be at least 8 characters");
-        
+
         when(exception.getBindingResult()).thenReturn(bindingResult);
         when(bindingResult.getFieldErrors()).thenReturn(List.of(emailError, passwordError));
 
@@ -59,7 +59,7 @@ class GlobalExceptionHandlerTest {
         assertEquals("Validation Failed", response.getBody().getError());
         assertEquals(400, response.getBody().getStatus());
         assertEquals("/api/v1/test", response.getBody().getPath());
-        
+
         List<ValidationError> validationErrors = response.getBody().getValidationErrors();
         assertNotNull(validationErrors);
         assertEquals(2, validationErrors.size());
@@ -111,7 +111,8 @@ class GlobalExceptionHandlerTest {
         UserAlreadyExistsException exception = new UserAlreadyExistsException("Email already registered");
 
         // When
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleUserAlreadyExistsException(exception, mockRequest);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleUserAlreadyExistsException(exception,
+                mockRequest);
 
         // Then
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
@@ -129,7 +130,8 @@ class GlobalExceptionHandlerTest {
         ResourceNotFoundException exception = new ResourceNotFoundException("User not found");
 
         // When
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleResourceNotFoundException(exception, mockRequest);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleResourceNotFoundException(exception,
+                mockRequest);
 
         // Then
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -165,7 +167,8 @@ class GlobalExceptionHandlerTest {
         IllegalArgumentException exception = new IllegalArgumentException("Invalid input");
 
         // When
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleIllegalArgumentException(exception, mockRequest);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleIllegalArgumentException(exception,
+                mockRequest);
 
         // Then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());

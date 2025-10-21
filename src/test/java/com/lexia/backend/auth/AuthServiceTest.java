@@ -297,7 +297,7 @@ class AuthServiceTest {
         assertEquals("Bearer", result.getTokenType());
         assertEquals(900000L, result.getExpiresIn()); // 15 minutes
         assertEquals(email, result.getUser().getEmail());
-        
+
         // Verify refresh token was stored
         verify(refreshTokenRepository).save(any());
     }
