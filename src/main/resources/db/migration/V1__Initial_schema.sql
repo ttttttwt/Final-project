@@ -47,10 +47,7 @@ CREATE TABLE refresh_tokens (
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     revoked_at TIMESTAMPTZ,
-    device_info TEXT,
-    INDEX idx_refresh_tokens_user_id (user_id),
-    INDEX idx_refresh_tokens_family (family),
-    INDEX idx_refresh_tokens_expires_at (expires_at)
+    device_info TEXT
 );
 
 -- Insert default roles
@@ -62,6 +59,9 @@ INSERT INTO roles (name) VALUES
 -- Create indexes for better performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_created_at ON users(created_at);
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_family ON refresh_tokens(family);
+CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 
 -- Create updated_at trigger function

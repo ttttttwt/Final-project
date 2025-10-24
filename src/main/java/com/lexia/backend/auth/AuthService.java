@@ -172,8 +172,8 @@ public class AuthService {
         User user = userOpt.get();
 
         // Generate JWT tokens
-        String accessToken = jwtTokenProvider.generateAccessToken(UUID.fromString(user.getId()));
-        String refreshToken = jwtTokenProvider.generateRefreshToken(UUID.fromString(user.getId()));
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
         String refreshTokenHash = jwtTokenProvider.hashToken(refreshToken);
 
         // Store refresh token in database
@@ -223,9 +223,6 @@ public class AuthService {
             throw new InvalidTokenException("Invalid or expired refresh token");
         }
 
-        // Extract user ID from refresh token
-        UUID userId = jwtTokenProvider.getUserIdFromToken(refreshTokenValue);
-
         // Hash the refresh token to look it up in database
         String tokenHash = jwtTokenProvider.hashToken(refreshTokenValue);
 
@@ -263,10 +260,10 @@ public class AuthService {
         LOG.debug("Old refresh token revoked for user: {}", user.getEmail());
 
         // Generate new access token
-        String newAccessToken = jwtTokenProvider.generateAccessToken(UUID.fromString(user.getId()));
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId());
 
         // Generate new refresh token (token rotation)
-        String newRefreshToken = jwtTokenProvider.generateRefreshToken(UUID.fromString(user.getId()));
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
         String newRefreshTokenHash = jwtTokenProvider.hashToken(newRefreshToken);
 
         // Store new refresh token in database (same family for rotation tracking)

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
@@ -38,7 +39,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
      * @return list of refresh tokens
      */
     @Query("SELECT rt FROM RefreshToken rt WHERE rt.user.id = :userId")
-    List<RefreshToken> findByUserId(@Param("userId") String userId);
+    List<RefreshToken> findByUserId(@Param("userId") UUID userId);
 
     /**
      * Find refresh tokens by family
@@ -64,7 +65,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
      */
     @Modifying
     @Query("DELETE FROM RefreshToken rt WHERE rt.user.id = :userId")
-    void deleteByUserId(@Param("userId") String userId);
+    void deleteByUserId(@Param("userId") UUID userId);
 
     /**
      * Delete refresh tokens by family (for token rotation)
@@ -92,5 +93,5 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
      * @return count of active tokens
      */
     @Query("SELECT COUNT(rt) FROM RefreshToken rt WHERE rt.user.id = :userId AND rt.revoked = false AND rt.expiresAt > :currentTime")
-    long countActiveTokensByUserId(@Param("userId") String userId, @Param("currentTime") LocalDateTime currentTime);
+    long countActiveTokensByUserId(@Param("userId") UUID userId, @Param("currentTime") LocalDateTime currentTime);
 }

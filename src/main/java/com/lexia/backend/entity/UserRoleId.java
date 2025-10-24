@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 @Embeddable
 @Data
@@ -15,7 +16,7 @@ import java.io.Serializable;
 public class UserRoleId implements Serializable {
 
     @Column(name = "user_id", columnDefinition = "UUID")
-    private String userId;
+    private UUID userId;
 
     @Column(name = "role_id")
     private Integer roleId;

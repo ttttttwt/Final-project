@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +69,7 @@ class AuthServiceTest {
         when(roleRepository.findByName("LEARNER")).thenReturn(Optional.of(learnerRole));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
-            user.setId("test-uuid");
+            user.setId(UUID.randomUUID());
             return user;
         });
 
@@ -114,7 +115,7 @@ class AuthServiceTest {
         when(roleRepository.findByName("LEARNER")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
-            user.setId("test-uuid");
+            user.setId(UUID.randomUUID());
             return user;
         });
 
@@ -162,7 +163,7 @@ class AuthServiceTest {
         String hashedPassword = passwordEncoder.encode(password);
 
         User user = User.builder()
-                .id("test-uuid")
+                .id(UUID.randomUUID())
                 .email(email)
                 .passwordHash(hashedPassword)
                 .isActive(true)
@@ -188,7 +189,7 @@ class AuthServiceTest {
         String hashedPassword = passwordEncoder.encode(correctPassword);
 
         User user = User.builder()
-                .id("test-uuid")
+                .id(UUID.randomUUID())
                 .email(email)
                 .passwordHash(hashedPassword)
                 .isActive(true)
@@ -247,7 +248,7 @@ class AuthServiceTest {
         when(roleRepository.findByName("LEARNER")).thenReturn(Optional.of(learnerRole));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
-            user.setId("test-uuid");
+            user.setId(UUID.randomUUID());
             return user;
         });
 
@@ -270,7 +271,7 @@ class AuthServiceTest {
         String hashedPassword = passwordEncoder.encode(password);
 
         User user = User.builder()
-                .id("550e8400-e29b-41d4-a716-446655440000")
+                .id(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"))
                 .email(email)
                 .passwordHash(hashedPassword)
                 .isActive(true)
@@ -332,7 +333,7 @@ class AuthServiceTest {
         String hashedPassword = passwordEncoder.encode(correctPassword);
 
         User user = User.builder()
-                .id("test-uuid")
+                .id(UUID.randomUUID())
                 .email(email)
                 .passwordHash(hashedPassword)
                 .isActive(true)

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Repository
 public interface UserRoleRepository extends JpaRepository<UserRole, UserRoleId> {
@@ -30,7 +31,7 @@ public interface UserRoleRepository extends JpaRepository<UserRole, UserRoleId> 
      * @return list of user roles
      */
     @Query("SELECT ur FROM UserRole ur WHERE ur.id.userId = :userId")
-    List<UserRole> findByUserId(@Param("userId") String userId);
+    List<UserRole> findByUserId(@Param("userId") UUID userId);
 
     /**
      * Find all users with a specific role
@@ -48,7 +49,7 @@ public interface UserRoleRepository extends JpaRepository<UserRole, UserRoleId> 
      */
     @Modifying
     @Query("DELETE FROM UserRole ur WHERE ur.id.userId = :userId")
-    void deleteByUserId(@Param("userId") String userId);
+    void deleteByUserId(@Param("userId") UUID userId);
 
     /**
      * Get role IDs for a user
@@ -57,5 +58,5 @@ public interface UserRoleRepository extends JpaRepository<UserRole, UserRoleId> 
      * @return set of role IDs
      */
     @Query("SELECT ur.id.roleId FROM UserRole ur WHERE ur.id.userId = :userId")
-    Set<Integer> findRoleIdsByUserId(@Param("userId") String userId);
+    Set<Integer> findRoleIdsByUserId(@Param("userId") UUID userId);
 }
