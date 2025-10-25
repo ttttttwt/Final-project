@@ -1,6 +1,3 @@
-Dưới đây là phiên bản viết lại chuẩn, rõ ràng và chuyên nghiệp hơn, giữ nguyên nội dung gốc nhưng cải thiện ngữ pháp, trình bày và nhất quán Markdown:
-
-```markdown
 # LEXIA – Quick Start for AI Context
 
 ## Identity

@@ -17,10 +17,10 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 **Sprint 1**
 
 - [x] Project setup + Git infrastructure
-- [ ] JWT authentication implementation
-- [ ] User registration/login API
-- [ ] User profile management
-- [ ] Database validation
+- [x] JWT authentication implementation
+- [x] User registration/login API
+- [ ] User profile management (In Progress - 5 subtasks defined)
+- [x] Database validation
 
 **Sprint 2**
 
