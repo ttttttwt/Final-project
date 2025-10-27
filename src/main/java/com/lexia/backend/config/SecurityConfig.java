@@ -1,12 +1,16 @@
 package com.lexia.backend.config;
 
+import com.lexia.backend.auth.JwtAuthFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Security configuration for LEXIA backend.
@@ -14,7 +18,11 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
 
     /**
      * Configure HTTP security for the application.
@@ -43,6 +51,9 @@ public class SecurityConfig {
                 // Use stateless session management (for JWT)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Add JWT filter before the username/password authentication filter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
 
                 // Allow frames for H2 console (development only)
                 .headers(headers -> headers

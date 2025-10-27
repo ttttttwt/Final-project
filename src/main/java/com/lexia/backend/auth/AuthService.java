@@ -172,8 +172,8 @@ public class AuthService {
         User user = userOpt.get();
 
         // Generate JWT tokens
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
         String refreshTokenHash = jwtTokenProvider.hashToken(refreshToken);
 
         // Store refresh token in database
@@ -260,10 +260,10 @@ public class AuthService {
         LOG.debug("Old refresh token revoked for user: {}", user.getEmail());
 
         // Generate new access token
-        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId());
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail());
 
         // Generate new refresh token (token rotation)
-        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
         String newRefreshTokenHash = jwtTokenProvider.hashToken(newRefreshToken);
 
         // Store new refresh token in database (same family for rotation tracking)

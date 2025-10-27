@@ -278,8 +278,10 @@ class AuthServiceTest {
                 .build();
 
         when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(user));
-        when(jwtTokenProvider.generateAccessToken(any(java.util.UUID.class))).thenReturn("mock.access.token");
-        when(jwtTokenProvider.generateRefreshToken(any(java.util.UUID.class))).thenReturn("mock.refresh.token");
+        when(jwtTokenProvider.generateAccessToken(any(java.util.UUID.class), anyString()))
+                .thenReturn("mock.access.token");
+        when(jwtTokenProvider.generateRefreshToken(any(java.util.UUID.class), anyString()))
+                .thenReturn("mock.refresh.token");
         when(jwtTokenProvider.hashToken(anyString())).thenReturn("hashed.token");
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 

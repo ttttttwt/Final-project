@@ -9,6 +9,7 @@ import com.lexia.backend.exception.UserNotFoundException;
 import com.lexia.backend.mapper.UserProfileMapper;
 import com.lexia.backend.repository.UserProfileRepository;
 import com.lexia.backend.repository.UserRepository;
+import com.lexia.backend.service.AuditLogService;
 import com.lexia.backend.service.UserProfileService;
 import com.lexia.backend.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
+    private final AuditLogService auditLogService;
 
     /**
      * {@inheritDoc}
@@ -98,6 +100,14 @@ public class UserProfileServiceImpl implements UserProfileService {
         // Save updated profile
         UserProfile updatedProfile = userProfileRepository.save(profile);
 
+        // Log the profile update for audit trail
+        try {
+            String changes = buildChangesJson(dto);
+            auditLogService.logProfileUpdate(userId, profile.getUserId(), changes, null, null);
+        } catch (Exception e) {
+            LOG.warn("Failed to log profile update audit for user ID: {}", userId, e);
+        }
+
         LOG.info("Successfully updated profile for user ID: {}", userId);
         return UserProfileMapper.toDTO(updatedProfile);
     }
@@ -132,6 +142,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         profile.setAvatarUrl(avatarUrl);
         userProfileRepository.save(profile);
 
+        // Log the avatar update
+        try {
+            auditLogService.logAvatarUpdate(userId, profile.getUserId(), avatarUrl, null, null);
+        } catch (Exception e) {
+            LOG.warn("Failed to log avatar update audit for user ID: {}", userId, e);
+        }
+
         LOG.info("Successfully updated avatar for user ID: {}", userId);
     }
 
@@ -155,6 +172,13 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         profile.setAvatarUrl(null);
         userProfileRepository.save(profile);
+
+        // Log the avatar deletion
+        try {
+            auditLogService.logAvatarDelete(userId, profile.getUserId(), null, null);
+        } catch (Exception e) {
+            LOG.warn("Failed to log avatar deletion audit for user ID: {}", userId, e);
+        }
 
         LOG.info("Successfully deleted avatar for user ID: {}", userId);
     }
@@ -203,5 +227,74 @@ public class UserProfileServiceImpl implements UserProfileService {
                 });
 
         return user.getId();
+    }
+
+    /**
+     * Builds a JSON string representing the changes made to a profile.
+     *
+     * @param dto the update profile data
+     * @return JSON string with field changes
+     */
+    private String buildChangesJson(UpdateProfileDTO dto) {
+        StringBuilder json = new StringBuilder("{");
+        boolean first = true;
+
+        if (dto.getFirstName() != null) {
+            json.append("\"firstName\":\"").append(escapeJson(dto.getFirstName())).append("\"");
+            first = false;
+        }
+
+        if (dto.getLastName() != null) {
+            if (!first)
+                json.append(",");
+            json.append("\"lastName\":\"").append(escapeJson(dto.getLastName())).append("\"");
+            first = false;
+        }
+
+        if (dto.getBio() != null) {
+            if (!first)
+                json.append(",");
+            json.append("\"bio\":\"").append(escapeJson(dto.getBio())).append("\"");
+            first = false;
+        }
+
+        if (dto.getPhoneNumber() != null) {
+            if (!first)
+                json.append(",");
+            json.append("\"phoneNumber\":\"").append(escapeJson(dto.getPhoneNumber())).append("\"");
+            first = false;
+        }
+
+        if (dto.getTimezone() != null) {
+            if (!first)
+                json.append(",");
+            json.append("\"timezone\":\"").append(escapeJson(dto.getTimezone())).append("\"");
+            first = false;
+        }
+
+        if (dto.getLanguage() != null) {
+            if (!first)
+                json.append(",");
+            json.append("\"language\":\"").append(escapeJson(dto.getLanguage())).append("\"");
+        }
+
+        json.append("}");
+        return json.toString();
+    }
+
+    /**
+     * Escapes special characters in JSON strings.
+     *
+     * @param str the string to escape
+     * @return escaped string
+     */
+    private String escapeJson(String str) {
+        if (str == null)
+            return "";
+        return str.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }

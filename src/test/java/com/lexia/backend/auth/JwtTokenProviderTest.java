@@ -25,37 +25,41 @@ class JwtTokenProviderTest {
     void testGenerateAccessToken_WithValidUserId_ReturnsValidToken() {
         // Arrange
         UUID userId = UUID.randomUUID();
+        String email = "test@test.com";
 
         // Act
-        String token = jwtTokenProvider.generateAccessToken(userId);
+        String token = jwtTokenProvider.generateAccessToken(userId, email);
 
         // Assert
         assertNotNull(token);
         assertFalse(token.isEmpty());
         assertTrue(jwtTokenProvider.validateToken(token));
         assertEquals(userId, jwtTokenProvider.getUserIdFromToken(token));
+        assertEquals(email, jwtTokenProvider.getEmailFromToken(token));
     }
 
     @Test
     void testGenerateRefreshToken_WithValidUserId_ReturnsValidToken() {
         // Arrange
         UUID userId = UUID.randomUUID();
+        String email = "test@test.com";
 
         // Act
-        String token = jwtTokenProvider.generateRefreshToken(userId);
+        String token = jwtTokenProvider.generateRefreshToken(userId, email);
 
         // Assert
         assertNotNull(token);
         assertFalse(token.isEmpty());
         assertTrue(jwtTokenProvider.validateToken(token));
         assertEquals(userId, jwtTokenProvider.getUserIdFromToken(token));
+        assertEquals(email, jwtTokenProvider.getEmailFromToken(token));
     }
 
     @Test
     void testValidateToken_WithValidToken_ReturnsTrue() {
         // Arrange
         UUID userId = UUID.randomUUID();
-        String token = jwtTokenProvider.generateAccessToken(userId);
+        String token = jwtTokenProvider.generateAccessToken(userId, "test@test.com");
 
         // Act
         boolean isValid = jwtTokenProvider.validateToken(token);
@@ -80,7 +84,7 @@ class JwtTokenProviderTest {
     void testGetUserIdFromToken_WithValidToken_ReturnsCorrectUserId() {
         // Arrange
         UUID expectedUserId = UUID.randomUUID();
-        String token = jwtTokenProvider.generateAccessToken(expectedUserId);
+        String token = jwtTokenProvider.generateAccessToken(expectedUserId, "test@test.com");
 
         // Act
         UUID actualUserId = jwtTokenProvider.getUserIdFromToken(token);
@@ -104,7 +108,7 @@ class JwtTokenProviderTest {
     void testIsTokenExpired_WithValidToken_ReturnsFalse() {
         // Arrange
         UUID userId = UUID.randomUUID();
-        String token = jwtTokenProvider.generateAccessToken(userId);
+        String token = jwtTokenProvider.generateAccessToken(userId, "test@test.com");
 
         // Act
         boolean isExpired = jwtTokenProvider.isTokenExpired(token);
@@ -117,7 +121,7 @@ class JwtTokenProviderTest {
     void testGetTokenExpiration_WithValidToken_ReturnsFutureDate() {
         // Arrange
         UUID userId = UUID.randomUUID();
-        String token = jwtTokenProvider.generateAccessToken(userId);
+        String token = jwtTokenProvider.generateAccessToken(userId, "test@test.com");
 
         // Act
         Date expiration = jwtTokenProvider.getTokenExpiration(token);

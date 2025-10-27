@@ -2,6 +2,8 @@ package com.lexia.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lexia.backend.auth.AuthService;
+import com.lexia.backend.auth.CustomUserDetailsService;
+import com.lexia.backend.auth.JwtTokenProvider;
 import com.lexia.backend.dto.*;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.exception.InvalidTokenException;
@@ -11,7 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.lexia.backend.common.GlobalExceptionHandler;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests all authentication endpoints with various scenarios.
  */
 @WebMvcTest(AuthController.class)
+@ContextConfiguration(classes = { AuthController.class, GlobalExceptionHandler.class })
 class AuthControllerTest {
 
         @Autowired
@@ -38,6 +43,12 @@ class AuthControllerTest {
 
         @MockitoBean
         private AuthService authService;
+
+        @MockitoBean
+        private JwtTokenProvider jwtTokenProvider;
+
+        @MockitoBean
+        private CustomUserDetailsService customUserDetailsService;
 
         private RegisterDTO validRegisterDTO;
         private LoginDTO validLoginDTO;

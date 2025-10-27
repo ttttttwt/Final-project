@@ -47,12 +47,13 @@ public class JwtTokenProvider {
      * @param userId user ID
      * @return JWT access token valid for 15 minutes
      */
-    public String generateAccessToken(UUID userId) {
+    public String generateAccessToken(UUID userId, String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_MS);
 
         return Jwts.builder()
                 .subject(userId.toString())
+                .claim("email", email)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .issuer("lexia-backend")
@@ -67,12 +68,13 @@ public class JwtTokenProvider {
      * @param userId user ID
      * @return JWT refresh token valid for 7 days
      */
-    public String generateRefreshToken(UUID userId) {
+    public String generateRefreshToken(UUID userId, String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + REFRESH_TOKEN_EXPIRATION_MS);
 
         return Jwts.builder()
                 .subject(userId.toString())
+                .claim("email", email)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .issuer("lexia-backend")
@@ -130,6 +132,22 @@ public class JwtTokenProvider {
             LOG.error("Invalid user ID format in JWT token: {}", userIdStr);
             throw new IllegalArgumentException("Invalid user ID in token");
         }
+    }
+
+    /**
+     * Extracts email from JWT token.
+     *
+     * @param token JWT token
+     * @return email as String
+     */
+    public String getEmailFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(jwtSecretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.get("email", String.class);
     }
 
     /**

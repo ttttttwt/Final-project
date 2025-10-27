@@ -45,4 +45,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      */
     @Query("SELECT COUNT(u) FROM User u WHERE u.authProvider = :authProvider")
     long countByAuthProvider(@Param("authProvider") User.AuthProvider authProvider);
+
+    /**
+     * Find user by email and fetch roles eagerly.
+     *
+     * @param email the email to search for
+     * @return Optional containing the user with roles if found
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.userRoles r LEFT JOIN FETCH r.role WHERE u.email = :email")
+    Optional<User> findByEmailWithRoles(@Param("email") String email);
 }
