@@ -1,8 +1,10 @@
 package com.lexia.backend.common;
 
+import com.lexia.backend.exception.InvalidInputException;
 import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
+import com.lexia.backend.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -137,6 +139,44 @@ public class GlobalExceptionHandler {
                                 .build();
 
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
+         * Handle user not found exception.
+         */
+        @ExceptionHandler(UserNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleUserNotFoundException(
+                        UserNotFoundException ex, HttpServletRequest request) {
+
+                LOG.warn("User not found: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.NOT_FOUND.value())
+                                .error("User Not Found")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
+         * Handle invalid input exception.
+         */
+        @ExceptionHandler(InvalidInputException.class)
+        public ResponseEntity<ErrorResponse> handleInvalidInputException(
+                        InvalidInputException ex, HttpServletRequest request) {
+
+                LOG.warn("Invalid input: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .error("Invalid Input")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
 
         /**

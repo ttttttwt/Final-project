@@ -33,9 +33,9 @@
 4. Implement + Tests (70%+ coverage)
 5. Run: ./gradlew test (must PASS)
 6. Update daily-log.md
-7. Create session summary (session-X-*.md)
-8. Commit (conventional format)
-9. Update sprint status
+7. Commit (conventional format)
+8. Update sprint status
+9. Create session summary ONLY when user explicitly requests it
 ```
 
 ---
@@ -159,7 +159,6 @@ void testLogin_WithValidCredentials_ReturnsToken() throws Exception {
 - ✅ Use DTOs for APIs
 - ✅ Handle Gemini timeouts
 - ✅ Update daily-log.md
-- ✅ Create session summary (session-X-\*.md)
 - ✅ Conventional commits
 
 ---
@@ -182,8 +181,7 @@ void testLogin_WithValidCredentials_ReturnsToken() throws Exception {
 
 1. Commit changes
 2. Update sprint status
-3. Create session summary (session-X-\*.md)
-4. Save AI session log (if used AI)
+3. Create session summary ONLY when user explicitly requests it
 
 ---
 

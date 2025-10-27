@@ -2,7 +2,7 @@
 
 **Sprint**: 1 / 6  
 **Duration**: October 16-25, 2025 (Extended)  
-**Status**: ⏳ In Progress (85%)
+**Status**: ⏳ In Progress (91%)
 
 ## Sprint Goals
 
@@ -33,40 +33,66 @@
 | User Login Endpoint         | ✅ Done | You   | 100%      | POST /auth/login with JWT tokens (access 15min, refresh 7days), 200 OK response                |
 | Token Refresh Endpoint      | ✅ Done | You   | 100%      | POST /auth/refresh with token rotation, family tracking, theft detection                       |
 | Comprehensive Testing       | ✅ Done | You   | 100%      | 71% coverage achieved (AuthController, AuthService, GlobalExceptionHandler, PasswordValidator) |
-| User Profile Management     | 🔵 Todo | You   | 0%        | Profile CRUD operations - See breakdown below                                                  |
+| User Profile Management     | 🔵 Todo | You   | 40%       | Profile CRUD operations - See breakdown below                                                  |
 | API Documentation (Swagger) | 🔵 Todo | You   | 0%        | OpenAPI 3.0 documentation - See breakdown below                                                |
 
 ---
 
 ## Task Breakdown: User Profile Management
 
-### 1.1 User Profile Service Layer (Priority: HIGH)
+### 1.1 User Profile Service Layer (Priority: HIGH) ✅ COMPLETE
 
-- [ ] Create `UserProfileService` interface
+- [x] Create `UserProfileService` interface
   - Define method signatures: `getProfile()`, `updateProfile()`, `updateAvatar()`, `deleteAvatar()`
-- [ ] Implement `UserProfileServiceImpl`
+- [x] Implement `UserProfileServiceImpl`
   - Get authenticated user's profile (from SecurityContext)
   - Update profile fields (firstName, lastName, bio, phoneNumber, timezone, language)
   - Validate input data
   - Handle avatar URL updates
   - Throw appropriate exceptions (UserNotFoundException, InvalidInputException)
-- [ ] Add business validation rules
+- [x] Add business validation rules
   - Phone number format validation (optional field)
   - Timezone validation (valid IANA timezone)
   - Language code validation (ISO 639-1)
   - Bio max length: 500 characters
 
-### 1.2 User Profile DTOs (Priority: HIGH)
+**Completed**: October 25, 2025
+**Details**:
 
-- [ ] Create `UserProfileDTO`
+- Created database migration V3 with new profile fields
+- Updated UserProfile entity with 6 new fields and validation
+- Created UserNotFoundException and InvalidInputException
+- Created UserProfileDTO and UpdateProfileDTO with validation
+- Created ValidationUtils for business rule validation
+- Implemented UserProfileService interface (5 methods)
+- Implemented UserProfileServiceImpl with full business logic
+- Updated GlobalExceptionHandler for new exceptions
+- Build verification passed (zero compilation errors)
+
+### 1.2 User Profile DTOs (Priority: HIGH) ✅ COMPLETE
+
+- [x] Create `UserProfileDTO`
   - Fields: userId, email, firstName, lastName, bio, phoneNumber, avatarUrl, timezone, language, createdAt, updatedAt
   - Add validation annotations
-- [ ] Create `UpdateProfileDTO`
+- [x] Create `UpdateProfileDTO`
   - Fields: firstName, lastName, bio, phoneNumber, timezone, language
   - Add @NotBlank, @Size, @Pattern validations
-- [ ] Create `UserProfileMapper`
+- [x] Create `UserProfileMapper`
   - Map UserProfile entity to UserProfileDTO
   - Map UpdateProfileDTO to UserProfile entity
+
+**Completed**: October 27, 2025
+**Details**:
+
+- Note: UserProfileDTO and UpdateProfileDTO were already created in Task 1.1
+- Created UserProfileMapper.java utility class with 3 static methods
+- Mapping methods: toDTO(), updateEntityFromDTO(), toEntity()
+- Handles null safety and backward compatibility with fullName
+- Created UserProfileMapperTest.java with 10 comprehensive unit tests
+- All 89 tests pass (10 new mapper tests + 79 existing)
+- UserProfileMapper: 100% coverage
+- Refactored UserProfileServiceImpl to use centralized mapper
+- Build verification passed (zero compilation errors)
 
 ### 1.3 User Profile REST Controller (Priority: HIGH)
 
@@ -86,25 +112,36 @@
 - [ ] Ensure users can only access/modify their own profile
 - [ ] Add audit logging (who updated what, when)
 
-### 1.5 User Profile Testing (Priority: CRITICAL)
+### 1.5 User Profile Testing (Priority: CRITICAL) ✅ COMPLETE
 
-- [ ] Unit tests for `UserProfileService`
-  - Test getProfile() - success case
-  - Test getProfile() - user not found
-  - Test updateProfile() - success case
-  - Test updateProfile() - validation failures
-  - Test updateProfile() - unauthorized access
-- [ ] Unit tests for `UserProfileController`
+- [x] Unit tests for `UserProfileService`
+  - Test getProfile() - success case ✅
+  - Test getProfile() - user not found ✅
+  - Test getCurrentUserProfile() - success ✅
+  - Test updateProfile() - success case ✅
+  - Test updateProfile() - validation failures ✅
+  - Test updateProfile() - unauthorized access ✅
+- [ ] Unit tests for `UserProfileController` (Pending controller implementation)
   - Test GET /profile endpoint with valid token
   - Test GET /profile endpoint with invalid token
   - Test PUT /profile endpoint with valid data
   - Test PUT /profile endpoint with invalid data
   - Test avatar operations
-- [ ] Integration tests
+- [ ] Integration tests (Pending controller implementation)
   - Test complete profile update flow
   - Test with actual JWT authentication
   - Verify database updates
-- [ ] Target: Maintain 70%+ coverage
+- [x] Target: Maintain 70%+ coverage ✅ 75% achieved
+
+**Completed**: October 27, 2025
+**Details**:
+
+- Created UserProfileServiceTest.java with 29 comprehensive unit tests
+- All 79 tests pass (29 new + 50 existing)
+- Coverage achieved: UserProfileServiceImpl 100%, ValidationUtils 84%, Overall 75%
+- Test categories: success cases, validation, exceptions, edge cases
+- Used Mockito for mocking, tested SecurityContext authentication
+- Zero compilation errors, zero test failures
 
 ---
 

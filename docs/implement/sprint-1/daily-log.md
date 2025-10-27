@@ -1,15 +1,609 @@
 # LEXIA Sprint 1 - Daily Log
 
-**Date**: October 25, 2025 (Updated)
-**Sprint Day**: 7/10 (Extended)
+**Date**: October 27, 2025 (Updated)
+**Sprint Day**: 9/10 (Extended)
 
 ## 🎯 Today's Focus
 
-Sprint 1 Planning Review & Task Breakdown for Remaining Work
+User Profile Management - DTOs & Mapper Implementation (Task 1.2)
 
-## ✅ Completed Tasks (Session 5 - October 25)
+## ✅ Completed Tasks (Session 8 - October 27)
 
-### Sprint Status Update & Task Breakdown ✅
+### UserProfileMapper Creation ✅
+
+- **Task**: Create centralized mapper utility class for UserProfile entity and DTOs
+- **Details**:
+  - Created UserProfileMapper.java utility class in `com.lexia.backend.mapper` package
+  - Private constructor to prevent instantiation (utility class pattern)
+  - Implemented 3 static mapping methods:
+    1. **toDTO(UserProfile)** - Converts entity to UserProfileDTO
+    2. **updateEntityFromDTO(UserProfile, UpdateProfileDTO)** - Updates entity from DTO
+    3. **toEntity(UpdateProfileDTO)** - Creates new entity from DTO
+  - Handles null safety for all fields
+  - Maintains backward compatibility with fullName field
+  - Proper JavaDoc documentation for all methods
+- **Mapping Methods**:
+  - **toDTO**: Maps all 13 fields from entity to DTO (userId, email, firstName, lastName, bio, phoneNumber, avatarUrl, timezone, language, currentLevel, learningGoal, createdAt, updatedAt)
+  - **updateEntityFromDTO**: Updates 7 profile fields + auto-updates fullName
+  - **toEntity**: Creates new UserProfile with default values for optional fields
+- **Features**:
+  - Centralized mapping logic (separation of concerns)
+  - Null-safe operations
+  - Backward compatibility with fullName
+  - Reusable across all layers
+- **Testing**: Comprehensive unit tests with 100% coverage
+- **Time Spent**: 25 minutes
+
+### UserProfileMapper Unit Tests ✅
+
+- **Task**: Create comprehensive unit tests for UserProfileMapper with 100% coverage
+- **Details**:
+  - Created UserProfileMapperTest.java with 10 unit tests
+  - Test categories:
+    1. **toDTO() tests** (3 tests):
+       - Valid profile with all fields
+       - Null profile returns null
+       - Profile without user relationship (lazy loading scenario)
+    2. **updateEntityFromDTO() tests** (3 tests):
+       - Valid update with all fields
+       - Null profile throws IllegalArgumentException
+       - Null DTO throws IllegalArgumentException
+    3. **toEntity() tests** (3 tests):
+       - Valid DTO with all fields
+       - Null DTO throws IllegalArgumentException
+       - Minimal DTO with only required fields
+    4. **Constructor test** (1 test):
+       - Verify utility class cannot be instantiated
+  - All tests use Arrange-Act-Assert pattern
+  - Clear test names describing scenario and expected outcome
+  - Comprehensive assertion coverage for all fields
+- **Coverage Results**:
+  - UserProfileMapper: 100% coverage ✅
+  - All 10 tests pass ✅
+- **Testing**: Build successful, all 89 tests pass (10 new + 79 existing)
+- **Time Spent**: 30 minutes
+
+### Refactor UserProfileServiceImpl to Use Mapper ✅
+
+- **Task**: Update service implementation to use centralized UserProfileMapper
+- **Details**:
+  - Added UserProfileMapper import to UserProfileServiceImpl
+  - Replaced UserProfileDTO.fromEntity() calls with UserProfileMapper.toDTO()
+  - Replaced manual field updates with UserProfileMapper.updateEntityFromDTO()
+  - Removed redundant field assignment code (cleaner implementation)
+  - Maintained all business logic and validation
+  - No breaking changes to existing tests
+- **Changes Made**:
+  - **getProfile()**: Now uses UserProfileMapper.toDTO(profile)
+  - **getCurrentUserProfile()**: Delegates to getProfile() (unchanged)
+  - **updateProfile()**: Now uses UserProfileMapper.updateEntityFromDTO(profile, dto)
+- **Benefits**:
+  - Cleaner service code (separation of concerns)
+  - Centralized mapping logic
+  - Easier to maintain and test
+  - Consistent mapping across all layers
+- **Testing**: All 89 tests pass (29 service tests + 50 existing + 10 mapper tests)
+- **Time Spent**: 15 minutes
+
+### Remove Deprecated fromEntity() from UserProfileDTO ✅
+
+- **Task**: Clean up UserProfileDTO by removing static mapper method (now in UserProfileMapper)
+- **Status**: SKIPPED - Will keep for backward compatibility
+- **Reason**: fromEntity() method still useful for simple cases, no harm in keeping it
+- **Decision**: Both approaches available (static method in DTO + centralized mapper)
+- **Time Spent**: 0 minutes
+
+## 🔄 Current Status
+
+- **Task 1.2 User Profile DTOs**: ✅ Complete (100%)
+  - ✅ UserProfileDTO already exists (created in Task 1.1)
+  - ✅ UpdateProfileDTO already exists (created in Task 1.1)
+  - ✅ UserProfileMapper created with 3 mapping methods
+  - ✅ UserProfileMapper unit tests (10 tests, 100% coverage)
+  - ✅ Service implementation refactored to use mapper
+  - ✅ All 89 tests pass
+  - ✅ Build verification passed
+- **Sprint 1 Overall**: ⏳ 91% Complete (Task 1.1 + 1.2 + 1.5 done)
+- **Next Priority**: Task 1.3 - User Profile REST Controller
+- **Blockers**: None
+
+## 📊 Code Generated (Session 8)
+
+### Files Created (2 files):
+
+```
+📁 Mapper Layer
+├── src/main/java/com/lexia/backend/mapper/
+│   └── UserProfileMapper.java (105 lines)
+
+📁 Test Layer
+├── src/test/java/com/lexia/backend/mapper/
+│   └── UserProfileMapperTest.java (236 lines)
+```
+
+### Files Modified (1 file):
+
+```
+📁 Service Layer
+├── src/main/java/com/lexia/backend/service/impl/
+│   └── UserProfileServiceImpl.java (refactored to use mapper)
+```
+
+**Total New Code**: ~341 lines
+**Tests Added**: 10 tests (all pass)
+**Coverage**: UserProfileMapper 100%
+
+## 📝 Key Decisions
+
+1. **Centralized Mapper**: Created UserProfileMapper as utility class for consistent mapping logic across all layers
+2. **Three Mapping Methods**: Separate methods for different use cases (toDTO, updateEntityFromDTO, toEntity)
+3. **Utility Class Pattern**: Private constructor prevents instantiation, all methods static
+4. **Null Safety**: All methods handle null inputs gracefully with proper exceptions
+5. **Backward Compatibility**: Kept fromEntity() in UserProfileDTO for simple use cases
+6. **Separation of Concerns**: Service layer focuses on business logic, mapper handles data transformation
+7. **Comprehensive Testing**: 10 tests cover all mapping scenarios including edge cases
+
+## 🎯 Next Steps
+
+**Session 9: User Profile REST Controller (Task 1.3)**
+
+1. Create UserProfileController in `com.lexia.api.user` package
+2. Implement 4 REST endpoints:
+   - GET /api/v1/users/profile
+   - PUT /api/v1/users/profile
+   - POST /api/v1/users/profile/avatar
+   - DELETE /api/v1/users/profile/avatar
+3. Add @PreAuthorize for JWT authentication
+4. Add proper HTTP status codes and response handling
+5. Create controller unit tests
+6. Target: Controller complete with 70%+ coverage
+
+---
+
+## 📝 Previous Sessions
+
+## ✅ Completed Tasks (Session 7 - October 27)
+
+### Comprehensive Unit Tests for UserProfileService ✅
+
+- **Task**: Create comprehensive unit tests for UserProfileService with 80%+ coverage
+- **Details**:
+  - Created UserProfileServiceTest.java with 29 unit tests
+  - All tests use Mockito for dependency mocking
+  - @ExtendWith(MockitoExtension.class) for clean test setup
+  - Comprehensive test coverage for all 5 service methods:
+    - **getProfile()** - 3 tests (success, null ID, non-existent user)
+    - **getCurrentUserProfile()** - 4 tests (success, no auth, unauthenticated, non-existent email)
+    - **updateProfile()** - 11 tests (success, validation failures, edge cases)
+    - **updateAvatar()** - 7 tests (success, validation failures, invalid URLs)
+    - **deleteAvatar()** - 4 tests (success, null ID, non-existent user, already null)
+  - Mock SecurityContext for authentication testing
+  - Test both success cases and error scenarios
+  - Verify all exceptions are thrown correctly
+  - Verify repository interactions with Mockito verify()
+- **Test Categories**:
+  1. **Success Cases**: Valid inputs return expected results
+  2. **Null/Empty Input Validation**: Throw InvalidInputException
+  3. **Business Rule Validation**: Timezone, language, phone, bio validation
+  4. **Entity Not Found**: Throw UserNotFoundException
+  5. **Edge Cases**: Empty strings, null optional fields, already null values
+- **Coverage Results**:
+  - **UserProfileServiceImpl**: 100% instruction coverage ✅
+  - **ValidationUtils**: 84% instruction coverage ✅
+  - **Overall Project**: 75% instruction coverage ✅ (exceeds 70% target)
+  - All 79 tests pass (29 new + 50 existing) ✅
+- **Testing Strategy**:
+  - Arrange-Act-Assert pattern
+  - Mock all external dependencies
+  - Test one scenario per test method
+  - Clear test names describing scenario and expected outcome
+  - Verify mock interactions to ensure correct flow
+- **Time Spent**: 2 hours
+
+### Test Execution & Validation ✅
+
+- **Task**: Run all tests and verify coverage meets requirements
+- **Details**:
+  - Executed `./gradlew test --tests UserProfileServiceTest` - 29 tests passed
+  - Executed `./gradlew test jacocoTestReport` - all 79 tests passed
+  - Generated JaCoCo coverage report
+  - Verified coverage exceeds 70% minimum requirement
+  - Zero compilation errors
+  - Zero test failures
+- **Results**:
+  - Total tests: 79 (29 new UserProfileService tests + 50 existing tests)
+  - Success rate: 100%
+  - Overall coverage: 75% (5% above target)
+  - UserProfileServiceImpl: 100% coverage
+  - Controller package: 100% coverage
+  - Validation package: 91% coverage
+- **Build Status**: BUILD SUCCESSFUL ✅
+- **Time Spent**: 30 minutes
+
+## 🔄 Current Status
+
+- **Task 1.5 User Profile Testing**: ✅ Complete (100%)
+  - ✅ Unit tests for UserProfileService (29 tests, 100% coverage)
+  - ✅ All tests pass (79/79)
+  - ✅ Coverage exceeds 70% target (75% achieved)
+  - ✅ Build verification passed
+- **Sprint 1 Overall**: ⏳ 89% Complete (Task 1.1 + 1.5 done)
+- **Next Priority**: Task 1.2 - User Profile DTOs & Mappers (ALREADY DONE in Session 6!)
+- **Next After That**: Task 1.3 - User Profile REST Controller
+- **Blockers**: None
+
+## 📊 Test Statistics
+
+### UserProfileServiceTest Coverage (29 tests):
+
+**getProfile() Method (3 tests)**:
+
+1. ✅ Valid userId returns UserProfileDTO
+2. ✅ Null userId throws InvalidInputException
+3. ✅ Non-existent userId throws UserNotFoundException
+
+**getCurrentUserProfile() Method (4 tests)**:
+
+1. ✅ Authenticated user returns UserProfileDTO
+2. ✅ No authentication throws UserNotFoundException
+3. ✅ Unauthenticated user throws UserNotFoundException
+4. ✅ Non-existent email throws UserNotFoundException
+
+**updateProfile() Method (11 tests)**:
+
+1. ✅ Valid data returns updated profile
+2. ✅ Null userId throws InvalidInputException
+3. ✅ Null DTO throws InvalidInputException
+4. ✅ Non-existent user throws UserNotFoundException
+5. ✅ Invalid timezone throws InvalidInputException
+6. ✅ Invalid language code throws InvalidInputException
+7. ✅ Invalid phone number throws InvalidInputException
+8. ✅ Too long bio throws InvalidInputException
+9. ✅ Null phone number succeeds (optional field)
+10. ✅ Empty phone number succeeds (optional field)
+11. ✅ Updates fullName field correctly
+
+**updateAvatar() Method (7 tests)**:
+
+1. ✅ Valid HTTPS URL succeeds
+2. ✅ Valid HTTP URL succeeds
+3. ✅ Null userId throws InvalidInputException
+4. ✅ Null URL throws InvalidInputException
+5. ✅ Empty URL throws InvalidInputException
+6. ✅ Invalid URL format throws InvalidInputException
+7. ✅ Non-existent user throws UserNotFoundException
+
+**deleteAvatar() Method (4 tests)**:
+
+1. ✅ Valid userId sets avatar to null
+2. ✅ Null userId throws InvalidInputException
+3. ✅ Non-existent user throws UserNotFoundException
+4. ✅ Already null avatar succeeds
+
+## 📝 Key Testing Decisions
+
+1. **Mockito Framework**: Used @ExtendWith(MockitoExtension.class) for clean mock injection
+2. **SecurityContext Mocking**: Tested getCurrentUserProfile() with mocked Spring Security context
+3. **Validation Testing**: Comprehensive tests for all ValidationUtils rules (timezone, language, phone, bio)
+4. **Optional Field Handling**: Tested null and empty strings for optional phoneNumber field
+5. **Repository Verification**: Used verify() to ensure correct repository method calls
+6. **Error Message Validation**: Asserted exception messages contain expected text
+7. **Test Independence**: Each test is self-contained with @BeforeEach setup
+8. **Edge Case Coverage**: Tested boundary conditions (max bio length, empty strings, null values)
+
+## 🎯 Next Steps
+
+**Session 8: User Profile REST Controller (Task 1.3)**
+
+1. Create UserProfileController in `com.lexia.api.user` package
+2. Implement 4 REST endpoints:
+   - GET /api/v1/users/profile
+   - PUT /api/v1/users/profile
+   - POST /api/v1/users/profile/avatar
+   - DELETE /api/v1/users/profile/avatar
+3. Add @PreAuthorize for JWT authentication
+4. Add proper HTTP status codes and response handling
+5. Create controller unit tests
+6. Target: Controller complete with 70%+ coverage
+
+---
+
+## 📝 Previous Sessions
+
+### Session 6 (October 25) - User Profile Service Layer ✅
+
+### Database Schema Extension for User Profiles ✅
+
+- **Task**: Add new fields to user_profiles table for comprehensive profile management
+- **Details**:
+  - Created Flyway migration V3\_\_Add_user_profile_fields.sql
+  - Added fields: first_name, last_name, bio, phone_number, timezone, language, created_at, updated_at
+  - Set default values: timezone='UTC', language='en'
+  - Made full_name nullable (now using firstName + lastName instead)
+  - Created index on user_id for better query performance
+  - Added column comments for documentation
+- **Fields Added**:
+  - first_name VARCHAR(100) - User's first name
+  - last_name VARCHAR(100) - User's last name
+  - bio VARCHAR(500) - User bio, max 500 characters
+  - phone_number VARCHAR(20) - Optional phone number field
+  - timezone VARCHAR(50) DEFAULT 'UTC' - IANA timezone identifier
+  - language VARCHAR(10) DEFAULT 'en' - ISO 639-1 language code
+  - created_at TIMESTAMPTZ - Profile creation timestamp
+  - updated_at TIMESTAMPTZ - Profile update timestamp
+- **Testing**: Migration script syntax validated
+- **Time Spent**: 15 minutes
+
+### UserProfile Entity Update ✅
+
+- **Task**: Update UserProfile entity to include new fields with proper validation
+- **Details**:
+  - Added 6 new fields to UserProfile.java entity
+  - Added validation annotations:
+    - @Size constraints for all string fields
+    - @Pattern for phoneNumber (10-20 digits, optional +)
+    - @Pattern for language (ISO 639-1 two-letter code)
+  - Added @CreationTimestamp and @UpdateTimestamp for automatic timestamp management
+  - Set default values: timezone='UTC', language='en'
+  - Made fullName nullable for backward compatibility
+  - Removed @NotBlank from fullName (now optional)
+- **New Entity Fields**:
+  - firstName, lastName, bio, phoneNumber, timezone, language
+  - createdAt, updatedAt (auto-managed by Hibernate)
+- **Validation Rules**:
+  - Phone: ^[+]?[0-9]{10,20}$ (optional + prefix)
+  - Language: ^[a-z]{2}$ (ISO 639-1 format)
+  - Bio: max 500 characters
+  - Timezone: max 50 characters (IANA format)
+- **Testing**: Entity compiles successfully
+- **Time Spent**: 12 minutes
+
+### Custom Exception Classes ✅
+
+- **Task**: Create custom exceptions for user profile operations
+- **Details**:
+  - Created UserNotFoundException.java for user lookup failures
+  - Created InvalidInputException.java for validation failures
+  - Both extend RuntimeException for unchecked exception handling
+  - Include constructors with message and cause
+  - Follow Spring Boot exception handling best practices
+- **Exceptions Created**:
+  1. UserNotFoundException - thrown when user/profile not found
+  2. InvalidInputException - thrown when input validation fails
+- **Usage**: Used in UserProfileService for error handling
+- **Testing**: Exceptions compile successfully
+- **Time Spent**: 8 minutes
+
+### UserProfileDTO & UpdateProfileDTO Creation ✅
+
+- **Task**: Create DTOs for user profile data transfer
+- **Details**:
+  - Created UserProfileDTO.java with all profile fields
+  - Created UpdateProfileDTO.java with update validation rules
+  - Added comprehensive JavaDoc documentation
+  - Implemented fromEntity() static method in UserProfileDTO
+  - Added validation annotations in UpdateProfileDTO:
+    - @NotBlank for required fields (firstName, lastName, timezone, language)
+    - @Size constraints for all string fields
+    - @Pattern for phoneNumber and language format
+- **UserProfileDTO Fields**:
+  - userId, email, firstName, lastName, bio, phoneNumber
+  - avatarUrl, timezone, language, currentLevel, learningGoal
+  - createdAt, updatedAt
+- **UpdateProfileDTO Fields**:
+  - firstName, lastName, bio, phoneNumber, timezone, language
+- **Validation Rules**:
+  - First/Last name: max 100 chars, required
+  - Bio: max 500 chars, optional
+  - Phone: 10-20 digits format, optional
+  - Timezone: max 50 chars, required
+  - Language: ISO 639-1 code (2 letters), required
+- **Testing**: DTOs compile successfully
+- **Time Spent**: 18 minutes
+
+### ValidationUtils Utility Class ✅
+
+- **Task**: Create utility class for business rule validation
+- **Details**:
+  - Created ValidationUtils.java with static validation methods
+  - Validates timezone using Java's ZoneId class (IANA timezones)
+  - Validates language using ISO 639-1 standard
+  - Validates phone number format (10-20 digits with optional +)
+  - Validates bio length (max 500 characters)
+  - Throws InvalidInputException with descriptive messages
+  - Comprehensive logging for debugging and audit trail
+- **Validation Methods**:
+  1. validateTimezone(String timezone) - checks IANA timezone validity
+  2. validateLanguage(String language) - checks ISO 639-1 format
+  3. validatePhoneNumber(String phoneNumber) - checks format (optional field)
+  4. validateBio(String bio) - checks max length
+- **Features**:
+  - Uses Java's ZoneId for timezone validation (handles all IANA zones)
+  - Maintains list of common language codes for validation
+  - Detailed error messages for client-side error display
+  - Logging for validation failures
+- **Testing**: Utility class compiles successfully
+- **Time Spent**: 20 minutes
+
+### UserProfileService Interface ✅
+
+- **Task**: Define service interface for user profile operations
+- **Details**:
+  - Created UserProfileService.java interface
+  - Defined 5 method signatures for profile management:
+    1. getProfile(UUID userId) - get profile by user ID
+    2. getCurrentUserProfile() - get current authenticated user's profile
+    3. updateProfile(UUID userId, UpdateProfileDTO dto) - update profile
+    4. updateAvatar(UUID userId, String avatarUrl) - update avatar URL
+    5. deleteAvatar(UUID userId) - remove avatar
+  - Added comprehensive JavaDoc for each method
+  - Documented exceptions thrown by each method
+  - Follows SOLID principles (interface segregation)
+- **Method Signatures**:
+  - All methods throw UserNotFoundException
+  - Update methods throw InvalidInputException
+  - Clear return types (UserProfileDTO or void)
+- **Testing**: Interface compiles successfully
+- **Time Spent**: 12 minutes
+
+### UserProfileServiceImpl Implementation ✅
+
+- **Task**: Implement complete UserProfileService with business logic and validation
+- **Details**:
+  - Created UserProfileServiceImpl.java service implementation
+  - Implemented all 5 interface methods with full business logic
+  - Integrated ValidationUtils for business rule validation
+  - Uses SecurityContextHolder to get current authenticated user
+  - Proper transaction management with @Transactional
+  - Comprehensive error handling with descriptive exceptions
+  - Detailed logging for audit trail (DEBUG, INFO, WARN levels)
+  - Constructor injection for dependencies (UserRepository, UserProfileRepository)
+- **Implemented Methods**:
+  1. **getProfile()** - Fetches profile by user ID, throws UserNotFoundException if not found
+  2. **getCurrentUserProfile()** - Gets current user from SecurityContext, delegates to getProfile()
+  3. **updateProfile()** - Validates input, updates all profile fields, saves to database
+  4. **updateAvatar()** - Validates URL format, updates avatar URL
+  5. **deleteAvatar()** - Sets avatar URL to null
+- **Business Logic**:
+  - Validates timezone using IANA standard
+  - Validates language using ISO 639-1 standard
+  - Validates phone number format (optional field)
+  - Validates bio length (max 500 chars)
+  - Updates fullName field for backward compatibility (firstName + lastName)
+  - Checks user account is active before operations
+- **Security Features**:
+  - Gets authenticated user from Spring Security context
+  - Validates user exists before operations
+  - Proper exception handling prevents information leakage
+  - Comprehensive audit logging for security monitoring
+- **Error Handling**:
+  - UserNotFoundException for missing users/profiles
+  - InvalidInputException for validation failures
+  - Clear error messages for client-side handling
+- **Testing**: Service implementation compiles successfully
+- **Time Spent**: 35 minutes
+
+### GlobalExceptionHandler Update ✅
+
+- **Task**: Add exception handlers for new user profile exceptions
+- **Details**:
+  - Added @ExceptionHandler for UserNotFoundException (404 Not Found)
+  - Added @ExceptionHandler for InvalidInputException (400 Bad Request)
+  - Imported new exception classes
+  - Consistent error response format using ErrorResponse DTO
+  - Proper HTTP status codes for each exception type
+  - Security-conscious error messages
+  - Comprehensive logging for all exceptions
+- **Handlers Added**:
+  1. handleUserNotFoundException() - Returns 404 with "User Not Found" error
+  2. handleInvalidInputException() - Returns 400 with "Invalid Input" error
+- **Response Format**:
+  - Consistent JSON structure: status, error, message, path, timestamp
+  - Clear error messages for client-side error display
+  - No sensitive information exposure
+- **Testing**: Exception handlers compile successfully
+- **Time Spent**: 10 minutes
+
+### Build Verification ✅
+
+- **Task**: Verify all code compiles successfully
+- **Details**:
+  - Ran `./gradlew clean build -x test` to verify compilation
+  - Build successful - zero compilation errors
+  - All new classes and dependencies resolved correctly
+  - Migration scripts validated
+  - Project structure maintained
+- **Result**: BUILD SUCCESSFUL in 14s
+- **Time Spent**: 5 minutes
+
+## 🔄 Current Status
+
+- **Task 1.1 User Profile Service Layer**: ✅ Complete (100%)
+  - ✅ Database migration for new profile fields
+  - ✅ UserProfile entity updated with validation
+  - ✅ Custom exceptions (UserNotFoundException, InvalidInputException)
+  - ✅ DTOs (UserProfileDTO, UpdateProfileDTO)
+  - ✅ ValidationUtils utility class
+  - ✅ UserProfileService interface
+  - ✅ UserProfileServiceImpl with full business logic
+  - ✅ GlobalExceptionHandler updated
+  - ✅ Build verification passed
+- **Sprint 1 Overall**: ⏳ 87% Complete (Task 1.1 done)
+- **Next Priority**: Task 1.2 - Unit tests for UserProfileService (CRITICAL)
+- **Blockers**: None
+
+## 📊 Code Generated Today
+
+### Files Created (9 files):
+
+```
+📁 Database Layer
+├── src/main/resources/db/migration/
+│   └── V3__Add_user_profile_fields.sql (24 lines)
+
+📁 Exception Layer
+├── src/main/java/com/lexia/backend/exception/
+│   ├── UserNotFoundException.java (12 lines)
+│   └── InvalidInputException.java (12 lines)
+
+📁 DTO Layer
+├── src/main/java/com/lexia/backend/dto/
+│   ├── UserProfileDTO.java (110 lines)
+│   └── UpdateProfileDTO.java (57 lines)
+
+📁 Utility Layer
+├── src/main/java/com/lexia/backend/util/
+│   └── ValidationUtils.java (102 lines)
+
+📁 Service Layer
+├── src/main/java/com/lexia/backend/service/
+│   ├── UserProfileService.java (64 lines)
+│   └── impl/UserProfileServiceImpl.java (224 lines)
+```
+
+### Files Modified (2 files):
+
+```
+📁 Entity Layer
+├── src/main/java/com/lexia/backend/entity/
+│   └── UserProfile.java (updated with 6 new fields)
+
+📁 Common Layer
+├── src/main/java/com/lexia/backend/common/
+│   └── GlobalExceptionHandler.java (added 2 exception handlers)
+```
+
+**Total Lines of Code**: ~605 lines
+
+## 📝 Key Decisions
+
+1. **Database Design**: Added new fields to existing user_profiles table rather than creating new table for better performance and simplicity
+2. **Validation Strategy**: Created centralized ValidationUtils class for reusable validation logic (timezone, language, phone, bio)
+3. **DTO Separation**: Separate UserProfileDTO (for responses) and UpdateProfileDTO (for updates) for clear API contracts
+4. **Exception Hierarchy**: Custom exceptions (UserNotFoundException, InvalidInputException) for precise error handling
+5. **Security Context**: Use Spring Security's SecurityContextHolder to get current authenticated user
+6. **Backward Compatibility**: Maintained fullName field, auto-populated from firstName + lastName
+7. **Transaction Management**: @Transactional on update methods for data consistency
+8. **Validation Layers**: Both annotation-based (@NotBlank, @Pattern) and programmatic (ValidationUtils) validation
+
+## 🎯 Next Steps
+
+**Session 7: Unit Tests for UserProfileService (CRITICAL)**
+
+1. Create UserProfileServiceTest.java
+2. Test all 5 methods (getProfile, getCurrentUserProfile, updateProfile, updateAvatar, deleteAvatar)
+3. Test success cases and error cases
+4. Mock dependencies (UserRepository, UserProfileRepository, SecurityContext)
+5. Target: 80%+ coverage for UserProfileService
+6. Run `./gradlew test jacocoTestReport` to verify coverage
+
+---
+
+## 📝 Previous Sessions
+
+### Session 5 (October 25) - Sprint Planning Review ✅
+
+Sprint Status Update & Task Breakdown ✅
 
 - **Task**: Review Sprint 1 completion status and break down remaining tasks
 - **Details**:
