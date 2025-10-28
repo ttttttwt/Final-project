@@ -245,37 +245,139 @@ API Documentation - Swagger Configuration & Authentication Endpoints (Tasks 2.1 
 
 ## 🎯 Next Steps
 
-**Session 12: Document AuthController Endpoints (Task 2.2)**
+**Session 13: Document Remaining Endpoints (Tasks 2.5-2.6)**
 
-1. Add @Tag annotation to AuthController ("Authentication API")
-2. Add @Operation annotations to register endpoint
-3. Add @ApiResponses for all response codes (201, 400, 409)
-4. Add request/response examples with @Schema
-5. Add @Operation to login endpoint
-6. Add @ApiResponses (200, 400, 401)
-7. Add @Operation to refresh token endpoint
-8. Add @ApiResponses (200, 401)
-9. Add @SecurityRequirement to refresh endpoint
-10. Test all documentation in Swagger UI
+1. Verify security scheme configuration is complete (Task 2.5)
+2. Test all documented endpoints from Swagger UI (Task 2.6)
+3. Verify request/response examples are accurate
+4. Test authentication flow with JWT token
+5. Export OpenAPI JSON/YAML specification
+6. Create README section on API documentation access
+7. Final Sprint 1 completion verification
 
 ---
 
-## 📝 Previous Sessions
+## Session 12 (October 28) - API Documentation for User Profile Endpoints ✅
 
-### Session 10 (October 27) - User Profile Security & Audit Logging ✅
+### Task 2.3: User Profile Endpoints Documentation ✅
 
-### JWT Security Configuration ✅
-
-- **Task**: Configure JWT authentication filter and integrate with Spring Security
+- **Objective**: Document all UserProfileController endpoints with comprehensive Swagger annotations
 - **Details**:
-  - Created JwtAuthFilter.java - JWT token validation filter
-  - Extracts JWT from Authorization header (Bearer token)
-  - Validates token using JwtTokenProvider
-  - Loads user details via CustomUserDetailsService
-  - Sets SecurityContext with authenticated user
-  - Extends OncePerRequestFilter for single execution per request
-  - Comprehensive error handling for invalid tokens
-  - Detailed logging for security audit trail
+  - Added @Tag annotation to UserProfileController: "User Profile API"
+  - Documented GET /api/v1/users/profile endpoint:
+    - @Operation with detailed description
+    - @ApiResponses: 200 OK, 401 Unauthorized, 404 Not Found
+    - Full request/response examples with UserProfileDTO schema
+    - Security requirement: JWT Bearer token
+  - Documented PUT /api/v1/users/profile endpoint:
+    - @Operation explaining update functionality
+    - @ApiResponses: 200 OK, 400 Bad Request (with validation examples), 401 Unauthorized
+    - Request body examples with UpdateProfileDTO
+    - Response examples with updated UserProfileDTO
+    - Audit logging information included
+  - Documented POST /api/v1/users/profile/avatar endpoint:
+    - @Operation for avatar upload/update
+    - @ApiResponses: 200 OK, 400 Bad Request, 401 Unauthorized
+    - Placeholder documentation for future multipart implementation
+    - Current JSON-based avatar URL update documented
+  - Documented DELETE /api/v1/users/profile/avatar endpoint:
+    - @Operation for avatar removal
+    - @ApiResponses: 200 OK, 401 Unauthorized, 404 Not Found
+    - Audit logging information included
+- **Time Spent**: 45 minutes
+
+### Task 2.4: DTO Schema Documentation ✅
+
+- **Objective**: Add comprehensive @Schema annotations to all DTOs for better API documentation
+- **Details**:
+  - **RegisterDTO**: Added @Schema annotations for all fields
+    - Class-level description
+    - Field-level descriptions with examples
+    - Validation constraints documented (minLength, maxLength, pattern, requiredMode)
+    - Password field marked with format="password"
+  - **LoginDTO**: Added @Schema annotations
+    - Email and password fields with examples
+    - Required mode and constraints documented
+  - **UserProfileDTO**: Comprehensive @Schema annotations
+    - 12 fields documented with descriptions and examples
+    - accessMode set to READ_ONLY for system-generated fields
+    - nullable fields clearly marked
+    - Pattern and length constraints documented
+  - **UpdateProfileDTO**: Detailed @Schema annotations
+    - 6 updatable fields documented
+    - Validation constraints (patterns, lengths) included in schema
+    - Examples show realistic profile update scenarios
+  - **UserDTO**: Added @Schema annotations
+    - All 10 fields documented with descriptions
+    - READ_ONLY access mode for all fields
+    - Profile-related fields marked as nullable
+  - **RefreshTokenDTO**: Added @Schema with JWT example
+    - Token format and expiration documented
+  - **RefreshTokenResponseDTO**: Complete documentation
+    - 4 fields with descriptions and examples
+    - Token lifecycle information included
+  - **LoginResponseDTO**: Comprehensive annotations
+    - 5 fields documented with token details
+    - User information schema reference included
+  - **ErrorResponse**: Added @Schema to error response structure
+    - All 7 fields documented with examples
+    - Consistent error format explained
+    - validationErrors and details marked as nullable
+- **Time Spent**: 50 minutes
+
+## � Code Generated (Session 12)
+
+### Files Modified (11 files):
+
+```
+📁 Controller Layer
+├── src/main/java/com/lexia/backend/controller/
+│   └── UserProfileController.java (added comprehensive Swagger annotations for 4 endpoints)
+
+📁 DTO Layer
+├── src/main/java/com/lexia/backend/dto/
+│   ├── RegisterDTO.java (added @Schema annotations)
+│   ├── LoginDTO.java (added @Schema annotations)
+│   ├── UserProfileDTO.java (added @Schema annotations for 12 fields)
+│   ├── UpdateProfileDTO.java (added @Schema annotations for 6 fields)
+│   ├── UserDTO.java (added @Schema annotations for 10 fields)
+│   ├── RefreshTokenDTO.java (added @Schema annotation)
+│   ├── RefreshTokenResponseDTO.java (added @Schema annotations for 4 fields)
+│   └── LoginResponseDTO.java (added @Schema annotations for 5 fields)
+
+📁 Common Layer
+├── src/main/java/com/lexia/backend/common/
+│   └── ErrorResponse.java (added @Schema annotations for 7 fields)
+```
+
+**Total New Code**: ~200 lines (controller annotations) + ~150 lines (DTO annotations) = ~350 lines
+**Tests Added**: 0 (documentation only, verified via Swagger UI)
+**Final Test Count**: 112 tests (all pass)
+**Coverage**: 81% overall (exceeds 70% target)
+
+## 📝 Key Decisions (Session 12)
+
+1. **Comprehensive Examples**: Added realistic JSON examples for all request/response scenarios
+2. **Security Documentation**: JWT authentication requirement documented on all protected endpoints
+3. **Validation Details**: All validation constraints included in @Schema annotations
+4. **Error Scenarios**: Documented all possible error responses with status codes and examples
+5. **Field Descriptions**: Clear, concise descriptions for every DTO field
+6. **Access Modes**: READ_ONLY specified for system-generated fields (timestamps, IDs)
+7. **Nullable Fields**: Explicitly marked optional fields as nullable in schema
+8. **Pattern Documentation**: Regular expression patterns included for validation rules
+9. **Token Lifecycle**: Documented token expiration times (15 min access, 7 day refresh)
+10. **Audit Logging**: Mentioned audit tracking in operation descriptions for security transparency
+
+## 🎯 Next Steps
+
+- Created JwtAuthFilter.java - JWT token validation filter
+- Extracts JWT from Authorization header (Bearer token)
+- Validates token using JwtTokenProvider
+- Loads user details via CustomUserDetailsService
+- Sets SecurityContext with authenticated user
+- Extends OncePerRequestFilter for single execution per request
+- Comprehensive error handling for invalid tokens
+- Detailed logging for security audit trail
 - **Security Features**:
   - Bearer token extraction from Authorization header
   - JWT signature validation

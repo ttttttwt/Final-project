@@ -34,7 +34,7 @@
 | Token Refresh Endpoint      | ✅ Done | You   | 100%      | POST /auth/refresh with token rotation, family tracking, theft detection                 |
 | Comprehensive Testing       | ✅ Done | You   | 100%      | 81% coverage achieved (AuthController, AuthService, GlobalExceptionHandler, UserProfile) |
 | User Profile Management     | ✅ Done | You   | 100%      | Profile CRUD operations with security and audit logging - See breakdown below            |
-| API Documentation (Swagger) | 🔵 Todo | You   | 33%       | OpenAPI 3.0 documentation - Tasks 2.1 + 2.2 complete, See breakdown below                |
+| API Documentation (Swagger) | 🔵 Todo | You   | 67%       | OpenAPI 3.0 documentation - Tasks 2.1-2.4 complete, See breakdown below                  |
 
 ---
 
@@ -255,9 +255,9 @@
 - Build verification passed (112 tests pass)
 - Swagger UI displays all documentation correctly with "Try it out" functionality
 
-### 2.3 API Documentation - User Profile Endpoints (Priority: HIGH)
+### 2.3 API Documentation - User Profile Endpoints (Priority: HIGH) ✅ COMPLETE
 
-- [ ] Document `UserProfileController`
+- [x] Document `UserProfileController`
   - Add @Tag annotation: "User Profile API"
   - Add @Operation annotations for each endpoint
   - GET /users/profile
@@ -268,25 +268,122 @@
     - Request/response examples
   - Avatar endpoints documentation
 
-### 2.4 DTO Schema Documentation (Priority: MEDIUM)
+**Completed**: October 28, 2025
+**Details**:
 
-- [ ] Add @Schema annotations to all DTOs
+- Added @Tag annotation to UserProfileController with comprehensive description
+- Documented GET /api/v1/users/profile endpoint with @Operation annotation:
+  - Detailed summary explaining profile retrieval from JWT token
+  - Response example for 200 OK with complete UserProfileDTO (12 fields)
+  - Error responses for 401 Unauthorized and 404 Not Found with examples
+  - Security requirement: Bearer Authentication documented
+- Documented PUT /api/v1/users/profile endpoint with @Operation annotation:
+  - Summary explaining profile update functionality and validation
+  - Request body example with UpdateProfileDTO (6 updatable fields)
+  - Response example for 200 OK with updated UserProfileDTO
+  - Comprehensive validation error response (400 Bad Request) showing field-level errors
+  - Error response for 401 Unauthorized
+  - Audit logging mentioned in description
+- Documented POST /api/v1/users/profile/avatar endpoint with @Operation annotation:
+  - Summary explaining avatar upload/update (current JSON implementation)
+  - Response example for 200 OK
+  - Error responses for 400 Bad Request (invalid URL) and 401 Unauthorized
+  - Future multipart/form-data implementation noted in description
+- Documented DELETE /api/v1/users/profile/avatar endpoint with @Operation annotation:
+  - Summary explaining avatar removal functionality
+  - Response example for 200 OK
+  - Error responses for 401 Unauthorized and 404 Not Found
+  - Audit logging tracking mentioned
+- All endpoints have complete JSON examples and security requirements
+- Build verification passed (112 tests pass)
+- Swagger UI displays all documentation correctly
+
+### 2.4 DTO Schema Documentation (Priority: MEDIUM) ✅ COMPLETE
+
+- [x] Add @Schema annotations to all DTOs
   - RegisterDTO: Add field descriptions and examples
   - LoginDTO: Add field descriptions and examples
   - UserProfileDTO: Add field descriptions and examples
   - UpdateProfileDTO: Add field descriptions and examples
   - ErrorResponse: Add field descriptions
-- [ ] Add @Schema(example = "...") for better documentation
+- [x] Add @Schema(example = "...") for better documentation
 
-### 2.5 Security Scheme Configuration (Priority: HIGH)
+**Completed**: October 28, 2025
+**Details**:
 
-- [ ] Configure JWT Bearer authentication in OpenApiConfig
+- **RegisterDTO**: Added @Schema annotations to class and all 4 fields
+  - Class-level description: "User registration request containing email, password, and personal information"
+  - Email field: example, requiredMode, maxLength, validation pattern documented
+  - Password field: example, requiredMode, minLength, maxLength, format="password", pattern documented
+  - confirmPassword field: example, requiredMode, format="password"
+  - fullName field: example, requiredMode, maxLength
+- **LoginDTO**: Added @Schema annotations to class and all 2 fields
+  - Class-level description: "User login request containing email and password credentials"
+  - Email and password fields with examples, constraints, format specifications
+- **UserProfileDTO**: Added @Schema annotations to class and all 12 fields
+  - Class-level description: "Complete user profile information including personal details, preferences, and learning status"
+  - All fields documented with descriptions, examples, patterns, and constraints
+  - System-generated fields (userId, email, createdAt, updatedAt) marked as READ_ONLY
+  - Optional fields (bio, phoneNumber, avatarUrl, currentLevel, learningGoal) marked as nullable
+- **UpdateProfileDTO**: Added @Schema annotations to class and all 6 fields
+  - Class-level description: "Request to update user profile information"
+  - All updatable fields with examples, validation constraints, patterns documented
+  - firstName, lastName: requiredMode, maxLength
+  - bio: maxLength, nullable
+  - phoneNumber: pattern, nullable
+  - timezone, language: requiredMode, pattern, examples
+- **UserDTO**: Added @Schema annotations to class and all 10 fields
+  - Class-level description: "User account information (excludes sensitive data like passwords)"
+  - All fields marked as READ_ONLY since this is response-only DTO
+  - Profile-related fields (fullName, avatarUrl, currentLevel, learningGoal) marked as nullable
+- **RefreshTokenDTO**: Added @Schema annotations
+  - Class-level description: "Request to refresh access token using a valid refresh token"
+  - refreshToken field with JWT format example and detailed description
+- **RefreshTokenResponseDTO**: Added @Schema annotations to all 4 fields
+  - Class-level description: "Response containing new access token and optionally a new refresh token"
+  - accessToken, refreshToken with JWT examples and expiration information
+  - tokenType and expiresIn with examples
+  - All fields marked as READ_ONLY
+- **LoginResponseDTO**: Added @Schema annotations to all 5 fields
+  - Class-level description: "Response containing JWT tokens and user information after successful authentication"
+  - accessToken and refreshToken with JWT examples and lifecycle information (15 min / 7 days)
+  - user field references UserDTO schema
+  - tokenType and expiresIn documented
+- **ErrorResponse**: Added @Schema annotations to class and all 7 fields
+  - Class-level description: "Standard error response returned for all API errors with consistent structure"
+  - All fields with descriptions, examples, and READ_ONLY access mode
+  - validationErrors and details marked as nullable (only present for specific error types)
+- All DTOs now have comprehensive OpenAPI documentation
+- Swagger UI displays enhanced schema information with examples
+- Build verification passed (112 tests pass)
+
+### 2.5 Security Scheme Configuration (Priority: HIGH) ✅ COMPLETE
+
+- [x] Configure JWT Bearer authentication in OpenApiConfig
   - Add @SecurityScheme annotation
   - Type: HTTP Bearer
   - Scheme: bearer
   - Bearer format: JWT
-- [ ] Add security requirements to protected endpoints
-- [ ] Document token format and expiration
+- [x] Add security requirements to protected endpoints
+- [x] Document token format and expiration
+
+**Completed**: October 28, 2025 (as part of Task 2.1)
+**Details**:
+
+- JWT Bearer authentication scheme already configured in OpenApiConfig.java during Task 2.1
+- @SecurityScheme annotation not required (using newer SecurityScheme API)
+- Security scheme configured with:
+  - Name: "Bearer Authentication"
+  - Type: HTTP
+  - Scheme: bearer
+  - Bearer format: JWT
+- Global security requirement applied to all protected endpoints
+- All protected endpoints in AuthController and UserProfileController have @SecurityRequirement annotations
+- Token format and expiration documented in DTO @Schema annotations:
+  - Access token: 15-minute expiration (900000 ms)
+  - Refresh token: 7-day expiration
+- Swagger UI displays "Authorize" button for JWT token input
+- Build verification passed (112 tests pass)
 
 ### 2.6 API Documentation Testing (Priority: MEDIUM)
 

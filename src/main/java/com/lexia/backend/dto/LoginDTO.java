@@ -1,5 +1,6 @@
 package com.lexia.backend.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "User login request containing email and password credentials")
 public class LoginDTO {
 
     /**
@@ -25,6 +27,7 @@ public class LoginDTO {
     @Email(message = "Email must be valid")
     @NotBlank(message = "Email is required")
     @Size(max = 255, message = "Email must not exceed 255 characters")
+    @Schema(description = "User's registered email address", example = "john.doe@lexia.com", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 255)
     private String email;
 
     /**
@@ -33,5 +36,6 @@ public class LoginDTO {
      */
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 255, message = "Password must be between 8 and 255 characters")
+    @Schema(description = "User's password for authentication", example = "SecurePass123", requiredMode = Schema.RequiredMode.REQUIRED, minLength = 8, maxLength = 255, format = "password")
     private String password;
 }
