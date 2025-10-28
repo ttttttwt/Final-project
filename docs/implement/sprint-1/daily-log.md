@@ -5,7 +5,7 @@
 
 ## 🎯 Today's Focus
 
-Swagger/OpenAPI Configuration (Task 2.1)
+API Documentation - Swagger Configuration & Authentication Endpoints (Tasks 2.1 & 2.2)
 
 ## ✅ Completed Tasks (Session 11 - October 28)
 
@@ -132,12 +132,63 @@ Swagger/OpenAPI Configuration (Task 2.1)
 - **Testing**: All manual verification steps completed successfully
 - **Time Spent**: 20 minutes
 
+### AuthController API Documentation ✅
+
+- **Task**: Add comprehensive Swagger annotations to AuthController endpoints
+- **Details**:
+  - Added @Tag annotation: "Authentication API" with description
+  - Documented POST /auth/register endpoint:
+    - @Operation with summary and detailed description
+    - Request body example with all required fields
+    - @ApiResponses for 201 Created, 400 Bad Request, 409 Conflict
+    - Detailed error response examples
+    - Schema references for RegisterDTO and UserDTO
+  - Documented POST /auth/login endpoint:
+    - @Operation with authentication flow description
+    - Request body example with email and password
+    - @ApiResponses for 200 OK, 400 Bad Request, 401 Unauthorized
+    - Token lifecycle information (15 min access, 7 day refresh)
+    - Full response example with tokens and user data
+  - Documented POST /auth/refresh endpoint:
+    - @Operation with token rotation explanation
+    - Request body example with refresh token
+    - @ApiResponses for 200 OK, 401 Unauthorized
+    - Security implications documented (token family, theft detection)
+    - Response example with new tokens
+- **Documentation Features**:
+  - All endpoints have detailed descriptions
+  - Request and response examples in JSON format
+  - Complete error response examples for each status code
+  - Security considerations documented
+  - Token expiration times clearly stated
+  - Validation requirements explained
+- **Testing**: Build successful, Swagger UI displays all documentation correctly
+- **Time Spent**: 45 minutes
+
 ## 🔄 Current Status
 
 - **Task 2.1 Swagger Configuration**: ✅ Complete (100%)
   - ✅ SpringDoc OpenAPI dependency added to build.gradle
   - ✅ OpenApiConfig.java created with comprehensive configuration
   - ✅ JWT Bearer authentication scheme configured
+  - ✅ SecurityConfig updated to allow Swagger access
+  - ✅ Application.properties configured for Swagger UI
+  - ✅ Build verification passed (112 tests pass)
+  - ✅ Runtime verification passed (Swagger UI accessible)
+  - ✅ OpenAPI JSON specification accessible
+- **Task 2.2 Authentication Endpoints Documentation**: ✅ Complete (100%)
+  - ✅ @Tag annotation added to AuthController
+  - ✅ POST /auth/register fully documented with examples
+  - ✅ POST /auth/login fully documented with examples
+  - ✅ POST /auth/refresh fully documented with examples
+  - ✅ All HTTP status codes documented (201, 200, 400, 401, 409)
+  - ✅ Request/response schemas with JSON examples
+  - ✅ Error responses documented with examples
+  - ✅ Build verification passed
+  - ✅ Swagger UI verification passed
+- **Sprint 1 Overall**: ✅ 99% Complete (Tasks 2.1 + 2.2 done!)
+- **Next Priority**: Task 2.3 - Document UserProfileController endpoints
+- **Blockers**: None
   - ✅ SecurityConfig updated to allow Swagger access
   - ✅ Application.properties configured for Swagger UI
   - ✅ Build verification passed (112 tests pass)
@@ -157,9 +208,13 @@ Swagger/OpenAPI Configuration (Task 2.1)
 │   └── OpenApiConfig.java (120 lines)
 ```
 
-### Files Modified (2 files):
+### Files Modified (3 files):
 
 ```
+📁 Controller Layer
+├── src/main/java/com/lexia/backend/controller/
+│   └── AuthController.java (added comprehensive Swagger annotations)
+
 📁 Configuration Layer
 ├── src/main/java/com/lexia/backend/config/
 │   └── SecurityConfig.java (added Swagger URL patterns)
@@ -172,8 +227,8 @@ Swagger/OpenAPI Configuration (Task 2.1)
 ├── build.gradle (added SpringDoc OpenAPI dependency)
 ```
 
-**Total New Code**: ~120 lines
-**Tests Added**: 0 (configuration only, will test with endpoint documentation)
+**Total New Code**: ~120 lines (config) + ~150 lines (annotations) = ~270 lines
+**Tests Added**: 0 (documentation only, verified via Swagger UI)
 **Final Test Count**: 112 tests (all pass)
 **Coverage**: 81% overall (exceeds 70% target)
 

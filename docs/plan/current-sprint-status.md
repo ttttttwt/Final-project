@@ -2,7 +2,7 @@
 
 **Sprint**: 1 / 6  
 **Duration**: October 16-25, 2025 (Extended)  
-**Status**: ⏳ In Progress (98%)
+**Status**: ⏳ In Progress (99%)
 
 ## Sprint Goals
 
@@ -16,7 +16,7 @@
 - [x] Token refresh API
 - [x] Unit tests (81% coverage - Target 70% ✅)
 - [x] User profile management API (GET, PUT, POST, DELETE endpoints)
-- [ ] API documentation (Swagger) - 1/6 subtasks complete
+- [ ] API documentation (Swagger) - 2/6 subtasks complete
 
 ## Story Breakdown
 
@@ -34,7 +34,7 @@
 | Token Refresh Endpoint      | ✅ Done | You   | 100%      | POST /auth/refresh with token rotation, family tracking, theft detection                 |
 | Comprehensive Testing       | ✅ Done | You   | 100%      | 81% coverage achieved (AuthController, AuthService, GlobalExceptionHandler, UserProfile) |
 | User Profile Management     | ✅ Done | You   | 100%      | Profile CRUD operations with security and audit logging - See breakdown below            |
-| API Documentation (Swagger) | 🔵 Todo | You   | 17%       | OpenAPI 3.0 documentation - Task 2.1 complete, See breakdown below                       |
+| API Documentation (Swagger) | 🔵 Todo | You   | 33%       | OpenAPI 3.0 documentation - Tasks 2.1 + 2.2 complete, See breakdown below                |
 
 ---
 
@@ -211,9 +211,9 @@
 - Runtime verification: Swagger UI accessible at http://localhost:8088/swagger-ui.html
 - OpenAPI JSON spec accessible at http://localhost:8088/api-docs
 
-### 2.2 API Documentation - Authentication Endpoints (Priority: HIGH)
+### 2.2 API Documentation - Authentication Endpoints (Priority: HIGH) ✅ COMPLETE
 
-- [ ] Document `AuthController`
+- [x] Document `AuthController`
   - Add @Tag annotation: "Authentication API"
   - Add @Operation annotations for each endpoint
   - POST /auth/register
@@ -226,6 +226,34 @@
   - POST /auth/refresh
     - @ApiResponses: 200 OK, 401 Unauthorized
     - Security requirement: Bearer token
+
+**Completed**: October 28, 2025
+**Details**:
+
+- Added @Tag annotation to AuthController: "Authentication API" with comprehensive description
+- Documented POST /auth/register endpoint with @Operation annotation:
+  - Detailed summary and description explaining registration requirements
+  - Request body example with RegisterDTO schema (email, password, confirmPassword, fullName)
+  - Response examples for 201 Created with UserDTO
+  - Error response examples for 400 Bad Request (validation errors)
+  - Error response example for 409 Conflict (duplicate email)
+- Documented POST /auth/login endpoint with @Operation annotation:
+  - Summary and description explaining authentication flow
+  - Request body example with LoginDTO schema (email, password)
+  - Response example for 200 OK with LoginResponseDTO (tokens + user data)
+  - Error response examples for 400 Bad Request and 401 Unauthorized
+  - Token lifecycle information documented (15 min access, 7 day refresh)
+- Documented POST /auth/refresh endpoint with @Operation annotation:
+  - Summary and description explaining token rotation mechanism
+  - Request body example with RefreshTokenDTO schema (refreshToken)
+  - Response example for 200 OK with new tokens (RefreshTokenResponseDTO)
+  - Error response example for 401 Unauthorized (invalid/expired token)
+  - Security implications documented (token family, theft detection)
+- All endpoints have complete JSON examples for requests and responses
+- All HTTP status codes documented with detailed error response examples
+- Validation requirements and constraints clearly explained
+- Build verification passed (112 tests pass)
+- Swagger UI displays all documentation correctly with "Try it out" functionality
 
 ### 2.3 API Documentation - User Profile Endpoints (Priority: HIGH)
 
