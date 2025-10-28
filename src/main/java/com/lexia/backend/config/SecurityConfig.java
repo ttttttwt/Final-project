@@ -39,6 +39,10 @@ public class SecurityConfig {
                         // Allow public access to authentication endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
+                        // Allow public access to Swagger UI and OpenAPI documentation
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**")
+                        .permitAll()
+
                         // Allow public access to H2 console (development only)
                         .requestMatchers("/h2-console/**").permitAll()
 

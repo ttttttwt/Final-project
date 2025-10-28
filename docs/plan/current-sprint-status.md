@@ -2,7 +2,7 @@
 
 **Sprint**: 1 / 6  
 **Duration**: October 16-25, 2025 (Extended)  
-**Status**: ⏳ In Progress (97%)
+**Status**: ⏳ In Progress (98%)
 
 ## Sprint Goals
 
@@ -16,7 +16,7 @@
 - [x] Token refresh API
 - [x] Unit tests (81% coverage - Target 70% ✅)
 - [x] User profile management API (GET, PUT, POST, DELETE endpoints)
-- [ ] API documentation (Swagger)
+- [ ] API documentation (Swagger) - 1/6 subtasks complete
 
 ## Story Breakdown
 
@@ -34,7 +34,7 @@
 | Token Refresh Endpoint      | ✅ Done | You   | 100%      | POST /auth/refresh with token rotation, family tracking, theft detection                 |
 | Comprehensive Testing       | ✅ Done | You   | 100%      | 81% coverage achieved (AuthController, AuthService, GlobalExceptionHandler, UserProfile) |
 | User Profile Management     | ✅ Done | You   | 100%      | Profile CRUD operations with security and audit logging - See breakdown below            |
-| API Documentation (Swagger) | 🔵 Todo | You   | 0%        | OpenAPI 3.0 documentation - See breakdown below                                          |
+| API Documentation (Swagger) | 🔵 Todo | You   | 17%       | OpenAPI 3.0 documentation - Task 2.1 complete, See breakdown below                       |
 
 ---
 
@@ -180,16 +180,36 @@
 
 ## Task Breakdown: API Documentation (Swagger)
 
-### 2.1 Swagger Configuration (Priority: HIGH)
+### 2.1 Swagger Configuration (Priority: HIGH) ✅ COMPLETE
 
-- [ ] Add SpringDoc OpenAPI dependency to `build.gradle`
+- [x] Add SpringDoc OpenAPI dependency to `build.gradle`
   - `implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'`
-- [ ] Create `OpenApiConfig.java` in `com.lexia.api.config` package
+- [x] Create `OpenApiConfig.java` in `com.lexia.backend.config` package
   - Configure OpenAPI info (title, version, description)
   - Add contact info (name, email)
   - Add license info (MIT License)
-  - Configure server URLs (localhost:8080)
-- [ ] Configure Swagger UI path: `/api-docs` and `/swagger-ui.html`
+  - Configure server URLs (localhost:8088)
+- [x] Configure Swagger UI path: `/swagger-ui.html` and `/api-docs`
+- [x] Configure JWT Bearer authentication security scheme
+- [x] Update SecurityConfig to allow public access to Swagger endpoints
+- [x] Add Swagger configuration to application.properties
+
+**Completed**: October 28, 2025
+**Details**:
+
+- Added SpringDoc OpenAPI 2.7.0 dependency (Spring Boot 3.5.x compatible)
+- Resolved compatibility issue with Spring Boot 3.5.6 (upgraded from 2.3.0 to 2.7.0)
+- Created OpenApiConfig.java with comprehensive configuration
+- Configured OpenAPI metadata (title, version, description, contact, license)
+- Added JWT Bearer authentication scheme (HTTP Bearer, JWT format)
+- Global security requirement for protected endpoints
+- Updated SecurityConfig to allow public access to `/swagger-ui/**`, `/swagger-ui.html`, `/v3/api-docs/**`, `/api-docs/**`
+- Added comprehensive Swagger UI configuration in application.properties
+- Enabled "Try it out" functionality, request duration display, sorting features
+- Configured package scanning for automatic endpoint discovery
+- Build verification passed (112 tests pass)
+- Runtime verification: Swagger UI accessible at http://localhost:8088/swagger-ui.html
+- OpenAPI JSON spec accessible at http://localhost:8088/api-docs
 
 ### 2.2 API Documentation - Authentication Endpoints (Priority: HIGH)
 
