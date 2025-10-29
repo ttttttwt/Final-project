@@ -24,13 +24,13 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 - [x] Comprehensive testing (81% coverage)
 - [x] API documentation (Swagger/OpenAPI)
 
-**Sprint 2** 🔵 Not Started
+**Sprint 2** 🔵 In Progress (October 29 – November 11, 2025)
 
-- [ ] Course/Lesson management API
-- [ ] Learning path structure
-- [ ] Progress tracking
-- [ ] API documentation (Swagger)
-- [ ] Unit tests (70%+ coverage)
+- [ ] Course/Lesson management API (entities, Flyway, CRUD, search/filter)
+- [ ] Learning path structure (CEFR-based defaults, retrieval API)
+- [ ] Progress tracking (completion, score, streak endpoints)
+- [ ] API documentation (Swagger) updated
+- [ ] Unit tests overall ≥70% (services ≥80%)
 
 **Deliverables**: Working REST API with 10+ endpoints, Postman collection
 
