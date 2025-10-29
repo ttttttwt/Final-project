@@ -14,15 +14,17 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 
 **Goal**: Solid, secure backend with core APIs
 
-**Sprint 1**
+**Sprint 1** ✅ COMPLETE (October 16-28, 2025)
 
 - [x] Project setup + Git infrastructure
 - [x] JWT authentication implementation
 - [x] User registration/login API
-- [ ] User profile management (In Progress - 5 subtasks defined)
+- [x] User profile management (Full CRUD operations)
 - [x] Database validation
+- [x] Comprehensive testing (81% coverage)
+- [x] API documentation (Swagger/OpenAPI)
 
-**Sprint 2**
+**Sprint 2** 🔵 Not Started
 
 - [ ] Course/Lesson management API
 - [ ] Learning path structure
@@ -77,13 +79,13 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 
 ## Key Milestones
 
-| Milestone            | Status         |
-| -------------------- | -------------- |
-| Backend MVP complete | ⏳ In Progress |
-| All APIs functional  | 🔵 Planned     |
-| AI features working  | 🔵 Planned     |
-| Frontend complete    | 🔵 Planned     |
-| Deployment ready     | 🔵 Planned     |
+| Milestone            | Status      | Completion Date  |
+| -------------------- | ----------- | ---------------- |
+| Backend MVP complete | ✅ Complete | October 28, 2025 |
+| All APIs functional  | 🔵 Planned  | TBD              |
+| AI features working  | 🔵 Planned  | TBD              |
+| Frontend complete    | 🔵 Planned  | TBD              |
+| Deployment ready     | 🔵 Planned  | TBD              |
 
 ## Risk Mitigation
 
