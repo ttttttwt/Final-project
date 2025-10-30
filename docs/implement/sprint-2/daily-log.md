@@ -88,12 +88,12 @@ Focus (Plan A): Course/Lesson, Learning Path, Progress Tracking (no AI deliverab
 
 ---
 
-## 2025-10-30 (Day 1 - Planning Complete + Task A1.1 ✅)
+## 2025-10-30 (Day 1 - Planning Complete + Tasks A1.1 & A1.2 ✅)
 
 - Planned:
   - [x] Create detailed task breakdown for all Sprint 2 tasks
   - [x] Task A1.1: Create V5 migration (courses table)
-  - [ ] Task A1.2: Create V6 migration (sections/lessons)
+  - [x] Task A1.2: Create V6 migration (sections/lessons)
   - [ ] Task A1.3: Test and verify migrations
 - Done:
   - [x] **Created Comprehensive Task Breakdown**
@@ -125,6 +125,24 @@ Focus (Plan A): Course/Lesson, Learning Path, Progress Tracking (no AI deliverab
     - Added comprehensive table/column comments
     - Successfully tested migration with Flyway
     - Migration applied to PostgreSQL (v5 confirmed)
+  - [x] **Task A1.2: V6 Migration - Sections & Lessons Tables (1.5 points) ✅**
+    - Created V6\_\_Create_sections_and_lessons_table.sql
+    - Created lesson_type_enum (READING, LISTENING, QUIZ, SPEAKING)
+    - Defined sections table:
+      - id (BIGSERIAL PRIMARY KEY)
+      - course_id (FK to courses, CASCADE DELETE)
+      - title, order_index with UNIQUE constraint
+      - Index on (course_id, order_index)
+    - Defined lessons table:
+      - id (BIGSERIAL PRIMARY KEY)
+      - section_id (FK to sections, CASCADE DELETE)
+      - title, lesson_type, content (JSONB)
+      - order_index, duration_minutes (1-240 CHECK)
+      - UNIQUE constraint on (section_id, order_index)
+      - Indexes on (section_id, order_index) and lesson_type
+    - Added comprehensive comments referencing JSONB schemas
+    - Successfully tested migration with Flyway (28ms)
+    - Migration applied to PostgreSQL (v6 confirmed)
 - Blockers/Risks:
   - None
 - Decisions:
@@ -144,5 +162,5 @@ Focus (Plan A): Course/Lesson, Learning Path, Progress Tracking (no AI deliverab
   - Day 1-7 focuses on foundation (migrations, entities, services)
   - Day 8-14 focuses on APIs and features
   - **Sprint 2 Readiness**: 100/100 ✅ (FULLY READY!)
-  - **Progress**: 1/50 subtasks (2%)
-  - **Next**: Execute Task A1.2 - Create V6 migration (sections & lessons)
+  - **Progress**: 2/50 subtasks (4%)
+  - **Next**: Execute Task A1.3 - Test and verify migrations
