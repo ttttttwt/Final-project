@@ -3,7 +3,7 @@
 ## Sprint 2 — In Progress
 
 **Sprint**: 2 / 6 | **Duration**: Oct 29 – Nov 11, 2025 (14 days)  
-**Status**: 🔵 In Progress (Day 2) | **Progress**: 2.5/21 points (11.9%)
+**Status**: 🔵 In Progress (Day 3) | **Progress**: 6.5/21 points (31.0%)
 
 ### Focus
 
@@ -16,7 +16,7 @@
 
 | Epic                          | Status         | Progress |
 | ----------------------------- | -------------- | -------- |
-| A: Course & Lesson Management | ⏳ In Progress | 19.2%    |
+| A: Course & Lesson Management | ⏳ In Progress | 50.0%    |
 | B: Learning Path              | 🔵 Not Started | 0%       |
 | C: Progress Tracking          | 🔵 Not Started | 0%       |
 | D: Technical Improvements     | 🔵 Not Started | 0%       |
@@ -27,14 +27,20 @@
 
 - A1.1: V5 Migration - Courses Table (1 pt)
 - A1.2: V6 Migration - Sections & Lessons (1.5 pts)
+- A1.3: Test & Verify Migrations (0.5 pts)
+- A2.1: Course Entity (0.75 pts)
+- A2.2: Section Entity (0.5 pts)
+- A2.3: Lesson Entity (0.75 pts)
+- A2.4: Create Repository Interfaces (0.5 pts)
+- A2.5: Create Specifications (0.5 pts)
+- A2.6: Write Repository Tests (0.5 pts)
 
 **In Progress** ⏳
 
-- A1.3: Test & Verify Migrations (0.5 pts)
+- None
 
 **Next Up** 📋
 
-- A2: JPA Entities & Repositories (3 pts)
 - A3: Service Layer + DTOs (3 pts)
 
 ---
