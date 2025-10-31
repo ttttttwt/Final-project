@@ -419,3 +419,33 @@ Focus (Plan A): Course/Lesson, Learning Path, Progress Tracking (no AI deliverab
   - Ready for service layer development (Task A3)
   - **Progress**: 9/50 subtasks (18%), 6.5/21 points (31%)
   - **Next**: Task A3.1 - Create DTOs (0.75 points)
+
+- Planned:
+  - [x] Task A3.1: Create DTOs (0.75 points)
+  - [x] Task A3.2: Create Mappers (0.5 points)
+- Done:
+  - [x] **Task A3.1: Create DTOs (0.75 points) ?**
+    - Created 7 DTOs with comprehensive validation and Swagger annotations
+    - CourseDTO, CreateCourseDTO, UpdateCourseDTO, CourseSearchDTO
+    - SectionDTO, LessonDTO, CreateLessonDTO
+    - All DTOs follow Spring Boot best practices
+  - [x] **Task A3.2: Create Mappers (0.5 points) ?**
+    - Created 3 mapper utility classes with 31 comprehensive tests
+    - CourseMapper (3 methods, 12 tests)
+    - SectionMapper (1 method, 7 tests)
+    - LessonMapper (3 methods, 12 tests)
+    - All tests passing: ? 31/31 (100%)
+- Blockers/Risks:
+  - None - All DTOs and mappers working perfectly ?
+- Decisions:
+  - Manual mapping (no MapStruct) for better control
+  - Partial update support in UpdateCourseDTO
+  - Derived fields calculated in mappers
+- QA Metrics:
+  - DTOs created: 7
+  - Mappers created: 3
+  - Mapper tests: 31/31 passing (100%) ?
+  - Total tests: 113 (82 repository + 31 mapper) ?
+- Notes:
+  - **Progress**: 11/50 subtasks (22%), 7.75/21 points (36.9%)
+  - **Next**: Task A3.3 - Create LessonContentValidator (0.75 points)

@@ -4,8 +4,8 @@
 **Duration**: October 29 – November 11, 2025 (14 days)  
 **Total Story Points**: 21 points  
 **Status**: 🔵 In Progress (Day 2)  
-**Completed**: 3/21 points (14.3%)  
-**Last Updated**: October 30, 2025 21:20
+**Completed**: 7.75/21 points (36.9%)  
+**Last Updated**: October 31, 2025 20:30
 
 ---
 
@@ -13,17 +13,17 @@
 
 | Epic                          | Tasks  | Subtasks | Completed | Total Points | Progress  |
 | ----------------------------- | ------ | -------- | --------- | ------------ | --------- |
-| A: Course & Lesson Management | 6      | 28       | 9/28      | 13           | 32.1%     |
+| A: Course & Lesson Management | 6      | 28       | 11/28     | 13           | 39.3%     |
 | B: Learning Path              | 2      | 10       | 0/10      | 4            | 0%        |
 | C: Progress Tracking          | 2      | 9        | 0/9       | 3            | 0%        |
 | D: Technical Improvements     | 1      | 3        | 0/3       | 1            | 0%        |
-| **TOTAL**                     | **11** | **50**   | **9/50**  | **21**       | **31.0%** |
+| **TOTAL**                     | **11** | **50**   | **11/50** | **21**       | **36.9%** |
 
 ---
 
 ## 🎯 EPIC A: Course & Lesson Management (13 points)
 
-**Progress**: 6.5/13 points completed (50.0%)
+**Progress**: 7.75/13 points completed (59.6%)
 
 ---
 
@@ -274,38 +274,53 @@
 
 ### Task A3: Service Layer + DTOs (3 points)
 
-**Priority**: P0 | **Dependencies**: A2 | **Estimated**: 2 days
+**Priority**: P0 | **Dependencies**: A2 | **Estimated**: 2 days  
+**Status**: 🔵 In Progress | **Progress**: 1.25/3 points (41.7%)
 
 #### Subtasks:
 
-#### A3.1: Create DTOs (0.75 points)
+#### A3.1: Create DTOs (0.75 points) ✅ COMPLETE
 
-- [ ] Create `CourseDTO` (response):
-  - [ ] id, title, description, thumbnailUrl, cefrLevel
-  - [ ] isPublished, createdAt, updatedAt
-  - [ ] sectionCount (derived)
-- [ ] Create `CreateCourseDTO` (input):
-  - [ ] @NotBlank title
-  - [ ] @Size(max=1000) description
-  - [ ] @Pattern cefrLevel
-  - [ ] @URL thumbnailUrl
-- [ ] Create `UpdateCourseDTO` (input) - all optional
-- [ ] Create `CourseSearchDTO` (filter params):
-  - [ ] title, cefrLevel, isPublished
-  - [ ] createdAfter, createdBefore
-  - [ ] Pageable (page, size, sort)
-- [ ] Create `SectionDTO`, `LessonDTO`
-- [ ] Create `CreateLessonDTO` with content validation
+**Status**: ✅ Complete | **Completed**: 2025-10-31
 
-#### A3.2: Create Mappers (0.5 points)
+- [x] Create `CourseDTO` (response):
+  - [x] id, title, description, thumbnailUrl, cefrLevel
+  - [x] isPublished, createdAt, updatedAt
+  - [x] sectionCount (derived)
+- [x] Create `CreateCourseDTO` (input):
+  - [x] @NotBlank title
+  - [x] @Size(max=1000) description
+  - [x] @Pattern cefrLevel
+  - [x] @URL thumbnailUrl
+- [x] Create `UpdateCourseDTO` (input) - all optional
+- [x] Create `CourseSearchDTO` (filter params):
+  - [x] title, cefrLevel, isPublished
+  - [x] createdAfter, createdBefore
+  - [x] Pageable (page, size, sort)
+- [x] Create `SectionDTO`, `LessonDTO`
+- [x] Create `CreateLessonDTO` with content validation
 
-- [ ] Create `CourseMapper` (MapStruct or manual)
-  - [ ] toDTO(Course entity)
-  - [ ] toEntity(CreateCourseDTO dto)
-  - [ ] updateEntity(UpdateCourseDTO dto, Course entity)
-- [ ] Create `SectionMapper`
-- [ ] Create `LessonMapper`
-- [ ] Write mapper tests (verify all fields mapped)
+**Deliverables**:
+
+- ✅ 7 DTOs created with comprehensive validation and Swagger annotations
+- ✅ All DTOs follow Spring Boot best practices
+
+#### A3.2: Create Mappers (0.5 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-10-31
+
+- [x] Create `CourseMapper` (manual mapping)
+  - [x] toDTO(Course entity)
+  - [x] toEntity(CreateCourseDTO dto)
+  - [x] updateEntity(UpdateCourseDTO dto, Course entity)
+- [x] Create `SectionMapper`
+- [x] Create `LessonMapper`
+- [x] Write mapper tests (verify all fields mapped)
+
+**Deliverables**:
+
+- ✅ 3 mapper utility classes with 31 comprehensive tests
+- ✅ All tests passing (100%)
 
 #### A3.3: Create LessonContentValidator (0.75 points)
 
