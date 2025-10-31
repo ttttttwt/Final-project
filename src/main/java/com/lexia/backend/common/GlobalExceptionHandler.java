@@ -1,9 +1,13 @@
 package com.lexia.backend.common;
 
+import com.lexia.backend.exception.CourseNotFoundException;
+import com.lexia.backend.exception.DuplicateCourseException;
 import com.lexia.backend.exception.InvalidInputException;
 import com.lexia.backend.exception.InvalidLessonContentException;
 import com.lexia.backend.exception.InvalidTokenException;
+import com.lexia.backend.exception.LessonNotFoundException;
 import com.lexia.backend.exception.ResourceNotFoundException;
+import com.lexia.backend.exception.SectionNotFoundException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
 import com.lexia.backend.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -201,6 +205,87 @@ public class GlobalExceptionHandler {
         }
 
         /**
+         * Handle course not found exception.
+         * Returns 404 Not Found when a course doesn't exist.
+         */
+        @ExceptionHandler(CourseNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleCourseNotFoundException(
+                        CourseNotFoundException ex, HttpServletRequest request) {
+
+                LOG.warn("Course not found: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.NOT_FOUND.value())
+                                .error("Course Not Found")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
+         * Handle duplicate course exception.
+         * Returns 409 Conflict when attempting to create a course with a duplicate
+         * title.
+         */
+        @ExceptionHandler(DuplicateCourseException.class)
+        public ResponseEntity<ErrorResponse> handleDuplicateCourseException(
+                        DuplicateCourseException ex, HttpServletRequest request) {
+
+                LOG.warn("Duplicate course: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.CONFLICT.value())
+                                .error("Duplicate Course")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        }
+
+        /**
+         * Handle lesson not found exception.
+         * Returns 404 Not Found when a lesson doesn't exist.
+         */
+        @ExceptionHandler(LessonNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleLessonNotFoundException(
+                        LessonNotFoundException ex, HttpServletRequest request) {
+
+                LOG.warn("Lesson not found: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.NOT_FOUND.value())
+                                .error("Lesson Not Found")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
+         * Handle section not found exception.
+         * Returns 404 Not Found when a section doesn't exist.
+         */
+        @ExceptionHandler(SectionNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleSectionNotFoundException(
+                        SectionNotFoundException ex, HttpServletRequest request) {
+
+                LOG.warn("Section not found: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.NOT_FOUND.value())
+                                .error("Section Not Found")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
          * Handle invalid token exceptions.
          */
         @ExceptionHandler(InvalidTokenException.class)
@@ -270,6 +355,26 @@ public class GlobalExceptionHandler {
                         IllegalArgumentException ex, HttpServletRequest request) {
 
                 LOG.warn("Illegal argument: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .error("Bad Request")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        /**
+         * Handle illegal state exceptions (business rule violations).
+         * Returns 400 Bad Request when business rules prevent an operation.
+         */
+        @ExceptionHandler(IllegalStateException.class)
+        public ResponseEntity<ErrorResponse> handleIllegalStateException(
+                        IllegalStateException ex, HttpServletRequest request) {
+
+                LOG.warn("Illegal state: {}", ex.getMessage());
 
                 ErrorResponse errorResponse = ErrorResponse.builder()
                                 .status(HttpStatus.BAD_REQUEST.value())

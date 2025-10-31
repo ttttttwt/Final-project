@@ -3,7 +3,7 @@
 ## Sprint 2 — In Progress
 
 **Sprint**: 2 / 6 | **Duration**: Oct 29 – Nov 11, 2025 (14 days)  
-**Status**: 🔵 In Progress (Day 3) | **Progress**: 9.5/21 points (45.2%)
+**Status**: 🔵 In Progress (Day 3) | **Progress**: 12/21 points (57.1%)
 
 ### Focus
 
@@ -16,7 +16,7 @@
 
 | Epic                          | Status         | Progress |
 | ----------------------------- | -------------- | -------- |
-| A: Course & Lesson Management | ⏳ In Progress | 76.9%    |
+| A: Course & Lesson Management | ⏳ In Progress | 92.3%    |
 | B: Learning Path              | 🔵 Not Started | 0%       |
 | C: Progress Tracking          | 🔵 Not Started | 0%       |
 | D: Technical Improvements     | 🔵 Not Started | 0%       |
@@ -40,6 +40,10 @@
 - A3.4: CourseService (0.5 pts)
 - A3.5: LessonService (0.5 pts)
 - A3.6: Service Tests (0.5 pts)
+- A4.1: CourseController (0.75 pts)
+- A4.2: LessonController (0.5 pts)
+- A4.3: Exception Handlers (0.25 pts)
+- A4.4: Controller Tests (0.5 pts)
 
 **In Progress** ⏳
 
@@ -47,7 +51,8 @@
 
 **Next Up** 📋
 
-- A4: REST Controllers (2 pts)
+- A5: Finalize Swagger Documentation (1 pt)
+- A6: Create Seed Data (1 pt)
 
 ---
 
