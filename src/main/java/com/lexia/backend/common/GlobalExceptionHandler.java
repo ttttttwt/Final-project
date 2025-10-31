@@ -1,6 +1,7 @@
 package com.lexia.backend.common;
 
 import com.lexia.backend.exception.InvalidInputException;
+import com.lexia.backend.exception.InvalidLessonContentException;
 import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
@@ -172,6 +173,26 @@ public class GlobalExceptionHandler {
                 ErrorResponse errorResponse = ErrorResponse.builder()
                                 .status(HttpStatus.BAD_REQUEST.value())
                                 .error("Invalid Input")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        /**
+         * Handle invalid lesson content exception.
+         * Returns 400 Bad Request with details about which validation rule failed.
+         */
+        @ExceptionHandler(InvalidLessonContentException.class)
+        public ResponseEntity<ErrorResponse> handleInvalidLessonContentException(
+                        InvalidLessonContentException ex, HttpServletRequest request) {
+
+                LOG.warn("Invalid lesson content: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .error("Invalid Lesson Content")
                                 .message(ex.getMessage())
                                 .path(request.getRequestURI())
                                 .build();
