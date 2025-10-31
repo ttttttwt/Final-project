@@ -16,7 +16,7 @@
 
 | Epic                          | Status         | Progress |
 | ----------------------------- | -------------- | -------- |
-| A: Course & Lesson Management | ⏳ In Progress | 73.1%    |
+| A: Course & Lesson Management | ⏳ In Progress | 76.9%    |
 | B: Learning Path              | 🔵 Not Started | 0%       |
 | C: Progress Tracking          | 🔵 Not Started | 0%       |
 | D: Technical Improvements     | 🔵 Not Started | 0%       |
@@ -39,6 +39,7 @@
 - A3.3: LessonContentValidator (0.75 pts)
 - A3.4: CourseService (0.5 pts)
 - A3.5: LessonService (0.5 pts)
+- A3.6: Service Tests (0.5 pts)
 
 **In Progress** ⏳
 
@@ -46,7 +47,6 @@
 
 **Next Up** 📋
 
-- A3.6: Service Tests (0.5 pts)
 - A4: REST Controllers (2 pts)
 
 ---
