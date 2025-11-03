@@ -671,48 +671,48 @@
 
 #### Subtasks:
 
-#### A6.1: Create CourseSeeder Component (0.5 points)
+#### A6.1: Create CourseSeeder Component (0.5 points) ✅ COMPLETE
 
-- [ ] Create `CourseSeeder` class
-- [ ] Add @Component, @Profile("dev")
-- [ ] Implement ApplicationRunner interface
-- [ ] Create method to check if data exists
-- [ ] Create seed data:
-  - [ ] Course 1: "English Basics (A1)"
-    - [ ] Section 1: "Getting Started" (3 lessons)
-    - [ ] Section 2: "Daily Conversations" (3 lessons)
-  - [ ] Course 2: "Intermediate English (B1)"
-    - [ ] Section 1: "Work and Career" (3 lessons)
-    - [ ] Section 2: "Travel and Culture" (3 lessons)
-  - [ ] Course 3: "Advanced English (C1)"
-    - [ ] Section 1: "Business English" (3 lessons)
-    - [ ] Section 2: "Academic Writing" (3 lessons)
+- [x] Create `CourseSeeder` class
+- [x] Add @Component, @Profile("dev")
+- [x] Implement ApplicationRunner interface
+- [x] Create method to check if data exists
+- [x] Create seed data:
+  - [x] Course 1: "English Basics (A1)"
+    - [x] Section 1: "Getting Started" (3 lessons)
+    - [x] Section 2: "Daily Conversations" (3 lessons)
+  - [x] Course 2: "Intermediate English (B1)"
+    - [x] Section 1: "Work and Career" (3 lessons)
+    - [x] Section 2: "Travel and Culture" (3 lessons)
+  - [x] Course 3: "Advanced English (C1)"
+    - [x] Section 1: "Business English" (3 lessons)
+    - [x] Section 2: "Academic Writing" (3 lessons)
 
-#### A6.2: Create Sample Lesson Content (0.3 points)
+#### A6.2: Create Sample Lesson Content (0.3 points) ✅ COMPLETE
 
-- [ ] Create READING lesson samples (valid JSONB):
-  - [ ] Use schemas from DATABASE-SCHEMA.md
-  - [ ] Realistic passages and questions
-- [ ] Create LISTENING lesson samples:
-  - [ ] Use sample audio URLs
-  - [ ] Include transcripts
-- [ ] Create QUIZ lesson samples:
-  - [ ] Grammar questions
-  - [ ] Vocabulary questions
-- [ ] Create SPEAKING lesson samples:
-  - [ ] Conversation prompts
-  - [ ] Sample answers
+- [x] Create READING lesson samples (valid JSONB):
+  - [x] Use schemas from DATABASE-SCHEMA.md
+  - [x] Realistic passages and questions
+- [x] Create LISTENING lesson samples:
+  - [x] Use sample audio URLs
+  - [x] Include transcripts
+- [x] Create QUIZ lesson samples:
+  - [x] Grammar questions
+  - [x] Vocabulary questions
+- [x] Create SPEAKING lesson samples:
+  - [x] Conversation prompts
+  - [x] Sample answers
 
-#### A6.3: Test and Verify Seeder (0.2 points)
+#### A6.3: Test and Verify Seeder (0.2 points) ✅ COMPLETE
 
-- [ ] Run application with dev profile
-- [ ] Verify 3 courses created
-- [ ] Verify 6 sections created
-- [ ] Verify 18 lessons created
-- [ ] Verify all JSONB content is valid
-- [ ] Test idempotency (run twice, same result)
-- [ ] Log seed status clearly
-- [ ] Update README with seed data info
+- [x] Run application with dev profile
+- [x] Verify 3 courses created
+- [x] Verify 6 sections created
+- [x] Verify 18 lessons created
+- [x] Verify all JSONB content is valid
+- [x] Test idempotency (run twice, same result)
+- [x] Log seed status clearly
+- [x] Update README with seed data info
 
 ---
 

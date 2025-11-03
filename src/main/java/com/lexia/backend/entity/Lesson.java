@@ -82,7 +82,8 @@ public class Lesson {
      */
     @NotNull(message = "Lesson type is required")
     @Enumerated(EnumType.STRING)
-    @Column(name = "lesson_type", nullable = false, length = 20)
+    @Column(name = "lesson_type", nullable = false, columnDefinition = "lesson_type_enum")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private LessonType lessonType;
 
     /**
