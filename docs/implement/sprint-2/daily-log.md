@@ -831,6 +831,7 @@ Focus (Plan A): Course/Lesson, Learning Path, Progress Tracking (no AI deliverab
   - Build: ✅ Successful (./gradlew test)
   - Test execution time: ~30s
 - Notes:
+
   - **CourseControllerTest.java**: 550+ lines, 35 comprehensive tests
   - **LessonControllerTest.java**: 530+ lines, 27 comprehensive tests
   - **GlobalExceptionHandler.java**: Added IllegalStateException handler (business rules)
@@ -844,3 +845,100 @@ Focus (Plan A): Course/Lesson, Learning Path, Progress Tracking (no AI deliverab
   - **Epic A Complete**: ✅ 18/18 subtasks done (12 points / 13 planned, -1 from A5 simplification)
   - **Progress**: 19/50 subtasks (38%), 12/21 points (57.1%)
   - **Next**: Task A5 - Finalize Swagger Documentation (0.5 points)
+
+- Planned:
+  - [x] Task A5: Finalize Swagger Documentation (1 point)
+- Done:
+  - [x] **Task A5: Swagger Documentation Update (1 point) ✅**
+    - **A5.1: Swagger Annotations Already Complete** ✅
+      - Reviewed all DTOs - Already have comprehensive @Schema annotations
+      - CourseDTO, CreateCourseDTO, UpdateCourseDTO, CourseSearchDTO, SectionDTO, LessonDTO, CreateLessonDTO, UpdateLessonDTO
+      - All fields have: description, example, validation constraints documented
+      - Complex types documented with @Schema(example = "...")
+    - **A5.2: Controller Swagger Annotations Already Complete** ✅
+      - CourseController: @Tag, @Operation, @ApiResponses for all 8 endpoints
+      - LessonController: @Tag, @Operation, @ApiResponses for all 6 endpoints
+      - All endpoints documented with:
+        - Summary and detailed descriptions
+        - Request/response examples (including 4 lesson types)
+        - All status codes (200, 201, 204, 400, 401, 403, 404, 409)
+        - @Parameter descriptions with examples
+        - @SecurityRequirement for JWT authentication
+        - JSONB content examples for all lesson types
+    - **A5.3: OpenAPI Configuration Updated** ✅
+      - Fixed security scheme name: "Bearer Authentication" → "bearerAuth" (consistent with controllers)
+      - Updated API description to version 2.0.0:
+        - Added Course Management features
+        - Added Lesson Management features
+        - Added Course Search capabilities
+        - Documented Roles & Permissions (USER, CONTENT_MANAGER, ADMIN)
+        - Documented CEFR Levels (A1-C2)
+        - Documented 4 Lesson Types (READING, LISTENING, QUIZ, SPEAKING)
+        - Added JSONB content structure explanation
+      - Updated server URL to port 8088
+      - Enhanced contact and license information
+    - **A5.4: API-SPECIFICATION.md Updated** ✅
+      - Completely rewrote API documentation (1000+ lines)
+      - Added comprehensive endpoint documentation:
+        - 1. Authentication Endpoints (4 endpoints)
+        - 2. User Profile Endpoints (2 endpoints)
+        - 3. Course Management Endpoints (8 endpoints)
+        - 4. Lesson Management Endpoints (7 endpoints - including reorder)
+        - 5. AI Features Endpoints (3 endpoints - Coming in Sprint 3)
+      - Added detailed examples for all endpoints:
+        - Request/response JSON examples
+        - All query parameters documented
+        - All HTTP status codes explained
+      - Added JSONB Content Schemas section:
+        - 1. READING Lesson Schema (passages, questions, vocabulary)
+        - 2. LISTENING Lesson Schema (audioUrl, duration, transcript, questions)
+        - 3. QUIZ Lesson Schema (title, questions, passingScore)
+        - 4. SPEAKING Lesson Schema (scenario, difficulty, turns, prompts)
+      - Added comprehensive sections:
+        - Authentication & JWT token lifecycle
+        - Roles & Permissions matrix
+        - Error Response Format (RFC 7807)
+        - Common HTTP Status Codes reference
+        - CEFR Levels explanation
+        - Pagination specification
+        - Swagger UI usage guide
+      - Version history: 1.0.0 (Sprint 1) → 2.0.0 (Sprint 2)
+    - **A5.5: Swagger UI Testing** ✅
+      - Started application on port 8088
+      - Accessed http://localhost:8088/swagger-ui.html
+      - Verified all endpoints render correctly:
+        - Course Management API (8 endpoints)
+        - Lesson Management API (6 endpoints)
+        - Authentication API (4 endpoints)
+        - User Profile API (2 endpoints)
+      - Verified request/response examples display correctly
+      - Verified all 4 lesson type examples (READING, LISTENING, QUIZ, SPEAKING)
+      - Verified "Try it out" functionality works
+      - Verified JWT authentication scheme configured
+- Blockers/Risks:
+  - None - All Swagger documentation complete and verified ✅
+- Decisions:
+  - **Swagger Already Complete**: Discovered comprehensive Swagger annotations already in place
+  - **Focus on Enhancement**: Updated OpenAPI config and API-SPECIFICATION.md instead
+  - **Security Scheme Fix**: Corrected "bearerAuth" naming consistency
+  - **API Spec Rewrite**: Comprehensive rewrite with examples and JSONB schemas
+  - **Version Bump**: Updated API version to 2.0.0 for Sprint 2 features
+  - **Documentation Standards**: All examples follow RFC 7807 error format
+- QA Metrics:
+  - Swagger UI: ✅ Verified working at http://localhost:8088/swagger-ui.html
+  - All endpoints: ✅ 20 endpoints documented
+  - All DTOs: ✅ 8 DTOs with comprehensive @Schema annotations
+  - Test coverage: Maintained at 84% overall, 92% services ✅
+  - All tests: ✅ 302/302 passing (100%)
+- Notes:
+  - **OpenApiConfig.java**: Updated to version 2.0.0 with enhanced description
+  - **API-SPECIFICATION.md**: Completely rewritten (1000+ lines)
+  - **Swagger UI**: Fully functional with interactive testing
+  - All JSONB schemas documented with examples
+  - All HTTP status codes documented
+  - All authentication flows documented
+  - Ready for seed data creation (Task A6)
+  - **Task A5 Complete**: ✅ (1 point)
+  - **Epic A Complete**: ✅ 19/19 subtasks done (13 points)
+  - **Progress**: 19/50 subtasks (38%), 13/21 points (61.9%)
+  - **Next**: Task A6 - Create Seed Data (1 point)
