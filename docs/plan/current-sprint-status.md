@@ -3,7 +3,7 @@
 ## Sprint 2 — In Progress
 
 **Sprint**: 2 / 6 | **Duration**: Oct 29 – Nov 11, 2025 (14 days)  
-**Status**: 🔵 In Progress (Day 5) | **Progress**: 15/21 points (71.4%)
+**Status**: � On Track (Day 5) | **Progress**: 16.7/21 points (79.5%)
 
 ### Focus
 
@@ -17,7 +17,7 @@
 | Epic                          | Status         | Progress |
 | ----------------------------- | -------------- | -------- |
 | A: Course & Lesson Management | ✅ Complete    | 100%     |
-| B: Learning Path              | ⏳ In Progress | 50%      |
+| B: Learning Path              | ⏳ In Progress | 85%      |
 | C: Progress Tracking          | 🔵 Not Started | 0%       |
 | D: Technical Improvements     | 🔵 Not Started | 0%       |
 
@@ -48,16 +48,20 @@
 - B1.1: V7 Migration - Learning Path Tables (1 pt) ✅
 - B1.2: Seed Default Learning Paths (0.75 pts) ✅
 - B1.3: Test and Verify Learning Paths (0.25 pts) ✅
+- B2.1: Create Entities and Repositories (0.5 pts) ✅
+- B2.2: Create DTOs and Mappers (0.3 pts) ✅
+- B2.3: Create LearningPathService (0.5 pts) ✅
+- B2.4: Create LearningPathController (0.4 pts) ✅
 
 **In Progress** ⏳
 
-- None
+- B2.5: Write Tests (0.3 pts)
 
 **Next Up** 📋
 
-- A6: Create Seed Data (1 pt)
-- B2: Learning Path API (2 pts)
 - C1: Progress Tracking Migrations (1 pt)
+- C2: Progress Tracking API (2 pts)
+- D1: Implement Caching (1 pt)
 
 ---
 

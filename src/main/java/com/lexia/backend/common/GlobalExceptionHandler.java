@@ -5,6 +5,7 @@ import com.lexia.backend.exception.DuplicateCourseException;
 import com.lexia.backend.exception.InvalidInputException;
 import com.lexia.backend.exception.InvalidLessonContentException;
 import com.lexia.backend.exception.InvalidTokenException;
+import com.lexia.backend.exception.LearningPathNotFoundException;
 import com.lexia.backend.exception.LessonNotFoundException;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.SectionNotFoundException;
@@ -278,6 +279,26 @@ public class GlobalExceptionHandler {
                 ErrorResponse errorResponse = ErrorResponse.builder()
                                 .status(HttpStatus.NOT_FOUND.value())
                                 .error("Section Not Found")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
+         * Handle learning path not found exception.
+         * Returns 404 Not Found when a learning path doesn't exist.
+         */
+        @ExceptionHandler(LearningPathNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleLearningPathNotFoundException(
+                        LearningPathNotFoundException ex, HttpServletRequest request) {
+
+                LOG.warn("Learning path not found: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.NOT_FOUND.value())
+                                .error("Learning Path Not Found")
                                 .message(ex.getMessage())
                                 .path(request.getRequestURI())
                                 .build();
