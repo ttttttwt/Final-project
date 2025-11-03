@@ -722,56 +722,114 @@
 
 ### Task B1: Learning Path Migrations + Seed Data (2 points)
 
-**Priority**: P1 | **Dependencies**: A1 | **Estimated**: 1 day
+**Priority**: P1 | **Dependencies**: A1 | **Estimated**: 1 day  
+**Status**: ✅ Complete | **Progress**: 2/2 points (100%)  
+**Started**: 2025-11-03 | **Completed**: 2025-11-03
 
 #### Subtasks:
 
-#### B1.1: Create V7 Migration - Learning Path Tables (1 point)
+#### B1.1: Create V7 Migration - Learning Path Tables (1 point) ✅ COMPLETE
 
-- [ ] Create `V7__Create_learning_paths_table.sql`
-- [ ] Define learning_paths table:
-  - [ ] id (BIGSERIAL PRIMARY KEY)
-  - [ ] name (VARCHAR(100) NOT NULL)
-  - [ ] description (TEXT)
-  - [ ] cefr_level (VARCHAR(2) NOT NULL)
-  - [ ] is_default (BOOLEAN DEFAULT false)
-  - [ ] created_at (TIMESTAMP)
-- [ ] Define learning_path_courses table:
-  - [ ] path_id (FK to learning_paths)
-  - [ ] course_id (FK to courses)
-  - [ ] order_index (INTEGER NOT NULL)
-  - [ ] PRIMARY KEY (path_id, course_id)
-- [ ] Define user_learning_paths table:
-  - [ ] id (BIGSERIAL PRIMARY KEY)
-  - [ ] user_id (FK to users)
-  - [ ] path_id (FK to learning_paths)
-  - [ ] current_course_id (FK to courses)
-  - [ ] started_at (TIMESTAMP)
-  - [ ] UNIQUE (user_id, path_id)
-- [ ] Add indexes for performance
-- [ ] Test migration
+**Status**: ✅ Complete | **Completed**: 2025-11-03
 
-#### B1.2: Create Seed Data for Default Paths (0.75 points)
+- [x] Create `V7__Create_learning_paths_table.sql`
+- [x] Define learning_paths table:
+  - [x] id (BIGSERIAL PRIMARY KEY)
+  - [x] name (VARCHAR(100) NOT NULL)
+  - [x] description (TEXT)
+  - [x] cefr_level (VARCHAR(2) NOT NULL)
+  - [x] is_default (BOOLEAN DEFAULT false)
+  - [x] created_at (TIMESTAMP)
+  - [x] updated_at (TIMESTAMP)
+- [x] Define learning_path_courses table:
+  - [x] path_id (FK to learning_paths)
+  - [x] course_id (FK to courses)
+  - [x] order_index (INTEGER NOT NULL)
+  - [x] PRIMARY KEY (path_id, course_id)
+  - [x] Constraint: valid_order_index CHECK (order_index >= 0)
+- [x] Define user_learning_paths table:
+  - [x] id (BIGSERIAL PRIMARY KEY)
+  - [x] user_id (FK to users)
+  - [x] path_id (FK to learning_paths)
+  - [x] current_course_id (FK to courses)
+  - [x] started_at (TIMESTAMP)
+  - [x] completed_at (TIMESTAMP)
+  - [x] UNIQUE (user_id, path_id)
+- [x] Add indexes for performance (7 indexes total)
+- [x] Test migration (verified with bootRun)
 
-- [ ] Create SQL seed script or Java seeder
-- [ ] Insert 6 default paths:
-  - [ ] "Beginner Path (A1)"
-  - [ ] "Elementary Path (A2)"
-  - [ ] "Intermediate Path (B1)"
-  - [ ] "Upper Intermediate Path (B2)"
-  - [ ] "Advanced Path (C1)"
-  - [ ] "Proficiency Path (C2)"
-- [ ] Link courses to paths (use seeded courses)
-- [ ] Set order_index for each course in path
-- [ ] Mark all as is_default = true
-- [ ] Test seed script idempotency
+**Deliverables**:
 
-#### B1.3: Test and Verify (0.25 points)
+- ✅ `V7__Create_learning_paths_table.sql` (93 lines, 3 tables, 7 indexes)
+- ✅ All tables created with proper constraints and foreign keys
+- ✅ Comprehensive documentation via SQL comments
+- ✅ Migration tested successfully (version v7 applied)
 
-- [ ] Verify all paths created
-- [ ] Verify course associations correct
-- [ ] Test queries for path retrieval
-- [ ] Document seed data
+#### B1.2: Create Seed Data for Default Paths (0.75 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-11-03
+
+- [x] Create SQL seed script or Java seeder
+- [x] Insert 6 default paths:
+  - [x] "Beginner Path (A1)"
+  - [x] "Elementary Path (A2)"
+  - [x] "Intermediate Path (B1)"
+  - [x] "Upper Intermediate Path (B2)"
+  - [x] "Advanced Path (C1)"
+  - [x] "Proficiency Path (C2)"
+- [x] Link courses to paths (use seeded courses)
+- [x] Set order_index for each course in path
+- [x] Mark all as is_default = true
+- [x] Test seed script idempotency (uses DO block for safety)
+
+**Deliverables**:
+
+- ✅ `V8__Seed_default_learning_paths.sql` (166 lines)
+- ✅ 6 learning paths created with comprehensive descriptions
+- ✅ Course associations created:
+  - A1 Path: 1 course (English Basics A1)
+  - A2 Path: 1 course (English Basics A1)
+  - B1 Path: 1 course (Intermediate English B1)
+  - B2 Path: 2 courses (Intermediate B1 + Advanced C1)
+  - C1 Path: 1 course (Advanced English C1)
+  - C2 Path: 1 course (Advanced English C1)
+- ✅ Idempotent design with NULL checks
+- ✅ Verification queries included as SQL comments
+- ✅ Migration tested successfully (version v8 applied)
+- ✅ Created `verify-learning-paths.sql` for manual verification
+
+#### B1.3: Test and Verify (0.25 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-11-03
+
+- [x] Verify all paths created
+- [x] Verify course associations correct
+- [x] Test queries for path retrieval
+- [x] Document seed data
+
+**Deliverables**:
+
+- ✅ `verify-learning-paths-results.md` - Comprehensive verification report (400+ lines)
+- ✅ All 6 learning paths verified in database
+- ✅ All 7 course associations verified
+- ✅ All 7 indexes verified and performance tested
+- ✅ All constraints verified (PK, FK, UNIQUE, CHECK)
+- ✅ Migration idempotency tested and confirmed
+- ✅ Application integration verified (Spring Boot startup)
+- ✅ Data integrity checks passed (no orphaned references)
+- ✅ Query performance verified (indexes used correctly)
+- ✅ All verification checks passed: 12/12 ✅
+
+**Verification Summary**:
+
+- Schema Creation: ✅ 3 tables, 7 indexes
+- Seed Data: ✅ 6 paths, 7 associations
+- Constraints: ✅ All FK, UK, CHECK working
+- Migration: ✅ v7, v8 applied (82ms total)
+- Idempotency: ✅ Re-run safe
+- Integration: ✅ Spring Boot successful
+- Data Integrity: ✅ No orphaned data
+- Performance: ✅ Indexes optimized
 
 ---
 
