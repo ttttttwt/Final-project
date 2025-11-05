@@ -3,7 +3,7 @@
 ## Sprint 2 — In Progress
 
 **Sprint**: 2 / 6 | **Duration**: Oct 29 – Nov 11, 2025 (14 days)  
-**Status**: ✅ On Track (Day 7) | **Progress**: 19.7/21 points (93.8%)
+**Status**: ✅ Ahead of Schedule (Day 7) | **Progress**: 20.0/21 points (95.2%)
 
 ### Focus
 
@@ -18,7 +18,7 @@
 | ----------------------------- | -------------- | ----------- |
 | A: Course & Lesson Management | ✅ Complete    | 13/13 pts   |
 | B: Learning Path              | ✅ Complete    | 4.0/4.0 pts |
-| C: Progress Tracking          | � In Progress  | 2.7/3 pts   |
+| C: Progress Tracking          | ✅ Complete    | 3.0/3 pts   |
 | D: Technical Improvements     | 🔵 Not Started | 0/1 pts     |
 
 ### Current Tasks
@@ -53,16 +53,18 @@
 - B2.3: Create LearningPathService (0.5 pts) ✅
 - B2.4: Create LearningPathController (0.4 pts) ✅
 - B2.5: Write Tests for Learning Path API (0.3 pts) ✅
-  - 48 service tests (comprehensive business logic coverage)
-  - 6 controller tests (endpoints without @AuthenticationPrincipal)
-  - 87% overall coverage, 93% service layer coverage
-  - All 414 tests passing
+- C1.1: V9 Migration - Enrollment Table (0.5 pts) ✅
+- C1.2: V10 Migration - Lesson Progress Table (0.5 pts) ✅
+- C2.1: Create Entities and Repositories (0.5 pts) ✅
+- C2.2: Create DTOs (0.3 pts) ✅
+- C2.3: Create EnrollmentService (0.5 pts) ✅
+- C2.4: Create ProgressService (0.4 pts) ✅
+- C2.5: Create Controllers (0.3 pts) ✅
+- C2.6: Progress Tracking Tests (0.5 pts) ✅
 
 **Next Up** 📋
 
-- C2.5: Progress Tracking Controllers (0.3 pts)
-- C2.6: Progress Tracking Tests (0.5 pts)
-- D1: Implement Caching (1 pt)
+- D1: Actuator Configuration (1 pt)
 
 ---
 

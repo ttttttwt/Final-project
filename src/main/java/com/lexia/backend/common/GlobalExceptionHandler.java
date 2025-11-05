@@ -2,6 +2,7 @@ package com.lexia.backend.common;
 
 import com.lexia.backend.exception.CourseNotFoundException;
 import com.lexia.backend.exception.DuplicateCourseException;
+import com.lexia.backend.exception.EnrollmentNotFoundException;
 import com.lexia.backend.exception.InvalidInputException;
 import com.lexia.backend.exception.InvalidLessonContentException;
 import com.lexia.backend.exception.InvalidTokenException;
@@ -299,6 +300,26 @@ public class GlobalExceptionHandler {
                 ErrorResponse errorResponse = ErrorResponse.builder()
                                 .status(HttpStatus.NOT_FOUND.value())
                                 .error("Learning Path Not Found")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
+         * Handle enrollment not found exception.
+         * Returns 404 Not Found when an enrollment doesn't exist.
+         */
+        @ExceptionHandler(EnrollmentNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleEnrollmentNotFoundException(
+                        EnrollmentNotFoundException ex, HttpServletRequest request) {
+
+                LOG.warn("Enrollment not found: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.NOT_FOUND.value())
+                                .error("Enrollment Not Found")
                                 .message(ex.getMessage())
                                 .path(request.getRequestURI())
                                 .build();

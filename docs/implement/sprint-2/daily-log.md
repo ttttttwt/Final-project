@@ -1,4 +1,4 @@
-## 2025-11-05 (Day 7 - Tasks C1.1, C1.2, C2.1, C2.2, C2.3, C2.4 Complete ✅✅✅✅✅✅)
+## 2025-11-05 (Day 7 - Tasks C1.1, C1.2, C2.1, C2.2, C2.3, C2.4, C2.5 Complete ✅✅✅✅✅✅✅)
 
 - Planned:
   - [x] Task C1.1: Create V9 Migration - Enrollment Table (0.5 points)
@@ -7,6 +7,7 @@
   - [x] Task C2.2: Create DTOs (0.3 points)
   - [x] Task C2.3: Create EnrollmentService (0.5 points)
   - [x] Task C2.4: Create ProgressService (0.4 points)
+  - [x] Task C2.5: Create Controllers (0.3 points)
 - Done:
   - [x] **Task C1.1: Create V9 Migration - Enrollment Table (0.5 points) ✅**
     - Created V9\_\_Create_enrollments_table.sql migration (42 lines)
@@ -345,6 +346,104 @@
   - **Task C2.4 Complete**: ✅ (0.4 points)
   - **Progress**: 33/50 subtasks (66%), 19.7/21 points (93.8%)
   - **Next**: Task C2.5 - Create Controllers (0.3 points)
+  - [x] **Task C2.5: Create Controllers (0.3 points) ✅**
+    - Created CompleteLessonRequest DTO (25 lines)
+      - resultDetailsJson (String) - validated with @NotNull
+      - JSON structure varies by lesson type (READING, LISTENING, QUIZ, SPEAKING)
+      - Comprehensive Swagger documentation with example
+    - Created EnrollmentController (220 lines)
+      - Base path: /api/v1/enrollments
+      - POST / - enroll in course (201 Created or 409 Conflict)
+      - GET / - get my enrollments (200 OK with array)
+      - GET /{courseId}/progress - get detailed course progress (200 OK)
+      - All endpoints require authentication (@AuthenticationPrincipal)
+      - Comprehensive Swagger annotations with JSON examples
+      - HTTP status codes: 200, 201, 400, 401, 404, 409
+      - SLF4J logging for all operations
+    - Created ProgressController (170 lines)
+      - Base path: /api/v1/progress
+      - POST /lessons/{lessonId}/complete - mark lesson complete (201 Created)
+      - GET /streak - get learning streak (200 OK)
+      - All endpoints require authentication (@AuthenticationPrincipal)
+      - Comprehensive Swagger annotations with JSON examples
+      - HTTP status codes: 200, 201, 400, 401, 404
+      - SLF4J logging for all operations
+    - Updated GlobalExceptionHandler (added EnrollmentNotFoundException handler)
+      - Returns 404 Not Found with error details
+      - Consistent with other exception handlers
+      - Proper logging with LOG.warn()
+    - Compilation successful: ✅ `./gradlew compileJava` passed
+- Blockers/Risks:
+  - None - All controllers compile successfully ✅
+- Decisions:
+  - **EnrollmentController Design**:
+    - POST /enrollments with query param courseId (simple enrollment)
+    - Returns 409 Conflict if already enrolled (IllegalStateException)
+    - Progress endpoint at /{courseId}/progress (RESTful nested resource)
+    - All responses include comprehensive error examples
+  - **ProgressController Design**:
+    - POST /lessons/{lessonId}/complete with request body (result details)
+    - Uses @Valid for request validation
+    - Returns 201 Created (not 200 OK) for resource creation
+    - Streak endpoint at /streak (simple GET, no params)
+  - **Swagger Documentation**:
+    - All endpoints have @Operation with summary and description
+    - All responses have @ApiResponse with JSON examples
+    - Multiple examples per endpoint (success, errors, edge cases)
+    - Parameter descriptions include types and examples
+  - **Error Handling**:
+    - GlobalExceptionHandler updated with EnrollmentNotFoundException
+    - Returns 404 with "Enrollment Not Found" error message
+    - Consistent error response format across all handlers
+- QA Metrics:
+  - New files: ✅ 4 new Java files
+    - CompleteLessonRequest.java (25 lines)
+    - EnrollmentController.java (220 lines)
+    - ProgressController.java (170 lines)
+    - GlobalExceptionHandler.java (updated, +1 handler)
+  - Total lines of code: ~415 lines (3 new files)
+  - REST endpoints: ✅ 5 new endpoints
+    - POST /api/v1/enrollments
+    - GET /api/v1/enrollments
+    - GET /api/v1/enrollments/{courseId}/progress
+    - POST /api/v1/progress/lessons/{lessonId}/complete
+    - GET /api/v1/progress/streak
+  - Compilation: ✅ No errors (./gradlew compileJava passed)
+  - Test coverage: Not yet measured (tests in C2.6)
+  - All tests: ✅ Still 414/414 passing (100%) - no new tests yet
+- Notes:
+
+  - **API Design**: RESTful conventions followed
+    - Enrollments: /api/v1/enrollments
+    - Progress: /api/v1/progress
+    - Nested resource: /{courseId}/progress
+  - **HTTP Status Codes**: Proper usage
+    - 200 OK: Successful GET
+    - 201 Created: Successful POST (resource created)
+    - 400 Bad Request: Validation errors
+    - 401 Unauthorized: Missing/invalid JWT
+    - 404 Not Found: Resource not found
+    - 409 Conflict: Duplicate enrollment
+  - **Swagger Documentation**: Complete with examples
+    - All endpoints documented
+    - Multiple response examples per endpoint
+    - Request body schemas with validation
+    - Error response examples for all status codes
+  - Ready for comprehensive testing (Task C2.6)
+  - **Task C2.5 Complete**: ✅ (0.3 points)
+  - **Progress**: 34/50 subtasks (68%), 20.0/21 points (95.2%)
+  - **Next**: Task C2.6 - Write Tests (0.5 points)
+
+  - [x] **Task C2.6: Write Tests (0.5 points) ✅**
+    - Created EnrollmentServiceTest with comprehensive tests for enrollment (new, duplicate, race condition) and progress calculation.
+    - Created ProgressServiceTest with detailed tests for lesson completion and streak calculation (including edge cases like no lessons, consecutive days, gaps, and same-day completions).
+    - Fixed initial compilation errors and a NullPointerException in the test setup.
+    - All 21 tests for both services are passing.
+    - Achieved sufficient test coverage for the new services.
+  - **Task C2 Complete**: ✅ All 6 subtasks done (2.0 points) ✅
+  - **Epic C Complete**: ✅ All 2 tasks done (3.0 points) ✅
+  - **Progress**: 35/50 subtasks (70%), 20.5/21 points (97.6%)
+  - **Next**: Task D1 - Actuator Configuration (1 point)
 
 # Sprint 2 Daily Log
 
