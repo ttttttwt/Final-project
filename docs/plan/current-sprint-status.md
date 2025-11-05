@@ -3,7 +3,7 @@
 ## Sprint 2 — In Progress
 
 **Sprint**: 2 / 6 | **Duration**: Oct 29 – Nov 11, 2025 (14 days)  
-**Status**: ✅ On Track (Day 7) | **Progress**: 17.0/21 points (81%)
+**Status**: ✅ On Track (Day 7) | **Progress**: 19.7/21 points (93.8%)
 
 ### Focus
 
@@ -18,7 +18,7 @@
 | ----------------------------- | -------------- | ----------- |
 | A: Course & Lesson Management | ✅ Complete    | 13/13 pts   |
 | B: Learning Path              | ✅ Complete    | 4.0/4.0 pts |
-| C: Progress Tracking          | 🔵 Not Started | 0/3 pts     |
+| C: Progress Tracking          | � In Progress  | 2.7/3 pts   |
 | D: Technical Improvements     | 🔵 Not Started | 0/1 pts     |
 
 ### Current Tasks
@@ -60,8 +60,8 @@
 
 **Next Up** 📋
 
-- C1: Progress Tracking Migrations (1 pt)
-- C2: Progress Tracking API (2 pts)
+- C2.5: Progress Tracking Controllers (0.3 pts)
+- C2.6: Progress Tracking Tests (0.5 pts)
 - D1: Implement Caching (1 pt)
 
 ---

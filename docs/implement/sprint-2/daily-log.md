@@ -1,10 +1,12 @@
-## 2025-11-05 (Day 7 - Tasks C1.1, C1.2, C2.1, C2.2 Complete ✅✅✅✅)
+## 2025-11-05 (Day 7 - Tasks C1.1, C1.2, C2.1, C2.2, C2.3, C2.4 Complete ✅✅✅✅✅✅)
 
 - Planned:
   - [x] Task C1.1: Create V9 Migration - Enrollment Table (0.5 points)
   - [x] Task C1.2: Create V10 Migration - Lesson Progress Table (0.5 points)
   - [x] Task C2.1: Create Entities and Repositories (0.5 points)
   - [x] Task C2.2: Create DTOs (0.3 points)
+  - [x] Task C2.3: Create EnrollmentService (0.5 points)
+  - [x] Task C2.4: Create ProgressService (0.4 points)
 - Done:
   - [x] **Task C1.1: Create V9 Migration - Enrollment Table (0.5 points) ✅**
     - Created V9\_\_Create_enrollments_table.sql migration (42 lines)
@@ -205,10 +207,144 @@
   - Mappers handle all edge cases (null, empty lists, missing progress)
   - JSONB schemas documented for all 4 lesson types in entity JavaDoc
   - Ready for service layer development (Task C2.3)
-  - **Task C2.1 Complete**: ✅ (0.5 points)
-  - **Task C2.2 Complete**: ✅ (0.3 points)
-  - **Progress**: 31/50 subtasks (62%), 18.8/21 points (89.5%)
-  - **Next**: Task C2.3 - Create EnrollmentService (0.5 points)
+  - [x] **Task C2.3: Create EnrollmentService (0.5 points) ✅**
+    - Created EnrollmentNotFoundException custom exception (30 lines)
+      - Constructor by ID: "Enrollment not found with id: {id}"
+      - Constructor by custom message
+      - Extends RuntimeException
+    - Created EnrollmentService interface (60 lines)
+      - enroll(User, Long) → EnrollmentDTO - Enroll user in course
+      - getMyEnrollments(User) → List<EnrollmentDTO> - User's all enrollments
+      - getCourseProgress(User, Long) → CourseProgressDTO - Detailed course progress with lesson breakdown
+      - updateEnrollmentProgress(UUID, Long) → void - Recalculate progress after lesson completion
+      - Comprehensive JavaDoc with @throws annotations
+    - Created EnrollmentServiceImpl implementation (160 lines)
+      - **enroll()** implementation:
+        - Check duplicate enrollment (existsByUserIdAndCourseId)
+        - Verify course exists (CourseRepository)
+        - Create enrollment with 0% progress
+        - @Transactional for race condition handling
+        - Handle UNIQUE constraint violation → IllegalStateException (409 Conflict)
+      - **getMyEnrollments()** implementation:
+        - Find by userId
+        - Use EnrollmentMapper.toDTOList()
+        - @Transactional(readOnly = true)
+      - **getCourseProgress()** implementation:
+        - Verify enrollment exists → EnrollmentNotFoundException
+        - Load course with sections (findByIdWithSections)
+        - Get total lesson count (countByCourseId)
+        - Get lesson progress list (findByUserIdAndCourseId)
+        - Use ProgressMapper.toCourseProgressDTO()
+        - @Transactional(readOnly = true)
+      - **updateEnrollmentProgress()** implementation:
+        - Get enrollment or return silently
+        - Count total lessons (countByCourseId)
+        - Count completed lessons (countCompletedByUserIdAndCourseId)
+        - Calculate progress percentage: (completed / total) \* 100
+        - Update enrollment.updateProgress() + save
+        - @Transactional for atomic update
+      - Comprehensive SLF4J logging (DEBUG, INFO, WARN, ERROR)
+    - Fixed compilation errors:
+      - CourseNotFoundException(courseId) → CourseNotFoundException("Course not found with id: " + courseId)
+      - int totalLessons → long totalLessons (repository returns long)
+      - Cast to int for ProgressMapper: (int) totalLessons
+  - [x] **Task C2.4: Create ProgressService (0.4 points) ✅**
+    - Created LessonProgressDTO (60 lines)
+      - id, lessonId, lessonTitle, lessonType
+      - status (NOT_STARTED/IN_PROGRESS/COMPLETED)
+      - score (0-100), attempts
+      - startedAt, completedAt, updatedAt
+      - resultDetails (Map<String, Object>) - JSONB field
+      - Comprehensive Swagger @Schema annotations
+    - Created ProgressService interface (70 lines)
+      - completeLesson(User, Long, String) → LessonProgressDTO - Mark lesson complete with JSON results
+      - getStreak(User) → StreakDTO - Calculate consecutive day streak
+      - Comprehensive JavaDoc with JSONB example and timezone notes
+    - Created ProgressServiceImpl implementation (280 lines)
+      - **completeLesson()** implementation:
+        - Verify lesson exists (LessonRepository)
+        - Verify enrollment (EnrollmentRepository.existsByUserIdAndCourseId)
+        - Parse JSON with ObjectMapper + @SuppressWarnings
+        - Find or create LessonProgress
+        - Extract score from resultDetails JSON
+        - Call progress.markCompleted(score, resultDetailsJson)
+        - Save LessonProgress
+        - Trigger enrollment progress update (EnrollmentService.updateEnrollmentProgress)
+        - Build and return LessonProgressDTO
+        - @Transactional for atomic operation
+      - **getStreak()** implementation:
+        - Get all completed lessons (findByUserIdAndStatus COMPLETED)
+        - Extract unique activity dates (LocalDate only, no time)
+        - Sort dates descending (newest first)
+        - Calculate current streak: Check if active today/yesterday, count backwards
+        - Calculate longest streak: Find longest consecutive sequence
+        - Return StreakDTO with 5 metrics
+        - @Transactional(readOnly = true)
+      - **Helper methods**:
+        - parseResultDetails(String) → Map<String, Object> - Jackson JSON parsing with @SuppressWarnings
+        - buildLessonProgressDTO(LessonProgress) → LessonProgressDTO - Convert entity to DTO
+        - calculateCurrentStreak(List<LocalDate>, LocalDate) → int - Streak from today backwards
+        - calculateLongestStreak(List<LocalDate>) → int - Longest consecutive sequence
+      - Comprehensive SLF4J logging (DEBUG, INFO, WARN, ERROR)
+      - Streak algorithm:
+        - Current: Today or yesterday with activity, count consecutive days backwards
+        - Longest: Find longest consecutive sequence in all history
+        - Uses LocalDate for date-only comparison
+    - Fixed compilation errors:
+      - progress.markCompleted() takes (Integer score, String resultDetails)
+      - Removed unused imports (LocalDateTime, ZoneId)
+      - Used progress.getCreatedAt() as startedAt (no separate field)
+      - Hardcoded lessonType = "GENERAL" (Lesson entity doesn't have type field yet)
+    - Compilation successful: ✅ `./gradlew compileJava` passed
+- Blockers/Risks:
+  - None - All services compile successfully ✅
+- Decisions:
+  - **EnrollmentService Architecture**:
+    - Duplicate enrollment check before insert + UNIQUE constraint as backup
+    - Race condition handling: @Transactional + catch Exception → IllegalStateException
+    - Progress calculation: (completed_lessons / total_lessons) \* 100
+    - Trigger updateEnrollmentProgress() from ProgressService after lesson completion
+  - **ProgressService Architecture**:
+    - JSON parsing with ObjectMapper (Jackson) for JSONB result_details
+    - Streak uses LocalDate (date-only, no time) for daily activity
+    - Current streak: Active today OR yesterday (allows 1-day gap)
+    - Longest streak: Find longest consecutive sequence in all history
+    - LessonProgress.markCompleted() handles score, resultDetails, attempts, completedAt
+  - **Entity Integration**:
+    - LessonProgress.markCompleted(score, resultDetailsJson) updates status, score, attempts, completedAt
+    - Lesson entity doesn't have type field yet → hardcoded "GENERAL" in DTO
+    - Used createdAt as startedAt (no separate field in entity)
+  - **Error Handling**:
+    - EnrollmentNotFoundException: 404 for missing enrollment
+    - LessonNotFoundException: 404 for missing lesson
+    - IllegalStateException: 409 for duplicate enrollment
+    - IllegalArgumentException: 400 for invalid JSON in result details
+- QA Metrics:
+  - Exception classes: ✅ 1 new exception (EnrollmentNotFoundException)
+  - Service interfaces: ✅ 2 interfaces (EnrollmentService, ProgressService)
+  - Service implementations: ✅ 2 implementations (~440 lines total)
+  - DTOs: ✅ 1 new DTO (LessonProgressDTO)
+  - Compilation: ✅ No errors (./gradlew compileJava passed)
+  - Test coverage: Not yet measured (tests in C2.6)
+  - All tests: ✅ Still 414/414 passing (100%) - no new tests yet
+- Notes:
+  - **Files created**: 6 new Java files
+    - EnrollmentNotFoundException.java (30 lines)
+    - EnrollmentService.java (60 lines)
+    - EnrollmentServiceImpl.java (160 lines)
+    - LessonProgressDTO.java (60 lines)
+    - ProgressService.java (70 lines)
+    - ProgressServiceImpl.java (280 lines)
+  - **Lines of code**: ~660 lines total
+  - EnrollmentService handles enrollment lifecycle and progress calculation
+  - ProgressService handles lesson completion and streak calculation
+  - Both services use @Transactional appropriately
+  - Comprehensive logging for all operations
+  - Ready for controller development (Task C2.5)
+  - **Task C2.3 Complete**: ✅ (0.5 points)
+  - **Task C2.4 Complete**: ✅ (0.4 points)
+  - **Progress**: 33/50 subtasks (66%), 19.7/21 points (93.8%)
+  - **Next**: Task C2.5 - Create Controllers (0.3 points)
 
 # Sprint 2 Daily Log
 

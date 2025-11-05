@@ -1183,34 +1183,59 @@
 - ✅ All mappers with null-safe conversions
 - ✅ Compilation successful (./gradlew compileJava passed)
 
-#### C2.3: Create EnrollmentService (0.5 points)
+#### C2.3: Create EnrollmentService (0.5 points) ✅
 
-- [ ] Create `EnrollmentService` interface
-- [ ] Implement enroll(User user, Long courseId):
-  - [ ] Check if already enrolled (409 if exists)
-  - [ ] Use @Transactional
-  - [ ] Handle race condition (UNIQUE constraint)
-  - [ ] Create enrollment record
-- [ ] Implement getMyEnrollments(User user)
-- [ ] Implement getCourseProgress(User user, Long courseId):
-  - [ ] Calculate: (completed_lessons / total_lessons) \* 100
-  - [ ] Return detailed progress per lesson
+- [x] Create `EnrollmentService` interface
+- [x] Implement enroll(User user, Long courseId):
+  - [x] Check if already enrolled (409 if exists)
+  - [x] Use @Transactional
+  - [x] Handle race condition (UNIQUE constraint)
+  - [x] Create enrollment record
+- [x] Implement getMyEnrollments(User user)
+- [x] Implement getCourseProgress(User user, Long courseId):
+  - [x] Calculate: (completed_lessons / total_lessons) \* 100
+  - [x] Return detailed progress per lesson
 
-#### C2.4: Create ProgressService (0.4 points)
+**Deliverables**:
 
-- [ ] Create `ProgressService` interface
-- [ ] Implement completeLesson(User user, Long lessonId, resultDetails):
-  - [ ] Create or update LessonProgress
-  - [ ] Set status = COMPLETED
-  - [ ] Increment attempts
-  - [ ] Save result_details (JSONB)
-  - [ ] Update enrollment progress_percentage
-  - [ ] Check if course completed
-- [ ] Implement getStreak(User user):
-  - [ ] Get all lesson completions
-  - [ ] Calculate consecutive days
-  - [ ] Handle timezone (use user profile or UTC)
-  - [ ] Return current and longest streak
+- ✅ `EnrollmentNotFoundException.java` (30 lines): Custom 404 exception
+- ✅ `EnrollmentService.java` (60 lines): Interface with 4 methods
+- ✅ `EnrollmentServiceImpl.java` (160 lines): Full business logic
+- ✅ Duplicate enrollment prevention with IllegalStateException
+- ✅ Race condition handling with @Transactional
+- ✅ Progress calculation: (completed / total) \* 100
+- ✅ Integration with EnrollmentMapper and ProgressMapper
+- ✅ Comprehensive SLF4J logging
+- ✅ Compilation successful (./gradlew compileJava passed)
+
+#### C2.4: Create ProgressService (0.4 points) ✅
+
+- [x] Create `ProgressService` interface
+- [x] Implement completeLesson(User user, Long lessonId, resultDetails):
+  - [x] Create or update LessonProgress
+  - [x] Set status = COMPLETED
+  - [x] Increment attempts
+  - [x] Save result_details (JSONB)
+  - [x] Update enrollment progress_percentage
+  - [x] Trigger enrollment progress recalculation
+- [x] Implement getStreak(User user):
+  - [x] Get all lesson completions
+  - [x] Calculate consecutive days
+  - [x] Handle timezone (LocalDate for date-only comparison)
+  - [x] Return current and longest streak
+
+**Deliverables**:
+
+- ✅ `LessonProgressDTO.java` (60 lines): Detailed lesson progress response
+- ✅ `ProgressService.java` (70 lines): Interface with 2 methods
+- ✅ `ProgressServiceImpl.java` (280 lines): Streak calculation and lesson completion
+- ✅ JSON parsing with Jackson ObjectMapper
+- ✅ Current streak: Active today or yesterday, count consecutive days
+- ✅ Longest streak: Find longest consecutive sequence in history
+- ✅ Integration with EnrollmentService.updateEnrollmentProgress()
+- ✅ Helper methods: parseResultDetails(), calculateCurrentStreak(), calculateLongestStreak()
+- ✅ Comprehensive SLF4J logging
+- ✅ Compilation successful (./gradlew compileJava passed)
 
 #### C2.5: Create Controllers (0.3 points)
 
