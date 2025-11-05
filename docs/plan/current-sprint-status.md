@@ -3,7 +3,7 @@
 ## Sprint 2 — In Progress
 
 **Sprint**: 2 / 6 | **Duration**: Oct 29 – Nov 11, 2025 (14 days)  
-**Status**: � On Track (Day 5) | **Progress**: 16.7/21 points (79.5%)
+**Status**: ✅ On Track (Day 7) | **Progress**: 17.0/21 points (81%)
 
 ### Focus
 
@@ -14,12 +14,12 @@
 
 ### Story Breakdown
 
-| Epic                          | Status         | Progress |
-| ----------------------------- | -------------- | -------- |
-| A: Course & Lesson Management | ✅ Complete    | 100%     |
-| B: Learning Path              | ⏳ In Progress | 85%      |
-| C: Progress Tracking          | 🔵 Not Started | 0%       |
-| D: Technical Improvements     | 🔵 Not Started | 0%       |
+| Epic                          | Status         | Progress    |
+| ----------------------------- | -------------- | ----------- |
+| A: Course & Lesson Management | ✅ Complete    | 13/13 pts   |
+| B: Learning Path              | ✅ Complete    | 4.0/4.0 pts |
+| C: Progress Tracking          | 🔵 Not Started | 0/3 pts     |
+| D: Technical Improvements     | 🔵 Not Started | 0/1 pts     |
 
 ### Current Tasks
 
@@ -52,10 +52,11 @@
 - B2.2: Create DTOs and Mappers (0.3 pts) ✅
 - B2.3: Create LearningPathService (0.5 pts) ✅
 - B2.4: Create LearningPathController (0.4 pts) ✅
-
-**In Progress** ⏳
-
-- B2.5: Write Tests (0.3 pts)
+- B2.5: Write Tests for Learning Path API (0.3 pts) ✅
+  - 48 service tests (comprehensive business logic coverage)
+  - 6 controller tests (endpoints without @AuthenticationPrincipal)
+  - 87% overall coverage, 93% service layer coverage
+  - All 414 tests passing
 
 **Next Up** 📋
 
