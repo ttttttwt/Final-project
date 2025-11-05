@@ -984,83 +984,204 @@
 
 ---
 
-### Task C1: Progress Tracking Migrations (1 point)
+### Task C1: Progress Tracking Migrations (1 point) ✅ COMPLETE
 
-**Priority**: P1 | **Dependencies**: A1, A2 | **Estimated**: 0.5 days
+**Priority**: P1 | **Dependencies**: A1, A2 | **Estimated**: 0.5 days  
+**Status**: ✅ Complete | **Progress**: 1/1 points (100%)  
+**Started**: 2025-11-05 | **Completed**: 2025-11-05
 
 #### Subtasks:
 
-#### C1.1: Create V8 Migration - Enrollment Table (0.5 points)
+#### C1.1: Create V9 Migration - Enrollment Table (0.5 points) ✅ COMPLETE
 
-- [ ] Create `V8__Create_enrollments_table.sql`
-- [ ] Define enrollments table:
-  - [ ] id (BIGSERIAL PRIMARY KEY)
-  - [ ] user_id (FK to users)
-  - [ ] course_id (FK to courses)
-  - [ ] enrolled_at (TIMESTAMP DEFAULT NOW)
-  - [ ] progress_percentage (INTEGER DEFAULT 0)
-  - [ ] completed_at (TIMESTAMP NULL)
-  - [ ] UNIQUE constraint (user_id, course_id)
-- [ ] Add index on user_id
-- [ ] Add index on course_id
-- [ ] Test migration
+**Status**: ✅ Complete | **Completed**: 2025-11-05
 
-#### C1.2: Create V9 Migration - Lesson Progress Table (0.5 points)
+- [x] Create `V9__Create_enrollments_table.sql` (updated from V8 since V8 was used for seed data)
+- [x] Define enrollments table:
+  - [x] id (BIGSERIAL PRIMARY KEY)
+  - [x] user_id (FK to users, UUID type)
+  - [x] course_id (FK to courses)
+  - [x] enrolled_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+  - [x] progress_percentage (INTEGER DEFAULT 0, CHECK 0-100)
+  - [x] completed_at (TIMESTAMP NULL)
+  - [x] UNIQUE constraint (user_id, course_id)
+- [x] Add index on user_id
+- [x] Add index on course_id
+- [x] Add composite index on (user_id, course_id)
+- [x] Add index on enrolled_at (DESC)
+- [x] Add partial index on completed_at (WHERE completed_at IS NOT NULL)
+- [x] Add comprehensive table and column comments
+- [x] Test migration (applied successfully in 82ms total with V10)
 
-- [ ] Create `V9__Create_lesson_progress_table.sql`
-- [ ] Define lesson_progress table:
-  - [ ] id (BIGSERIAL PRIMARY KEY)
-  - [ ] user_id (FK to users)
-  - [ ] lesson_id (FK to lessons)
-  - [ ] status (VARCHAR(20) CHECK: NOT_STARTED, IN_PROGRESS, COMPLETED)
-  - [ ] score (INTEGER NULL)
-  - [ ] attempts (INTEGER DEFAULT 0)
-  - [ ] result_details (JSONB NULL)
-  - [ ] completed_at (TIMESTAMP NULL)
-  - [ ] UNIQUE constraint (user_id, lesson_id)
-- [ ] Add index on (user_id, lesson_id)
-- [ ] Test migration and constraints
+**Deliverables**:
+
+- ✅ `V9__Create_enrollments_table.sql` (42 lines)
+- ✅ 5 indexes created for optimal query performance
+- ✅ Foreign keys with ON DELETE CASCADE
+- ✅ CHECK constraint for progress_percentage (0-100)
+- ✅ Migration tested successfully (version v9 applied)
+
+#### C1.2: Create V10 Migration - Lesson Progress Table (0.5 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-11-05
+
+- [x] Create `V10__Create_lesson_progress_table.sql` (updated from V9)
+- [x] Define lesson_progress table:
+  - [x] id (BIGSERIAL PRIMARY KEY)
+  - [x] user_id (FK to users, UUID type)
+  - [x] lesson_id (FK to lessons)
+  - [x] status (VARCHAR(20) CHECK: NOT_STARTED, IN_PROGRESS, COMPLETED, DEFAULT 'NOT_STARTED')
+  - [x] score (INTEGER NULL, CHECK 0-100)
+  - [x] attempts (INTEGER DEFAULT 0, CHECK >= 0)
+  - [x] result_details (JSONB NULL)
+  - [x] completed_at (TIMESTAMP NULL)
+  - [x] created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+  - [x] updated_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+  - [x] UNIQUE constraint (user_id, lesson_id)
+- [x] Add composite index on (user_id, lesson_id)
+- [x] Add index on user_id
+- [x] Add index on lesson_id
+- [x] Add index on (user_id, status)
+- [x] Add partial index on (user_id, completed_at DESC) WHERE completed_at IS NOT NULL
+- [x] Add partial index on (user_id, completed_at) for date range queries
+- [x] Add comprehensive table and column comments
+- [x] Add detailed JSONB structure documentation for all 4 lesson types
+- [x] Test migration and constraints (applied successfully)
+
+**Deliverables**:
+
+- ✅ `V10__Create_lesson_progress_table.sql` (125 lines)
+- ✅ 6 indexes created for optimal query performance (including streak calculation support)
+- ✅ Foreign keys with ON DELETE CASCADE
+- ✅ CHECK constraints for status, score (0-100), and attempts (>= 0)
+- ✅ JSONB field documentation for READING, LISTENING, QUIZ, SPEAKING lessons
+- ✅ Migration tested successfully (version v10 applied)
+- ✅ Created `verify-progress-tables.sql` for comprehensive verification
+
+**Migration Results**:
+
+- ✅ Both migrations applied successfully in 82ms total
+- ✅ Database version: v8 → v10 (2 new migrations)
+- ✅ All tables created with proper constraints, indexes, and comments
+- ✅ Application started successfully with new schema
 
 ---
 
 ### Task C2: Progress Tracking API (2 points)
 
-**Priority**: P1 | **Dependencies**: C1 | **Estimated**: 1 day
+**Priority**: P1 | **Dependencies**: C1 | **Estimated**: 1 day  
+**Status**: 🔄 In Progress | **Progress**: 0.8/2 points (40%)  
+**Started**: 2025-11-05
 
 #### Subtasks:
 
-#### C2.1: Create Entities and Repositories (0.5 points)
+#### C2.1: Create Entities and Repositories (0.5 points) ✅ COMPLETE
 
-- [ ] Create `Enrollment` entity:
-  - [ ] Add @Transactional for concurrent safety
-  - [ ] Add method to calculate progress
-- [ ] Create `LessonProgress` entity:
-  - [ ] Add JSONB field for result_details
-  - [ ] Add status enum
-- [ ] Create `EnrollmentRepository`:
-  - [ ] findByUserId
-  - [ ] findByUserIdAndCourseId
-  - [ ] existsByUserIdAndCourseId
-- [ ] Create `LessonProgressRepository`:
-  - [ ] findByUserIdAndLessonId
-  - [ ] findByUserIdAndStatus
-  - [ ] countByUserIdAndCompletedAtBetween (for streak)
+**Status**: ✅ Complete | **Completed**: 2025-11-05
 
-#### C2.2: Create DTOs (0.3 points)
+- [x] Create `Enrollment` entity:
+  - [x] id (BIGSERIAL PRIMARY KEY)
+  - [x] userId (UUID FK to users)
+  - [x] course (ManyToOne to Course)
+  - [x] enrolledAt (TIMESTAMP, auto-generated)
+  - [x] progressPercentage (INTEGER 0-100, default 0)
+  - [x] completedAt (TIMESTAMP, nullable)
+  - [x] UNIQUE constraint (user_id, course_id)
+  - [x] Helper methods: isCompleted(), updateProgress()
+  - [x] Comprehensive JavaDoc with table constraints
+- [x] Create `LessonProgress` entity:
+  - [x] id (BIGSERIAL PRIMARY KEY)
+  - [x] userId (UUID FK to users)
+  - [x] lesson (ManyToOne to Lesson)
+  - [x] status (ENUM: NOT_STARTED, IN_PROGRESS, COMPLETED)
+  - [x] score (INTEGER 0-100, nullable)
+  - [x] attempts (INTEGER, default 0)
+  - [x] resultDetails (JSONB field, @JdbcTypeCode for PostgreSQL)
+  - [x] completedAt (TIMESTAMP, nullable)
+  - [x] createdAt, updatedAt (auto-managed)
+  - [x] UNIQUE constraint (user_id, lesson_id)
+  - [x] Helper methods: isCompleted(), markCompleted(), markInProgress()
+  - [x] Comprehensive JavaDoc with JSONB schemas for all 4 lesson types
+- [x] Create `EnrollmentRepository`:
+  - [x] findByUserId (ordered by enrolledAt DESC)
+  - [x] findByUserIdAndCourseId
+  - [x] existsByUserIdAndCourseId
+  - [x] findCompletedByUserId (uses partial index)
+  - [x] findActiveByUserId
+  - [x] countByCourseId
+  - [x] countCompletedByCourseId
+  - [x] 7 methods total with @Query annotations
+- [x] Create `LessonProgressRepository`:
+  - [x] findByUserIdAndLessonId
+  - [x] findByUserId
+  - [x] findByUserIdAndStatus
+  - [x] findCompletedByUserIdBetween (for streak calculation)
+  - [x] countByUserIdAndCompletedAtBetween (date range analytics)
+  - [x] findByUserIdAndSectionId (section-level progress)
+  - [x] findByUserIdAndCourseId (course-level progress)
+  - [x] countCompletedByUserIdAndCourseId (enrollment progress calc)
+  - [x] isLessonCompleted
+  - [x] findCompletedByUserId
+  - [x] 11 methods total with @Query annotations
 
-- [ ] Create `EnrollmentDTO`:
-  - [ ] courseId, courseTitle, thumbnailUrl
-  - [ ] enrolledAt, progressPercentage
-  - [ ] completedAt
-- [ ] Create `CourseProgressDTO`:
-  - [ ] courseId, courseTitle
-  - [ ] totalLessons, completedLessons
-  - [ ] progressPercentage
-  - [ ] lessonProgress[] (per lesson status)
-- [ ] Create `StreakDTO`:
-  - [ ] currentStreak (days)
-  - [ ] longestStreak
-  - [ ] lastActivityDate
+**Deliverables**:
+
+- ✅ `Enrollment.java` (120 lines): Entity with helper methods
+- ✅ `LessonProgress.java` (180 lines): Entity with status enum and JSONB support
+- ✅ `EnrollmentRepository.java` (100 lines): 7 query methods
+- ✅ `LessonProgressRepository.java` (160 lines): 11 query methods
+- ✅ All entities use Lombok annotations (@Data, @Builder)
+- ✅ All queries documented with index usage
+- ✅ Compilation successful (./gradlew compileJava passed)
+
+#### C2.2: Create DTOs (0.3 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-11-05
+
+- [x] Create `EnrollmentDTO`:
+  - [x] id, courseId, courseTitle
+  - [x] thumbnailUrl, cefrLevel
+  - [x] enrolledAt, progressPercentage
+  - [x] completedAt, isCompleted
+  - [x] Comprehensive Swagger @Schema annotations
+- [x] Create `CourseProgressDTO`:
+  - [x] courseId, courseTitle, cefrLevel
+  - [x] totalLessons, completedLessons
+  - [x] progressPercentage (0-100)
+  - [x] lessonProgress[] (nested DTO array)
+  - [x] Nested LessonProgressSummary DTO:
+    - [x] lessonId, lessonTitle, lessonType
+    - [x] sectionTitle, status
+    - [x] score, attempts
+  - [x] Comprehensive Swagger @Schema annotations
+- [x] Create `StreakDTO`:
+  - [x] currentStreak (consecutive days)
+  - [x] longestStreak
+  - [x] lastActivityDate
+  - [x] isActiveToday
+  - [x] totalActiveDays
+  - [x] Comprehensive Swagger @Schema annotations
+- [x] Create `EnrollmentMapper`:
+  - [x] toDTO(Enrollment) method
+  - [x] toDTOList(List<Enrollment>) method
+  - [x] Null-safe conversions
+- [x] Create `ProgressMapper`:
+  - [x] toCourseProgressDTO() method
+  - [x] buildLessonProgressSummaries() helper
+  - [x] buildLessonProgressSummary() helper
+  - [x] Progress percentage calculation
+  - [x] Null-safe conversions with fallback values
+
+**Deliverables**:
+
+- ✅ `EnrollmentDTO.java` (90 lines): Full enrollment details
+- ✅ `CourseProgressDTO.java` (130 lines): Detailed progress with nested DTO
+- ✅ `StreakDTO.java` (70 lines): Streak tracking metrics
+- ✅ `EnrollmentMapper.java` (60 lines): 2 mapping methods
+- ✅ `ProgressMapper.java` (110 lines): 3 mapping methods
+- ✅ All DTOs with comprehensive Swagger documentation
+- ✅ All mappers with null-safe conversions
+- ✅ Compilation successful (./gradlew compileJava passed)
 
 #### C2.3: Create EnrollmentService (0.5 points)
 
