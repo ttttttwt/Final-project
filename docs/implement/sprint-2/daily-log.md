@@ -1,3 +1,23 @@
+## 2025-11-05
+
+- Planned:
+  - [x] Run full regression suite and resolve failing repository/seeder tests
+- Done:
+  - [x] Updated `Lesson` entity mapping to use string-backed enums so the in-memory H2 schema matches PostgreSQL without custom enum types (fixes LessonRepository tests)
+  - [x] Reworked dev `CourseSeeder` JSON payloads to follow the validated schemas for reading, listening, quiz, and speaking lessons (now include `type`, `correctAnswer`, `difficulty`, `prompts`, etc.)
+  - [x] Executed `./gradlew test` with all 372 tests passing after fixes
+- Blockers/Risks:
+  - None
+- Decisions:
+  - Standardised lesson JSON to validator contract to avoid future drift between seed data and runtime validation
+  - Prefer JPA string enums for cross-database compatibility; keep migrations authoritative for PostgreSQL enum type
+- QA Metrics:
+  - Test coverage: Maintained (Jacoco unchanged from previous run – overall ~84%, services ~92%)
+  - Tests: `./gradlew test` ✅ (372/372)
+- Notes:
+  - Seeder content now safe to reuse in integration scenarios and aligns with LessonContentValidator expectations
+  - No production code regressions detected; only dev seeder and persistence mapping adjusted
+
 # Sprint 2 Daily Log
 
 Sprint: 2 / 6
