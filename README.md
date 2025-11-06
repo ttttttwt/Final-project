@@ -248,11 +248,15 @@ backend/
 
 See `docs/context/DATABASE-SCHEMA.md` for detailed schema documentation.
 
-## 🚦 Health Checks
+## 🚦 Health Checks & Monitoring
 
-- **Application Health**: Spring Boot Actuator (if enabled)
-- **Database Connection**: Flyway migration validation on startup
-- **H2 Console**: Available at `/h2-console` (development only)
+- **Actuator Base Path**: `http://localhost:8088/actuator`
+- **Public Endpoint**: `/actuator/health` (basic uptime check, no auth required)
+- **Privileged Endpoints**: `/actuator/info` and `/actuator/metrics` (ADMIN role via JWT)
+- **Access Responses**: Anonymous requests receive `401 Unauthorized`; non-admin authenticated users receive `403 Forbidden`
+- **Health Details**: Full diagnostics shown only to ADMIN users
+- **Database Connection**: Verified automatically through Flyway migrations on startup
+- **H2 Console**: Available at `/h2-console` in development profile only
 
 ## 📝 Environment Variables
 

@@ -20,6 +20,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
@@ -376,6 +379,22 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(AccessDeniedException.class)
         public ResponseEntity<ErrorResponse> handleAccessDeniedException(
                         AccessDeniedException ex, HttpServletRequest request) {
+
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+                // If no authenticated principal, treat as missing authentication (401)
+                if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+                        LOG.warn("Authentication required for actuator access: {}", request.getRequestURI());
+
+                        ErrorResponse unauthorizedResponse = ErrorResponse.builder()
+                                        .status(HttpStatus.UNAUTHORIZED.value())
+                                        .error("Authentication Required")
+                                        .message("Please provide valid credentials to access this resource")
+                                        .path(request.getRequestURI())
+                                        .build();
+
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(unauthorizedResponse);
+                }
 
                 LOG.warn("Access denied: {}", ex.getMessage());
 

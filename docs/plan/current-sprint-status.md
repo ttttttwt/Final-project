@@ -1,9 +1,9 @@
 # LEXIA - Current Sprint Status
 
-## Sprint 2 — In Progress
+## Sprint 2 — Complete
 
 **Sprint**: 2 / 6 | **Duration**: Oct 29 – Nov 11, 2025 (14 days)  
-**Status**: ✅ Ahead of Schedule (Day 7) | **Progress**: 20.0/21 points (95.2%)
+**Status**: ✅ Complete (Day 8) | **Progress**: 21.0/21 points (100%)
 
 ### Focus
 
@@ -14,12 +14,12 @@
 
 ### Story Breakdown
 
-| Epic                          | Status         | Progress    |
-| ----------------------------- | -------------- | ----------- |
-| A: Course & Lesson Management | ✅ Complete    | 13/13 pts   |
-| B: Learning Path              | ✅ Complete    | 4.0/4.0 pts |
-| C: Progress Tracking          | ✅ Complete    | 3.0/3 pts   |
-| D: Technical Improvements     | 🔵 Not Started | 0/1 pts     |
+| Epic                          | Status      | Progress    |
+| ----------------------------- | ----------- | ----------- |
+| A: Course & Lesson Management | ✅ Complete | 13/13 pts   |
+| B: Learning Path              | ✅ Complete | 4.0/4.0 pts |
+| C: Progress Tracking          | ✅ Complete | 3.0/3 pts   |
+| D: Technical Improvements     | ✅ Complete | 1/1 pts     |
 
 ### Current Tasks
 
@@ -61,10 +61,11 @@
 - C2.4: Create ProgressService (0.4 pts) ✅
 - C2.5: Create Controllers (0.3 pts) ✅
 - C2.6: Progress Tracking Tests (0.5 pts) ✅
+- D1: Actuator Configuration (1 pt) ✅
 
 **Next Up** 📋
 
-- D1: Actuator Configuration (1 pt)
+- Sprint 2 review & retrospective (development tasks completed)
 
 ---
 

@@ -4,12 +4,15 @@ import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,6 +36,12 @@ class GlobalExceptionHandlerTest {
         exceptionHandler = new GlobalExceptionHandler();
         mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getRequestURI()).thenReturn("/api/v1/test");
+        SecurityContextHolder.clearContext();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     // ========== Validation Exception Tests ==========
@@ -144,8 +153,26 @@ class GlobalExceptionHandlerTest {
     // ========== Access Denied Exception Tests ==========
 
     @Test
-    void handleAccessDeniedException_ReturnsForbidden() {
+    void handleAccessDeniedException_WithAnonymousUser_ReturnsUnauthorized() {
         // Given
+        AccessDeniedException exception = new AccessDeniedException("Access denied");
+
+        // When
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAccessDeniedException(exception, mockRequest);
+
+        // Then
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Please provide valid credentials to access this resource", response.getBody().getMessage());
+        assertEquals("Authentication Required", response.getBody().getError());
+        assertEquals(401, response.getBody().getStatus());
+    }
+
+    @Test
+    void handleAccessDeniedException_WithAuthenticatedUser_ReturnsForbidden() {
+        // Given
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("admin@lexia.com", "password", "ROLE_ADMIN"));
         AccessDeniedException exception = new AccessDeniedException("Access denied");
 
         // When

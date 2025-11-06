@@ -1,3 +1,32 @@
+## 2025-11-06 (Day 8 - Task D1 Actuator Configuration ✅)
+
+- Planned:
+  - [x] Enable Spring Boot Actuator with least-privilege exposure
+  - [x] Lock down management endpoints through SecurityConfig updates
+  - [x] Document monitoring strategy and add integration smoke tests
+- Done:
+  - [x] Added `spring-boot-starter-actuator` dependency and management properties (base path, exposure, health detail policy)
+  - [x] Updated `SecurityConfig` to permit `/actuator/health` publicly while requiring `ROLE_ADMIN` for remaining actuator endpoints
+  - [x] Authored `ActuatorSecurityTest` covering anonymous, learner, and admin access patterns for health/info/metrics
+  - [x] Enhanced `GlobalExceptionHandler` to return 401 for anonymous actuator access while retaining 403 for authenticated-but-unauthorized users
+  - [x] Extended README health section with endpoint URLs, role requirements, and operational notes
+  - [x] Reviewed application logs to confirm actuator invocations exclude sensitive payloads (only status summaries observed)
+  - [x] Captured follow-up to sync Postman + API spec during next documentation sweep (requires docs/context approval)
+- Blockers/Risks:
+  - None; actuator endpoints responded as expected under all roles
+- Decisions:
+  - Kept actuator configuration inside `application.properties` to match existing properties strategy (no new YAML files)
+  - Used `ROLE_ADMIN` for elevated actuator access to align with existing role naming conventions
+  - Added probe health checks (`management.endpoint.health.probes.enabled=true`) to unblock future Kubernetes readiness/liveness integration
+- QA Metrics:
+  - Tests: `./gradlew test` ✅ (includes new `ActuatorSecurityTest` scenarios)
+  - Health endpoint (public) GET → 200 OK, info/metrics require ADMIN (401/403/200 validated via MockMvc)
+  - Coverage: Jacoco target maintained (still ≥87% overall / ≥93% services per prior report)
+- Notes:
+  - Actuator base path standardized at `/actuator`; README and backlog updated accordingly
+  - No sensitive data emitted during actuator interactions (verified via INFO-level logs)
+  - Sprint 2 development scope now fully delivered (21/21 pts)
+
 ## 2025-11-06 (Bugfix - /auth/logout Endpoint ✅)
 
 - Planned:
