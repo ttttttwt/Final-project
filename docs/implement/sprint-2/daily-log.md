@@ -1,3 +1,27 @@
+## 2025-11-06 (Bugfix - /auth/logout Endpoint ✅)
+
+- Planned:
+  - [x] Diagnose "terminate" errors reported on `/api/v1/auth/logout` and `/api/v1/auth/refresh`
+- Done:
+  - [x] Implemented `AuthService.logout` to validate Authorization header, parse access token, ensure active user, and revoke all refresh tokens atomically
+  - [x] Added `/api/v1/auth/logout` controller endpoint with Swagger docs and `LogoutResponseDTO`
+  - [x] Hardened `SecurityConfig` so only register/login/refresh remain public; logout now requires authentication
+  - [x] Strengthened `AuthService.refreshToken` validation (blank token guard, safe `isActive` checks) to stop terminate errors
+  - [x] Extended unit tests: AuthControllerTest (+3) and AuthServiceTest (+12) covering logout and refresh success/failure flows
+  - [x] Executed `.\gradlew test` – all suites passing
+- Blockers/Risks:
+  - None encountered; regression tests clean
+- Decisions:
+  - Logout revokes every active refresh token for the account to protect multi-device sessions
+  - Missing or malformed Authorization headers raise `InvalidTokenException` (401) for consistent client feedback
+- QA Metrics:
+  - Tests: `.\gradlew test` ✅
+  - New tests added: 15 (controller + service) covering logout & refresh flows
+  - Coverage remains above targets (≈87% overall / 93% services per latest Jacoco run)
+- Notes:
+  - Swagger & user guide expectations now align with backend behavior
+  - Security rules tightened to match documented requirement that logout is authenticated
+
 ## 2025-11-05 (Day 7 - Tasks C1.1, C1.2, C2.1, C2.2, C2.3, C2.4, C2.5 Complete ✅✅✅✅✅✅✅)
 
 - Planned:

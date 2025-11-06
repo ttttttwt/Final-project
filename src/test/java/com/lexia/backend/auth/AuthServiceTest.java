@@ -1,8 +1,11 @@
 package com.lexia.backend.auth;
 
+import com.lexia.backend.dto.RefreshTokenDTO;
 import com.lexia.backend.dto.RegisterDTO;
+import com.lexia.backend.entity.RefreshToken;
 import com.lexia.backend.entity.Role;
 import com.lexia.backend.entity.User;
+import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
 import com.lexia.backend.repository.RefreshTokenRepository;
 import com.lexia.backend.repository.RoleRepository;
@@ -15,12 +18,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -354,5 +359,205 @@ class AuthServiceTest {
         });
 
         assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    // ========== Logout Tests ==========
+
+    @Test
+    void testLogout_WithValidAuthorizationHeader_RevokesTokens() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        String accessToken = "valid.access.token";
+        String authorizationHeader = "Bearer " + accessToken;
+        User user = User.builder()
+                .id(userId)
+                .email("logout@lexia.com")
+                .passwordHash("$2a$12$abcdefghijklmnopqrstuv")
+                .isActive(true)
+                .build();
+
+        when(jwtTokenProvider.validateToken(accessToken)).thenReturn(true);
+        when(jwtTokenProvider.getUserIdFromToken(accessToken)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        // Act & Assert
+        assertDoesNotThrow(() -> authService.logout(authorizationHeader));
+        verify(refreshTokenRepository).deleteByUserId(userId);
+    }
+
+    @Test
+    void testLogout_WithMissingAuthorizationHeader_ThrowsInvalidTokenException() {
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.logout(null));
+        verify(refreshTokenRepository, never()).deleteByUserId(any(UUID.class));
+    }
+
+    @Test
+    void testLogout_WithInvalidHeaderPrefix_ThrowsInvalidTokenException() {
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.logout("Token invalid"));
+        verify(refreshTokenRepository, never()).deleteByUserId(any(UUID.class));
+    }
+
+    @Test
+    void testLogout_WithInvalidToken_ThrowsInvalidTokenException() {
+        // Arrange
+        String authorizationHeader = "Bearer invalid.token";
+        when(jwtTokenProvider.validateToken("invalid.token")).thenReturn(false);
+
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.logout(authorizationHeader));
+        verify(refreshTokenRepository, never()).deleteByUserId(any(UUID.class));
+    }
+
+    @Test
+    void testLogout_WhenUserNotFound_ThrowsInvalidTokenException() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        String accessToken = "valid.access.token";
+        String authorizationHeader = "Bearer " + accessToken;
+
+        when(jwtTokenProvider.validateToken(accessToken)).thenReturn(true);
+        when(jwtTokenProvider.getUserIdFromToken(accessToken)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.logout(authorizationHeader));
+        verify(refreshTokenRepository, never()).deleteByUserId(userId);
+    }
+
+    @Test
+    void testLogout_WhenUserInactive_ThrowsInvalidTokenException() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        String accessToken = "valid.access.token";
+        String authorizationHeader = "Bearer " + accessToken;
+        User inactiveUser = User.builder()
+                .id(userId)
+                .email("inactive@lexia.com")
+                .passwordHash("$2a$12$abcdefghijklmnopqrstuv")
+                .isActive(false)
+                .build();
+
+        when(jwtTokenProvider.validateToken(accessToken)).thenReturn(true);
+        when(jwtTokenProvider.getUserIdFromToken(accessToken)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(inactiveUser));
+
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.logout(authorizationHeader));
+        verify(refreshTokenRepository, never()).deleteByUserId(userId);
+    }
+
+    // ========== Refresh Token Tests ==========
+
+    @Test
+    void testRefreshToken_WithValidToken_ReturnsNewTokens() {
+        // Arrange
+        String refreshTokenValue = "valid.refresh.token";
+        String refreshTokenHash = "hashed.refresh.token";
+        UUID userId = UUID.randomUUID();
+        User user = User.builder()
+                .id(userId)
+                .email("refresh@lexia.com")
+                .passwordHash("$2a$12$abcdefghijklmnopqrstuv")
+                .isActive(true)
+                .build();
+
+        RefreshToken storedToken = RefreshToken.builder()
+                .id(1L)
+                .user(user)
+                .tokenHash(refreshTokenHash)
+                .family("family-123")
+                .expiresAt(LocalDateTime.now().plusDays(3))
+                .revoked(false)
+                .build();
+
+        when(jwtTokenProvider.validateToken(refreshTokenValue)).thenReturn(true);
+        when(jwtTokenProvider.hashToken(refreshTokenValue)).thenReturn(refreshTokenHash);
+        when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(storedToken));
+        when(jwtTokenProvider.generateAccessToken(userId, user.getEmail())).thenReturn("new.access.token");
+        when(jwtTokenProvider.generateRefreshToken(userId, user.getEmail())).thenReturn("new.refresh.token");
+        when(jwtTokenProvider.hashToken("new.refresh.token")).thenReturn("hashed.new.refresh.token");
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        var result = authService.refreshToken(RefreshTokenDTO.builder()
+                .refreshToken(refreshTokenValue)
+                .build());
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("new.access.token", result.getAccessToken());
+        assertEquals("new.refresh.token", result.getRefreshToken());
+        assertEquals("Bearer", result.getTokenType());
+        assertEquals(900000L, result.getExpiresIn());
+        verify(refreshTokenRepository).revokeToken(eq(refreshTokenHash), any(LocalDateTime.class));
+        verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void testRefreshToken_WithBlankToken_ThrowsInvalidTokenException() {
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.refreshToken(
+                RefreshTokenDTO.builder().refreshToken(" ").build()));
+        verify(refreshTokenRepository, never()).findByTokenHash(anyString());
+    }
+
+    @Test
+    void testRefreshToken_WithRevokedToken_ThrowsInvalidTokenException() {
+        // Arrange
+        String refreshTokenValue = "revoked.refresh.token";
+        String refreshTokenHash = "revoked.hash";
+        RefreshToken revokedToken = RefreshToken.builder()
+                .id(2L)
+                .user(User.builder()
+                        .id(UUID.randomUUID())
+                        .email("revoked@lexia.com")
+                        .passwordHash("$2a$12$abcdefghijklmnopqrstuv")
+                        .isActive(true)
+                        .build())
+                .tokenHash(refreshTokenHash)
+                .family("family-456")
+                .expiresAt(LocalDateTime.now().plusDays(1))
+                .revoked(true)
+                .build();
+
+        when(jwtTokenProvider.validateToken(refreshTokenValue)).thenReturn(true);
+        when(jwtTokenProvider.hashToken(refreshTokenValue)).thenReturn(refreshTokenHash);
+        when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(revokedToken));
+
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.refreshToken(
+                RefreshTokenDTO.builder().refreshToken(refreshTokenValue).build()));
+        verify(refreshTokenRepository).deleteByFamily("family-456");
+    }
+
+    @Test
+    void testRefreshToken_WithExpiredToken_ThrowsInvalidTokenException() {
+        // Arrange
+        String refreshTokenValue = "expired.refresh.token";
+        String refreshTokenHash = "expired.hash";
+        RefreshToken expiredToken = RefreshToken.builder()
+                .id(3L)
+                .user(User.builder()
+                        .id(UUID.randomUUID())
+                        .email("expired@lexia.com")
+                        .passwordHash("$2a$12$abcdefghijklmnopqrstuv")
+                        .isActive(true)
+                        .build())
+                .tokenHash(refreshTokenHash)
+                .family("family-789")
+                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .revoked(false)
+                .build();
+
+        when(jwtTokenProvider.validateToken(refreshTokenValue)).thenReturn(true);
+        when(jwtTokenProvider.hashToken(refreshTokenValue)).thenReturn(refreshTokenHash);
+        when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(expiredToken));
+
+        // Act & Assert
+        assertThrows(InvalidTokenException.class, () -> authService.refreshToken(
+                RefreshTokenDTO.builder().refreshToken(refreshTokenValue).build()));
+        verify(refreshTokenRepository, never()).revokeToken(anyString(), any(LocalDateTime.class));
     }
 }

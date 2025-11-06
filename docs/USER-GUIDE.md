@@ -500,7 +500,464 @@ curl -X DELETE http://localhost:8080/api/v1/users/profile/avatar \
 
 ---
 
-## 🔐 Bảo Mật & Quyền Riêng Tư
+## � Quản Lý Khóa Học (Sprint 2)
+
+Sprint 2 bổ sung đầy đủ API quản lý khóa học cho cả người học và đội ngũ soạn nội dung. Mọi yêu cầu phải kèm header `Authorization: Bearer <accessToken>` hợp lệ.
+
+### Xem danh sách khóa học đã xuất bản
+
+**Endpoint**: `GET /api/v1/courses`
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/courses?page=0&size=10&sort=createdAt,desc" \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (200 OK):
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "title": "English Basics (A1)",
+      "description": "Foundation course for beginners",
+      "thumbnailUrl": "https://cdn.lexia.com/courses/a1-basics.jpg",
+      "cefrLevel": "A1",
+      "isPublished": true,
+      "sectionCount": 3,
+      "createdAt": "2025-10-30T10:15:30",
+      "updatedAt": "2025-10-31T14:22:45"
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10
+  },
+  "totalPages": 1,
+  "totalElements": 1,
+  "last": true,
+  "first": true
+}
+```
+
+**Ghi chú**:
+
+- `size` tối đa 100.
+- `sort` nhận định dạng `field,asc|desc` (ví dụ `title,asc`).
+
+### Tìm kiếm khóa học nâng cao
+
+**Endpoint**: `GET /api/v1/courses/search`
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/courses/search?title=english&cefrLevel=B1&isPublished=true&page=0&size=5&sort=title,asc" \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Tham số hỗ trợ**:
+
+- `title`: tìm kiếm theo tiêu đề (không phân biệt hoa/thường, hỗ trợ chứa).
+- `cefrLevel`: lọc theo trình độ (`A1` → `C2`).
+- `isPublished`: `true/false`.
+- `page`, `size`, `sort`: giống endpoint danh sách.
+
+Phản hồi có cấu trúc phân trang giống `GET /courses`.
+
+### Xem chi tiết khóa học
+
+**Endpoint**: `GET /api/v1/courses/{id}`
+
+```bash
+curl -X GET http://localhost:8080/api/v1/courses/1 \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (200 OK):
+
+```json
+{
+  "id": 1,
+  "title": "English Basics (A1)",
+  "description": "Foundation course for beginners starting to learn English",
+  "thumbnailUrl": "https://cdn.lexia.com/courses/a1-basics.jpg",
+  "cefrLevel": "A1",
+  "isPublished": true,
+  "sectionCount": 3,
+  "createdAt": "2025-10-30T10:15:30",
+  "updatedAt": "2025-10-31T14:22:45"
+}
+```
+
+### Tạo & quản lý khóa học (⚠️ ROLE_CONTENT_MANAGER)
+
+Các endpoint bên dưới yêu cầu quyền `CONTENT_MANAGER`.
+
+**Tạo mới** — `POST /api/v1/courses`
+
+```bash
+curl -X POST http://localhost:8080/api/v1/courses \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Business English for Professionals",
+    "description": "Master business English for office communication",
+    "thumbnailUrl": "https://cdn.lexia.com/courses/business-english.jpg",
+    "cefrLevel": "B1"
+  }'
+```
+
+**Phản hồi mẫu** (201 Created):
+
+```json
+{
+  "id": 5,
+  "title": "Business English for Professionals",
+  "description": "Master business English for office communication",
+  "thumbnailUrl": "https://cdn.lexia.com/courses/business-english.jpg",
+  "cefrLevel": "B1",
+  "isPublished": false,
+  "sectionCount": 0,
+  "createdAt": "2025-11-01T09:00:00",
+  "updatedAt": "2025-11-01T09:00:00"
+}
+```
+
+**Cập nhật** — `PUT /api/v1/courses/{id}` (chỉ cập nhật các trường gửi lên; tiêu đề phải duy nhất).
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/courses/5 \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Updated syllabus with live workshops",
+    "cefrLevel": "B2"
+  }'
+```
+
+**Xuất bản / gỡ khỏi trang**:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/courses/5/publish \
+  -H "Authorization: Bearer <accessToken>"
+
+curl -X POST http://localhost:8080/api/v1/courses/5/unpublish \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Xóa khóa học** — `DELETE /api/v1/courses/{id}` (chỉ thực hiện được khi khóa học đã ở trạng thái `isPublished = false`).
+
+**Lỗi thường gặp**:
+
+- 400: khóa học chưa có nội dung nên không thể publish hoặc dữ liệu đầu vào sai định dạng.
+- 403: người dùng không có quyền `CONTENT_MANAGER`.
+- 404: không tìm thấy khóa học theo ID.
+- 409: tiêu đề bị trùng.
+
+---
+
+## 🧩 Quản Lý Bài Học (Lessons)
+
+Người học có thể đọc dữ liệu bài học; quyền chỉnh sửa thuộc đội `CONTENT_MANAGER`. Tất cả endpoint yêu cầu JWT hợp lệ.
+
+### Xem thông tin bài học
+
+**Endpoint**: `GET /api/v1/lessons/{id}`
+
+```bash
+curl -X GET http://localhost:8080/api/v1/lessons/10 \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (200 OK):
+
+```json
+{
+  "id": 10,
+  "sectionId": 3,
+  "title": "Basic Greetings and Introductions",
+  "lessonType": "READING",
+  "content": "{\"passages\":[{\"title\":\"Meeting People\",\"text\":\"When you meet someone new...\"}],\"questions\":[{\"question\":\"What should you say first?\",\"type\":\"multiple_choice\",\"options\":[\"Hello\",\"Goodbye\",\"Thank you\"],\"correctAnswer\":0}]}",
+  "orderIndex": 0,
+  "durationMinutes": 15,
+  "createdAt": "2025-10-31T08:00:00",
+  "updatedAt": "2025-10-31T08:30:00"
+}
+```
+
+**Ghi chú**: Trường `content` là chuỗi JSON, cấu trúc phụ thuộc `lessonType` (tham khảo `DATABASE-SCHEMA.md` mục 2.3).
+
+### Danh sách bài học theo section hoặc khóa học
+
+- `GET /api/v1/lessons/sections/{sectionId}` – trả về danh sách bài học theo thứ tự `orderIndex`.
+- `GET /api/v1/lessons/courses/{courseId}` – tổng hợp bài học của cả khóa học.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/lessons/sections/3 \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+Phản hồi: mảng `LessonDTO` đã sắp xếp theo thứ tự hiển thị.
+
+### Tạo bài học mới (⚠️ ROLE_CONTENT_MANAGER)
+
+```bash
+curl -X POST http://localhost:8080/api/v1/lessons/sections/3/lessons \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Basic Greetings and Introductions",
+    "lessonType": "READING",
+    "content": "{\"passages\":[{\"title\":\"Meeting People\",\"text\":\"When you meet someone new...\"}],\"questions\":[{\"question\":\"What should you say first?\",\"type\":\"multiple_choice\",\"options\":[\"Hello\",\"Goodbye\",\"Thank you\"],\"correctAnswer\":0}]}",
+    "orderIndex": 0,
+    "durationMinutes": 15
+  }'
+```
+
+**Phản hồi mẫu** (201 Created): giống dữ liệu ở endpoint GET.
+
+**Ghi chú**:
+
+- `content` phải là chuỗi JSON hợp lệ; hệ thống sẽ validate theo từng `lessonType`.
+- Nếu JSON không đúng schema, API trả về 400 cùng thông báo chi tiết.
+
+### Cập nhật, xóa & sắp xếp lại bài học (⚠️ ROLE_CONTENT_MANAGER)
+
+- `PUT /api/v1/lessons/{id}` – cập nhật tiêu đề, nội dung, thời lượng,...
+- `DELETE /api/v1/lessons/{id}` – xóa bài học (trả về 204 No Content).
+- `PATCH /api/v1/lessons/{id}/reorder?newOrderIndex=2` – đổi vị trí trong section.
+
+**Lỗi thường gặp**: 400 (dữ liệu không hợp lệ), 403 (thiếu quyền), 404 (không tìm thấy bài học).
+
+---
+
+## 🛣️ Lộ Trình Học Tập (Learning Paths)
+
+Sprint 2 giới thiệu lộ trình học chuẩn CEFR. Người dùng phải đăng nhập để sử dụng các endpoint sau.
+
+### Xem tất cả lộ trình
+
+**Endpoint**: `GET /api/v1/learning-paths`
+
+```bash
+curl -X GET http://localhost:8080/api/v1/learning-paths \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (200 OK):
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Beginner Path (A1)",
+    "description": "A comprehensive path for complete beginners starting their English journey",
+    "cefrLevel": "A1",
+    "isDefault": true,
+    "courses": [
+      {
+        "courseId": 1,
+        "courseTitle": "English Basics (A1)",
+        "orderIndex": 0,
+        "sectionCount": 3
+      }
+    ],
+    "totalCourses": 1,
+    "estimatedHours": 15,
+    "createdAt": "2025-11-03T10:00:00",
+    "updatedAt": "2025-11-03T10:00:00"
+  }
+]
+```
+
+### Xem chi tiết một lộ trình
+
+**Endpoint**: `GET /api/v1/learning-paths/{id}` – trả về danh sách khóa học thuộc lộ trình cùng thứ tự học.
+
+### Nhận lộ trình được đề xuất
+
+**Endpoint**: `GET /api/v1/learning-paths/recommend`
+
+- Dựa trên `currentLevel` trong hồ sơ người dùng.
+- Nếu chưa thiết lập, hệ thống mặc định trả về lộ trình A1.
+
+### Bắt đầu một lộ trình
+
+**Endpoint**: `POST /api/v1/learning-paths/{id}/start`
+
+```bash
+curl -X POST http://localhost:8080/api/v1/learning-paths/1/start \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (201 Created):
+
+```json
+{
+  "enrollmentId": 12,
+  "pathId": 1,
+  "pathName": "Beginner Path (A1)",
+  "pathCefrLevel": "A1",
+  "currentCourseId": 1,
+  "currentCourseTitle": "English Basics (A1)",
+  "coursesCompleted": 0,
+  "totalCourses": 1,
+  "progressPercentage": 0,
+  "startedAt": "2025-11-03T15:30:00",
+  "completedAt": null,
+  "isCompleted": false
+}
+```
+
+### Xem tiến độ các lộ trình của tôi
+
+**Endpoint**: `GET /api/v1/learning-paths/my-progress`
+
+- Trả về mảng `UserPathProgressDTO` (bao gồm lộ trình đang học và đã hoàn thành).
+- 409 được trả về nếu cố gắng `start` một lộ trình đã tham gia.
+
+**Lỗi thường gặp**: 404 (không tìm thấy lộ trình hoặc lộ trình chưa được cấu hình), 409 (đăng ký trùng lặp).
+
+---
+
+## 🎯 Đăng Ký Khóa Học & Theo Dõi Tiến Độ
+
+Các API này hỗ trợ người học theo dõi tiến độ chi tiết và streak học tập hằng ngày.
+
+### Đăng ký khóa học
+
+**Endpoint**: `POST /api/v1/enrollments?courseId={id}`
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/enrollments?courseId=1" \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (201 Created):
+
+```json
+{
+  "id": 20,
+  "courseId": 1,
+  "courseTitle": "English Basics (A1)",
+  "thumbnailUrl": "https://cdn.lexia.com/courses/a1-basics.jpg",
+  "cefrLevel": "A1",
+  "enrolledAt": "2025-11-05T10:30:00",
+  "progressPercentage": 0,
+  "completedAt": null,
+  "isCompleted": false
+}
+```
+
+### Danh sách khóa học đã đăng ký
+
+**Endpoint**: `GET /api/v1/enrollments` – trả về danh sách `EnrollmentDTO` của người dùng hiện tại.
+
+### Xem tiến độ chi tiết của một khóa
+
+**Endpoint**: `GET /api/v1/enrollments/{courseId}/progress`
+
+```bash
+curl -X GET http://localhost:8080/api/v1/enrollments/1/progress \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (200 OK):
+
+```json
+{
+  "courseId": 1,
+  "courseTitle": "English Basics (A1)",
+  "cefrLevel": "A1",
+  "totalLessons": 18,
+  "completedLessons": 8,
+  "progressPercentage": 44,
+  "lessonProgress": [
+    {
+      "lessonId": 1,
+      "lessonTitle": "Introduction to English Alphabet",
+      "lessonType": "READING",
+      "sectionTitle": "Getting Started",
+      "status": "COMPLETED",
+      "score": 100,
+      "attempts": 1
+    }
+  ]
+}
+```
+
+### Ghi nhận hoàn thành bài học
+
+**Endpoint**: `POST /api/v1/progress/lessons/{lessonId}/complete`
+
+```bash
+curl -X POST http://localhost:8080/api/v1/progress/lessons/1/complete \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resultDetailsJson": "{\"score\":95,\"correctAnswers\":19,\"totalQuestions\":20,\"timeSpent\":780}"
+  }'
+```
+
+**Phản hồi mẫu** (201 Created):
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "lessonId": 1,
+  "lessonTitle": "Introduction to English Alphabet",
+  "lessonType": "READING",
+  "status": "COMPLETED",
+  "score": 95,
+  "attempts": 1,
+  "startedAt": "2025-11-05T10:30:00",
+  "completedAt": "2025-11-05T10:43:00",
+  "resultDetails": {
+    "score": 95,
+    "correctAnswers": 19,
+    "totalQuestions": 20,
+    "timeSpent": 780
+  },
+  "updatedAt": "2025-11-05T10:43:00"
+}
+```
+
+**Ghi chú**:
+
+- `resultDetailsJson` bắt buộc là chuỗi JSON hợp lệ (dùng `{}` nếu không có dữ liệu bổ sung).
+- API tự động đếm số lần thử, cập nhật điểm và đồng bộ tiến độ khóa học.
+
+### Xem streak học tập
+
+**Endpoint**: `GET /api/v1/progress/streak`
+
+```bash
+curl -X GET http://localhost:8080/api/v1/progress/streak \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+**Phản hồi mẫu** (200 OK):
+
+```json
+{
+  "currentStreak": 7,
+  "longestStreak": 15,
+  "lastActivityDate": "2025-11-05",
+  "isActiveToday": true,
+  "totalActiveDays": 42
+}
+```
+
+**Lỗi thường gặp**:
+
+- 400: dữ liệu không hợp lệ (ví dụ courseId âm, JSON sai định dạng).
+- 401: chưa đăng nhập hoặc token hết hạn.
+- 404: không tìm thấy khóa học/bài học hoặc chưa đăng ký.
+- 409: hành động trùng lặp (đã đăng ký khóa học hoặc đã bắt đầu lộ trình).
+
+---
+
+## �🔐 Bảo Mật & Quyền Riêng Tư
 
 ### Audit Logging (Nhật Ký Hoạt Động)
 

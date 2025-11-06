@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -217,6 +218,11 @@ public class AuthService {
         String refreshTokenValue = refreshTokenDTO.getRefreshToken();
         LOG.info("Attempting to refresh access token");
 
+        if (!StringUtils.hasText(refreshTokenValue)) {
+            LOG.warn("Invalid refresh token: value missing or blank");
+            throw new InvalidTokenException("Refresh token is required");
+        }
+
         // Validate refresh token format
         if (!jwtTokenProvider.validateToken(refreshTokenValue)) {
             LOG.warn("Invalid refresh token format");
@@ -250,7 +256,7 @@ public class AuthService {
 
         // Get user from database
         User user = storedToken.getUser();
-        if (!user.getIsActive()) {
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
             LOG.warn("User account is inactive: {}", user.getEmail());
             throw new InvalidTokenException("User account is inactive");
         }
@@ -288,5 +294,65 @@ public class AuthService {
 
         LOG.info("Access token refreshed successfully for user: {}", user.getEmail());
         return response;
+    }
+
+    /**
+     * Logs out the authenticated user by revoking all active refresh tokens
+     * associated with the provided access token. Requires a valid Authorization
+     * header in the format "Bearer <access_token>".
+     *
+     * @param authorizationHeader the Authorization header containing the bearer
+     *                            token
+     * @throws InvalidTokenException if the header is missing, malformed, or the
+     *                               token is invalid
+     */
+    @Transactional
+    public void logout(String authorizationHeader) {
+        LOG.info("Attempting to log out user");
+
+        if (!StringUtils.hasText(authorizationHeader)) {
+            LOG.warn("Logout failed: Missing Authorization header");
+            throw new InvalidTokenException("Authorization header is required");
+        }
+
+        if (!authorizationHeader.startsWith("Bearer ")) {
+            LOG.warn("Logout failed: Authorization header does not start with Bearer");
+            throw new InvalidTokenException("Authorization header must start with 'Bearer '");
+        }
+
+        String accessToken = authorizationHeader.substring(7).trim();
+
+        if (!StringUtils.hasText(accessToken)) {
+            LOG.warn("Logout failed: Access token missing in Authorization header");
+            throw new InvalidTokenException("Access token is required");
+        }
+
+        if (!jwtTokenProvider.validateToken(accessToken)) {
+            LOG.warn("Logout failed: Invalid access token");
+            throw new InvalidTokenException("Invalid or expired access token");
+        }
+
+        UUID userId;
+
+        try {
+            userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("Logout failed: Unable to parse user ID from token");
+            throw new InvalidTokenException("Invalid access token", ex);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    LOG.warn("Logout failed: User not found for token subject: {}", userId);
+                    return new InvalidTokenException("User associated with token does not exist");
+                });
+
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            LOG.warn("Logout failed: User {} is inactive", user.getEmail());
+            throw new InvalidTokenException("User account is inactive");
+        }
+
+        refreshTokenRepository.deleteByUserId(userId);
+        LOG.info("User {} logged out successfully. All refresh tokens revoked.", user.getEmail());
     }
 }

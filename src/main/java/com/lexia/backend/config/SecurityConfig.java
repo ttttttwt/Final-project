@@ -37,7 +37,8 @@ public class SecurityConfig {
                 // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Allow public access to authentication endpoints
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh")
+                        .permitAll()
 
                         // Allow public access to Swagger UI and OpenAPI documentation
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**")

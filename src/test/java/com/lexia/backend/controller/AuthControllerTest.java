@@ -22,6 +22,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -257,5 +262,56 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidDTO)))
                                 .andExpect(status().isBadRequest());
+        }
+
+        // ========== Logout Tests ==========
+
+        @Test
+        @WithMockUser
+        void logoutUser_WithValidAuthorizationHeader_ReturnsOk() throws Exception {
+                // Given
+                String authHeader = "Bearer valid.access.token";
+                doNothing().when(authService).logout(authHeader);
+
+                // When & Then
+                mockMvc.perform(post("/api/v1/auth/logout")
+                                .with(csrf())
+                                .header("Authorization", authHeader))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Logged out successfully"));
+
+                verify(authService, times(1)).logout(authHeader);
+        }
+
+        @Test
+        @WithMockUser
+        void logoutUser_WithMissingAuthorizationHeader_ReturnsUnauthorized() throws Exception {
+                // Given
+                doThrow(new InvalidTokenException("Authorization header is required"))
+                                .when(authService).logout(isNull());
+
+                // When & Then
+                mockMvc.perform(post("/api/v1/auth/logout")
+                                .with(csrf()))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.error").value("Invalid Token"))
+                                .andExpect(jsonPath("$.message").value("Authorization header is required"));
+        }
+
+        @Test
+        @WithMockUser
+        void logoutUser_WithInvalidToken_ReturnsUnauthorized() throws Exception {
+                // Given
+                String invalidHeader = "Bearer invalid.token";
+                doThrow(new InvalidTokenException("Invalid or expired access token"))
+                                .when(authService).logout(invalidHeader);
+
+                // When & Then
+                mockMvc.perform(post("/api/v1/auth/logout")
+                                .with(csrf())
+                                .header("Authorization", invalidHeader))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.error").value("Invalid Token"))
+                                .andExpect(jsonPath("$.message").value("Invalid or expired access token"));
         }
 }
