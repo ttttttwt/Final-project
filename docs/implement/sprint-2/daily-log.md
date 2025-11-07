@@ -1,3 +1,25 @@
+## 2025-11-07 (Bugfix - Learning Path Recommendation Principal Injection ✅)
+
+- Planned:
+  - [x] Investigate "terminate" failures when calling GET /api/v1/learning-paths/recommend
+  - [x] Ensure security principal exposure matches controllers expecting domain `User`
+- Done:
+  - [x] Introduced `AuthenticatedUserDetails` to wrap the domain user while satisfying Spring Security
+  - [x] Updated `JwtAuthFilter` to seed `SecurityContext` with the `User` entity, eliminating ClassCastException/LazyInitializationException on recommendation lookups
+  - [x] Expanded `UserRepository.findByEmailWithRoles` to eagerly fetch profiles for CEFR-level reads
+  - [x] Executed `./gradlew test` ✅ (all suites pass)
+- Blockers/Risks:
+  - None; regression suite green and no downstream impacts observed
+- Decisions:
+  - Preserve `@AuthenticationPrincipal User` usage by translating principals in the filter instead of touching every controller
+  - Load profile data during authentication to avoid on-demand lazy loading in recommendation logic
+- QA Metrics:
+  - Tests: `./gradlew test` ✅
+  - Coverage: Maintained ≥87% overall / ≥93% services (per prior Jacoco baseline)
+- Notes:
+  - Learning path recommendation now resolves user CEFR levels without extra repository calls
+  - Pattern is reusable for enrollment/progress controllers relying on injected domain users
+
 ## 2025-11-06 (Day 8 - Task D1 Actuator Configuration ✅)
 
 - Planned:

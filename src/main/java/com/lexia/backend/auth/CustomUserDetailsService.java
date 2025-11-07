@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,11 +27,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmailWithRoles(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPasswordHash(),
-                user.getUserRoles().stream()
-                        .map(userRole -> new SimpleGrantedAuthority("ROLE_" + userRole.getRole().getName()))
-                        .collect(Collectors.toSet()));
+        Set<SimpleGrantedAuthority> authorities = user.getUserRoles().stream()
+                .map(userRole -> new SimpleGrantedAuthority("ROLE_" + userRole.getRole().getName()))
+                .collect(Collectors.toSet());
+
+        return new AuthenticatedUserDetails(user, authorities);
     }
 }

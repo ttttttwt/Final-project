@@ -1,7 +1,7 @@
 # LEXIA - API Specification
 
-**Version**: 2.0.0  
-**Last Updated**: October 31, 2025  
+**Version**: 2.1.0  
+**Last Updated**: November 6, 2025  
 **Sprint**: 2 / 6
 
 ---
@@ -24,6 +24,7 @@ The Swagger UI provides:
 - Authentication testing with JWT tokens
 - Detailed schema documentation for all DTOs
 - JSONB content examples for all 4 lesson types (READING, LISTENING, QUIZ, SPEAKING)
+- Quick links to runtime health checks via `/actuator`
 
 ---
 
@@ -86,16 +87,16 @@ All error responses follow RFC 7807 Problem Details format:
 
 ### Common HTTP Status Codes
 
-| Code | Meaning      | Usage                                           |
-| ---- | ------------ | ----------------------------------------------- |
-| 200  | OK           | Successful GET, PUT, PATCH                      |
-| 201  | Created      | Successful POST (resource created)              |
-| 204  | No Content   | Successful DELETE                               |
-| 400  | Bad Request  | Validation errors, invalid input                |
-| 401  | Unauthorized | Missing or invalid token                        |
-| 403  | Forbidden    | Insufficient permissions (wrong role)           |
-| 404  | Not Found    | Resource does not exist                         |
-| 409  | Conflict     | Duplicate resource (e.g., title already exists) |
+| Code | Meaning      | Usage                                                      |
+| ---- | ------------ | ---------------------------------------------------------- |
+| 200  | OK           | Successful GET, PUT, PATCH                                 |
+| 201  | Created      | Successful POST (resource created)                         |
+| 204  | No Content   | Successful DELETE                                          |
+| 400  | Bad Request  | Validation errors, invalid input                           |
+| 401  | Unauthorized | Missing or invalid token (e.g., anonymous actuator access) |
+| 403  | Forbidden    | Insufficient permissions (e.g., non-admin actuator access) |
+| 404  | Not Found    | Resource does not exist                                    |
+| 409  | Conflict     | Duplicate resource (e.g., title already exists)            |
 
 ---
 
@@ -341,6 +342,59 @@ POST /api/v1/lessons/sections/1/lessons
 | POST   | `/ai/flashcard/generate` | Yes           | Any  | Generate AI flashcards         |
 
 **Status**: Not yet implemented (Planned for Sprint 3)
+
+---
+
+### 6. Monitoring & Actuator Endpoints (Sprint 2 Technical Improvements)
+
+Actuator endpoints are exposed outside the `/api/v1` scope at `http://localhost:8088/actuator`. They provide operational insight while adhering to least-privilege access rules.
+
+| Method | Endpoint              | Auth Required | Role  | Description                                        |
+| ------ | --------------------- | ------------- | ----- | -------------------------------------------------- |
+| GET    | `/actuator/health`    | No            | -     | Basic liveness check (suitable for load balancers) |
+| GET    | `/actuator/health/**` | Yes           | ADMIN | Detailed health info (components, readiness)       |
+| GET    | `/actuator/info`      | Yes           | ADMIN | Application metadata (version, description)        |
+| GET    | `/actuator/metrics`   | Yes           | ADMIN | Aggregated runtime metrics (JVM, HTTP, database)   |
+
+**Security Behaviour**
+
+- Anonymous requests to protected actuator endpoints receive **401 Unauthorized**.
+- Authenticated users without `ROLE_ADMIN` receive **403 Forbidden**.
+- Health details (`/actuator/health/**`) remain hidden unless the caller has `ROLE_ADMIN`.
+- Health probes (`/actuator/health`) return a compact status payload (`{"status":"UP"}`) for external monitoring.
+
+**Sample Responses**
+
+```json
+GET /actuator/health
+{
+  "status": "UP"
+}
+```
+
+```json
+GET /actuator/info (ADMIN)
+{
+  "app": {
+    "name": "LEXIA Backend API",
+    "description": "Spring Boot 3 service for the LEXIA learning platform"
+  }
+}
+```
+
+```json
+GET /actuator/metrics/http.server.requests (ADMIN)
+{
+  "name": "http.server.requests",
+  "measurements": [
+    { "statistic": "COUNT", "value": 128.0 },
+    { "statistic": "TOTAL_TIME", "value": 32.7 }
+  ],
+  "availableTags": [
+    { "tag": "uri", "values": ["/api/v1/courses", "/actuator/health"] }
+  ]
+}
+```
 
 ---
 
