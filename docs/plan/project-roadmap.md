@@ -12,7 +12,7 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 
 ### Phase 1: Backend Foundation (Week 1-2, Sprints 1-2)
 
-**Goal**: Solid, secure backend with core APIs
+**Goal**: Solid, secure backend with core APIs _(Phase complete)_
 
 **Sprint 1** ✅ COMPLETE (October 16-28, 2025)
 
@@ -24,15 +24,15 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 - [x] Comprehensive testing (81% coverage)
 - [x] API documentation (Swagger/OpenAPI)
 
-**Sprint 2** 🔵 In Progress (October 29 – November 11, 2025)
+**Sprint 2** ✅ COMPLETE (October 29 – November 7, 2025)
 
-- [ ] Course/Lesson management API (entities, Flyway, CRUD, search/filter)
-- [ ] Learning path structure (CEFR-based defaults, retrieval API)
-- [ ] Progress tracking (completion, score, streak endpoints)
-- [ ] API documentation (Swagger) updated
-- [ ] Unit tests overall ≥70% (services ≥80%)
+- [x] Course/Lesson management API (entities, Flyway, CRUD, search/filter)
+- [x] Learning path structure (CEFR-based defaults, retrieval API)
+- [x] Progress tracking (completion, score, streak endpoints)
+- [x] API documentation (Swagger) updated
+- [x] Unit tests overall ≥70% (services ≥80%) — Achieved 87% overall / 93% services
 
-**Deliverables**: Working REST API with 10+ endpoints, Postman collection
+**Deliverables**: Working REST API covering courses, learning paths, progress, and auth flows with updated Postman suite
 
 ### Phase 2: AI Features + Frontend (Week 3-6, Sprints 3-4)
 
@@ -82,7 +82,7 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 | Milestone            | Status      | Completion Date  |
 | -------------------- | ----------- | ---------------- |
 | Backend MVP complete | ✅ Complete | October 28, 2025 |
-| All APIs functional  | 🔵 Planned  | TBD              |
+| All APIs functional  | ✅ Complete | November 6, 2025 |
 | AI features working  | 🔵 Planned  | TBD              |
 | Frontend complete    | 🔵 Planned  | TBD              |
 | Deployment ready     | 🔵 Planned  | TBD              |

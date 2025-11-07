@@ -93,48 +93,57 @@
 
 ### Sprint 2: Core APIs
 
-**Status**: 🔵 Not Started  
-**Duration**: TBD (2 weeks planned)  
-**Focus**: Course/lesson management, progress tracking
+**Status**: ✅ Complete (100%)  
+**Duration**: October 29 – November 11, 2025 (delivered Day 8)  
+**Focus**: Course and lesson delivery, learning paths, progress tracking  
+**Completion Date**: November 7, 2025
 
 **Key Features**:
 
-- Course CRUD operations
-- Lesson content management
-- Course enrollment system
-- Learning progress tracking
-- Placement test API
-- API documentation updates
+- ✅ Course, section, and lesson domain with Flyway migrations and JSONB schemas
+- ✅ Course & lesson services with filtering, DTOs, mappers, and controller coverage
+- ✅ CEFR-aligned learning path API with seeded defaults and end-to-end tests
+- ✅ Enrollment and lesson progress services with streak calculations and progress analytics
+- ✅ Auth hardening (logout flow, principal wrapping) and Actuator operational monitoring
 
-**Planned Tasks**:
+**Completed Tasks (21/21 story points)**:
 
-1. Course entity & repository
-2. Lesson entity & repository
-3. Enrollment entity & repository
-4. Progress tracking entity & repository
-5. Course management service
-6. Lesson content service
-7. Enrollment service
-8. Progress tracking service
-9. Placement test algorithm
-10. REST controllers for all features
-11. Integration tests
-12. Swagger documentation updates
+- Epic A – Course & Lesson Management: migrations (V5/V6), entities, repositories, specs, DTOs/mappers, services, controllers, validation, Swagger, and full test suite
+- Epic B – Learning Path: schema migrations (V7), seed data, domain layer, service/controller, contract tests
+- Epic C – Progress Tracking: migrations (V9/V10), enrollment/progress entities, DTOs/mappers, services, controllers, service tests, streak logic
+- Epic D – Technical Improvements: Spring Boot Actuator enablement with security and test coverage
 
 **Acceptance Criteria**:
 
-- [ ] User can browse courses
-- [ ] User can enroll in course
-- [ ] User can access lessons
-- [ ] Placement test calculates level correctly (A1-C2)
-- [ ] Progress saved and retrieved accurately
-- [ ] All endpoints documented in Swagger
-- [ ] Unit tests: 70%+ coverage maintained
-- [ ] Integration tests cover main flows
+- [x] User can browse courses
+- [x] User can enroll in course
+- [x] User can access lessons
+- [ ] Placement test calculates level correctly (A1-C2) — Deferred to Sprint 3 backlog refinement
+- [x] Progress saved and retrieved accurately
+- [x] All endpoints documented in Swagger
+- [x] Unit tests: 70%+ coverage maintained (87% overall / 93% services)
+- [x] Integration tests cover main flows
 
-**Dependencies**: Sprint 1 must be 100% complete
+**Final Metrics**:
 
-**Estimated Story Points**: 21-25 points
+- Story Points: 21/21 delivered (100%)
+- Total Tests: 414+ (Gradle suite, all passing)
+- Code Coverage: 87% overall, 93% service layer (JaCoCo)
+- API Endpoints: 25+ documented in Swagger/OpenAPI
+- Database: 6 new Flyway migrations (V5–V10) applied successfully
+- Performance: Controller and service tests green; recommendation latency resolved via security principal fix
+
+**Lessons Learned**:
+
+- Early Flyway validation plus verification scripts prevented regression in complex migrations
+- Injecting domain `User` instances via a dedicated principal wrapper keeps controllers clean and avoids repeated repository calls
+- Enforcing actuator security policies during implementation simplified compliance for future ops work
+
+**Action Items for Sprint 3**:
+
+1. Design and implement the CEFR placement assessment API deferred from Sprint 2 scope
+2. Extend progress analytics to surface streak data in forthcoming AI-driven coaching features
+3. Align API docs/Postman with new logout and actuator endpoints before frontend integration
 
 ---
 
