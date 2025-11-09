@@ -147,288 +147,493 @@
 
 ---
 
-### Sprint 3: AI Integration
+### Sprint 3: Frontend Development (Web)
 
-**Status**: 🔵 Not Started  
-**Duration**: TBD (2 weeks planned)  
-**Focus**: Gemini API integration, AI-powered features
-
-**Key Features**:
-
-- Gemini API client setup
-- Role-play scenario generation (EPIC 3)
-- Grammar exercise generation (EPIC 4)
-- Flashcard generation
-- AI usage tracking & cost monitoring
-- Error handling & fallback scenarios
-- Rate limiting & retry logic
-
-**Planned Tasks**:
-
-1. Gemini API configuration & authentication
-2. AI client service with retry logic
-3. Role-play generator service
-4. Grammar sandbox service
-5. Flashcard generator service
-6. AI usage log entity & repository
-7. Cost tracking & monitoring
-8. Fallback content service
-9. REST controllers for AI features
-10. Integration tests with mock AI responses
-11. Swagger documentation for AI endpoints
-
-**Acceptance Criteria**:
-
-- [ ] Role-play API generates 10+ unique scenarios per context
-- [ ] Grammar exercises generated with correct explanations
-- [ ] Flashcards generated from lesson content
-- [ ] Graceful handling of API failures (fallback content)
-- [ ] AI usage logged with cost tracking
-- [ ] Results saved to database
-- [ ] Rate limiting prevents API abuse
-- [ ] Retry logic handles transient failures
-- [ ] Unit tests: 70%+ coverage maintained
-- [ ] Mock tests for AI responses
-
-**Dependencies**: Sprint 2 must be 100% complete
-
-**Estimated Story Points**: 23-27 points
-
-**Technical Considerations**:
-
-- Gemini API key management (environment variables)
-- Token usage monitoring
-- Response time optimization (<3 seconds)
-- Caching for repeated requests
-
----
-
-### Sprint 4: Frontend Development
-
-**Status**: 🔵 Not Started  
-**Duration**: TBD (2 weeks planned)  
-**Focus**: User interface (Web + Mobile)
+**Status**: ⏳ In Progress  
+**Duration**: November 8-21, 2025 (14 days)  
+**Focus**: Next.js web application with existing backend APIs
 
 **Key Features**:
 
-- Next.js web application setup
-- Authentication pages (login, register)
-- User dashboard
-- Course browsing & enrollment UI
-- Lesson player interface
-- Role-play practice interface
-- Grammar sandbox UI
-- Progress tracking display
-- React Native mobile app setup
-- Mobile authentication flow
-- Mobile basic navigation
+- Next.js 14+ with TypeScript and App Router
+- Authentication UI (Login/Register) with JWT integration
+- Dashboard layout with sidebar navigation
+- Course browsing with search and filters
+- Learning path display
+- Progress tracking visualization
+- Profile management with avatar upload
+- Responsive design (mobile, tablet, desktop)
+- Form validation and error handling
+- State management with Zustand
 
-**Planned Tasks**:
+**Task Breakdown**:
 
-**Web (Next.js)**:
+**Epic A: Project Setup** (4 pts)
 
-1. Project setup with TypeScript
-2. Authentication context & protected routes
-3. Login/Register pages
-4. Dashboard layout
-5. Course listing page
-6. Course detail & enrollment page
-7. Lesson player component
-8. Role-play interface
-9. Grammar sandbox interface
-10. Progress charts & statistics
-11. Profile management page
+1. A1: Next.js project initialization (1 pt)
+2. A2: Tailwind CSS + shadcn/ui setup (0.5 pt)
+3. A3: Zustand state management (0.5 pt)
+4. A4: Axios API client setup (1 pt)
+5. A5: Environment configuration (1 pt)
 
-**Mobile (React Native)**:
+**Epic B: Authentication** (5 pts)
 
-1. Project setup with Expo
-2. Navigation setup (React Navigation)
-3. Authentication screens
-4. Tab navigation layout
-5. Course list screen
-6. Lesson screen
-7. Practice screens (basic)
-8. Profile screen
+1. B1: Login page (1.5 pts)
+2. B2: Register page (1.5 pts)
+3. B3: JWT token management (1 pt)
+4. B4: Protected routes middleware (0.5 pt)
+5. B5: Auth store (0.5 pt)
+
+**Epic C: Dashboard & Layout** (4 pts)
+
+1. C1: Main layout with sidebar (1.5 pts)
+2. C2: Header with user dropdown (0.5 pt)
+3. C3: Responsive navigation (1 pt)
+4. C4: Dashboard home page (1 pt)
+
+**Epic D: Course Features** (7 pts)
+
+1. D1: Course listing page (2 pts)
+2. D2: Course detail + enrollment (1.5 pts)
+3. D3: Learning path display (1.5 pts)
+4. D4: Lesson viewer (1.5 pts)
+5. D5: Lesson navigation (0.5 pt)
+
+**Epic E: Progress & Profile** (5 pts)
+
+1. E1: Progress dashboard with charts (2 pts)
+2. E2: Completion tracking UI (1 pt)
+3. E3: Profile page (1 pt)
+4. E4: Avatar upload (0.5 pt)
+5. E5: Settings page (0.5 pt)
+
+**Epic F: Testing & Polish** (3 pts)
+
+1. F1: Form validation (0.5 pt)
+2. F2: Error handling + toasts (0.5 pt)
+3. F3: Loading states (0.5 pt)
+4. F4: Testing setup (0.5 pt)
+5. F5: Component tests (1 pt)
 
 **Acceptance Criteria**:
 
-- [ ] All backend features accessible via web UI
-- [ ] Responsive design (mobile, tablet, desktop)
-- [ ] Mobile app has basic navigation (4+ screens)
-- [ ] JWT authentication works on both platforms
-- [ ] Forms have proper validation
-- [ ] Loading states & error handling
-- [ ] Tests: 60%+ coverage (Jest + React Testing Library)
-- [ ] Accessibility: WCAG 2.1 AA compliance
+- [x] Backend APIs ready (Sprint 1-2 complete) ✅
+- [ ] Next.js app runs locally with no errors
+- [ ] Users can register and login
+- [ ] Protected routes redirect to login
+- [ ] Course listing displays all courses from API
+- [ ] Users can enroll in courses
+- [ ] Progress is tracked and displayed
+- [ ] Profile can be viewed and edited
+- [ ] Responsive on mobile, tablet, desktop
+- [ ] Forms have validation with clear error messages
+- [ ] Loading states for all async operations
+- [ ] Unit tests: 60%+ coverage (Jest + RTL)
 
-**Dependencies**: Sprint 3 must be 100% complete
+**Dependencies**: Sprint 1 & 2 must be 100% complete ✅
 
-**Estimated Story Points**: 28-32 points
+**Estimated Story Points**: 28 points
 
 **Technical Stack**:
 
-- Web: Next.js 14+, TypeScript, Tailwind CSS, Zustand/Redux
-- Mobile: React Native, Expo, TypeScript, React Navigation
-- Testing: Jest, React Testing Library, Cypress (E2E)
+- Next.js 14+ (App Router)
+- TypeScript
+- Tailwind CSS + shadcn/ui
+- Zustand (state management)
+- Axios (API client)
+- React Hook Form + Zod (form validation)
+- Chart.js or Recharts (progress visualization)
+- Jest + React Testing Library
 
 ---
 
-### Sprint 5: Testing & QA
+### Sprint 4: Mobile App Development
 
 **Status**: 🔵 Not Started  
-**Duration**: TBD (2 weeks planned)  
-**Focus**: End-to-end testing, performance optimization, security audit
+**Duration**: November 22 - December 5, 2025 (14 days planned)  
+**Focus**: React Native mobile app with backend integration
 
 **Key Features**:
 
-- End-to-end testing (Selenium/Cypress)
-- Performance testing & optimization
-- Security audit & penetration testing
-- Load testing
+- React Native app setup with Expo
+- Mobile authentication flow
+- Tab navigation structure
+- Course browsing screens
+- Lesson viewer optimized for mobile
+- Progress tracking screens
+- Profile management
+- Offline support basics
+- Push notifications setup
+- Mobile-specific UI/UX
+
+**Planned Tasks**:
+
+1. Expo project initialization with TypeScript
+2. React Navigation setup (Stack + Tab)
+3. Mobile authentication screens (Login/Register)
+4. Auth token management (AsyncStorage)
+5. Tab navigation layout (Home, Courses, Progress, Profile)
+6. Course listing screen with pull-to-refresh
+7. Course detail screen with enrollment
+8. Lesson viewer optimized for mobile
+9. Progress dashboard with native charts
+10. Profile screen with image picker
+11. Settings screen
+12. Basic offline support (cache)
+13. Push notification configuration
+14. Mobile testing setup (Jest + RNTL)
+15. Component tests (50%+ coverage)
+
+**Acceptance Criteria**:
+
+- [ ] Mobile app runs on iOS and Android
+- [ ] Authentication flow works seamlessly
+- [ ] All core features accessible (courses, lessons, progress)
+- [ ] Smooth navigation with proper transitions
+- [ ] Offline mode shows cached content
+- [ ] Forms optimized for mobile input
+- [ ] Image upload works (avatar, etc.)
+- [ ] Push notifications registered
+- [ ] Performance: 60fps maintained
+- [ ] Tests: 50%+ coverage
+- [ ] No memory leaks in navigation
+
+**Dependencies**: Sprint 3 must be 100% complete
+
+**Estimated Story Points**: 24 points
+
+**Technical Stack**:
+
+- React Native with Expo
+- TypeScript
+- React Navigation (Stack + Tab + Drawer)
+- Axios (API client)
+- AsyncStorage (local storage)
+- React Native Paper or NativeBase (UI components)
+- Victory Native or React Native Chart Kit (charts)
+- Expo Image Picker
+- Expo Notifications
+- Jest + React Native Testing Library
+
+---
+
+### Sprint 5: AI Integration
+
+**Status**: 🔵 Not Started  
+**Duration**: December 6-19, 2025 (14 days planned)  
+**Focus**: Gemini API integration + AI features in Web & Mobile
+
+**Key Features**:
+
+**Backend (AI Services)**:
+
+- Gemini API client setup with retry logic
+- Role-play scenario generator
+- Grammar exercise generator
+- Flashcard generator from content
+- AI usage tracking and cost monitoring
+- Fallback content for API failures
+
+**Frontend (Web + Mobile)**:
+
+- Role-play practice interface
+- Grammar sandbox UI
+- Flashcard study interface
+- AI loading states and animations
+- Error handling for AI failures
+- AI feature integration in existing flows
+
+**Planned Tasks**:
+
+**Backend** (10 tasks):
+
+1. Gemini API client service
+2. AIUsageLog entity + repository (V11 migration)
+3. RolePlayScenario entity + service
+4. Grammar exercise generator service
+5. Flashcard generator service
+6. AI controllers (RolePlay, Grammar, Flashcard)
+7. Fallback content service
+8. Rate limiting for AI endpoints
+9. Cost calculation and monitoring
+10. Comprehensive tests with mock AI
+
+**Frontend Web** (5 tasks):
+
+1. Role-play UI (conversation interface)
+2. Grammar sandbox (interactive exercises)
+3. Flashcard study interface (swipe cards)
+4. AI loading animations
+5. Error handling + retry UI
+
+**Frontend Mobile** (3 tasks):
+
+1. Role-play screen (mobile-optimized)
+2. Grammar practice screen
+3. Flashcard screen with gestures
+
+**Acceptance Criteria**:
+
+- [ ] Gemini API successfully integrated
+- [ ] Role-play generates unique scenarios (<3s)
+- [ ] Grammar exercises with explanations
+- [ ] Flashcards extracted from lessons
+- [ ] AI usage tracked with cost
+- [ ] Graceful fallback on API errors
+- [ ] Web UI responsive and interactive
+- [ ] Mobile gestures work smoothly
+- [ ] Backend tests: 70%+ coverage
+- [ ] Frontend tests: 60%+ coverage
+- [ ] All endpoints documented
+
+**Dependencies**: Sprint 3 & 4 must be complete
+
+**Estimated Story Points**: 26 points
+
+**Technical Stack**:
+
+- Backend: Gemini SDK, Spring Boot
+- Web: React components, animations
+- Mobile: React Native gestures
+- Testing: Mock AI responses
+
+---
+
+### Sprint 6: Testing & QA
+
+**Status**: 🔵 Not Started  
+**Duration**: December 20, 2025 - January 2, 2026 (14 days planned)  
+**Focus**: End-to-end testing, performance optimization, bug fixes
+
+**Key Features**:
+
+- End-to-end testing (Web + Mobile)
+- Performance optimization
 - Bug fixes from testing phase
-- Database query optimization
-- API response time optimization
-- Mobile app performance tuning
+- Cross-browser/device testing
+- Security audit
+- Load testing
+- Accessibility improvements
+- UI/UX polish
 
 **Planned Tasks**:
 
 **Testing**:
 
-1. E2E test suite setup
-2. Critical user flow tests (10+ scenarios)
-3. Performance benchmarking
-4. Load testing with JMeter/K6
-5. Security audit checklist
-6. Penetration testing
-7. Cross-browser testing
-8. Mobile app testing (iOS + Android)
+1. E2E test suite setup (Cypress/Playwright)
+2. Critical user flows (10+ scenarios)
+3. Cross-browser testing (Chrome, Firefox, Safari)
+4. Mobile testing (iOS + Android real devices)
+5. Performance benchmarking
+6. Load testing (100+ concurrent users)
+7. Security audit (OWASP Top 10)
+8. Accessibility testing (WCAG 2.1 AA)
 
 **Optimization**:
 
-1. Database indexing review
-2. N+1 query fixes
+1. Frontend bundle optimization
+2. Image optimization (WebP, lazy loading)
 3. API response caching
-4. Frontend bundle optimization
-5. Image optimization
-6. Database connection pooling tuning
+4. Database query optimization
+5. Mobile app performance tuning
+6. SEO optimization (Web)
 
 **Bug Fixes**:
 
-1. Critical bugs (P0)
-2. Major bugs (P1)
-3. Minor bugs (P2)
+1. Fix all P0 (critical) bugs
+2. Fix all P1 (major) bugs
+3. Address P2 (minor) bugs
 4. UI/UX improvements
+5. Edge case handling
 
 **Acceptance Criteria**:
 
-- [ ] All critical bugs fixed (0 P0 bugs)
-- [ ] Major bugs fixed (≤2 P1 bugs)
-- [ ] Performance: p99 <500ms for all API endpoints
-- [ ] Security audit passed (OWASP Top 10 checked)
-- [ ] Load test: 100 concurrent users sustained
-- [ ] E2E test coverage: 80%+ of critical flows
-- [ ] Mobile app: 60fps maintained
-- [ ] Database queries optimized (no N+1)
-- [ ] API documentation verified accurate
+- [ ] E2E tests: 80%+ critical flow coverage
+- [ ] Zero P0 bugs, ≤2 P1 bugs remaining
+- [ ] Performance: p99 <500ms (API), LCP <2.5s (Web)
+- [ ] Load test: 100+ concurrent users
+- [ ] Security audit passed
+- [ ] Mobile: 60fps maintained
+- [ ] Accessibility: WCAG 2.1 AA compliant
+- [ ] Cross-browser: works on latest 2 versions
+- [ ] Mobile: works on iOS 14+ and Android 8+
 
-**Dependencies**: Sprint 4 must be 100% complete
+**Dependencies**: Sprint 5 must be complete
 
-**Estimated Story Points**: 18-22 points
+**Estimated Story Points**: 20 points
 
-**Testing Tools**:
+**Tools**:
 
-- E2E: Cypress, Selenium
-- Load: JMeter, K6
-- Security: OWASP ZAP, SonarQube
-- Performance: Lighthouse, React DevTools Profiler
+- E2E: Cypress/Playwright
+- Performance: Lighthouse, WebPageTest
+- Load: K6, Artillery
+- Security: OWASP ZAP, Snyk
+- Mobile: Detox, Maestro
 
 ---
 
-### Sprint 6: Deployment & Documentation
+### Sprint 7: Security & Performance
 
 **Status**: 🔵 Not Started  
-**Duration**: TBD (2 weeks planned)  
-**Focus**: Production deployment, documentation finalization, launch preparation
+**Duration**: January 3-16, 2026 (14 days planned)  
+**Focus**: Security hardening, performance optimization, scaling
 
 **Key Features**:
 
-- Production environment setup
+- Security audit and penetration testing
+- Performance optimization (backend + frontend)
+- Database scaling preparation
+- Rate limiting and throttling
+- Advanced caching strategies
+- API optimization
+- Mobile app optimization
+
+**Planned Tasks**:
+
+**Security**:
+
+1. OWASP Top 10 security audit
+2. Penetration testing (automated + manual)
+3. SQL injection prevention verification
+4. XSS/CSRF protection verification
+5. JWT security review
+6. Secrets management review
+7. HTTPS enforcement
+8. Security headers configuration
+
+**Performance**:
+
+1. Database query optimization (indexes, N+1)
+2. API response caching (Redis)
+3. CDN integration for static assets
+4. Image optimization pipeline
+5. Frontend bundle splitting
+6. Lazy loading implementation
+7. Service worker for offline support
+8. Database connection pooling
+
+**Scaling**:
+
+1. Load balancer setup
+2. Database replication strategy
+3. API rate limiting per user
+4. Background job processing
+5. File upload optimization
+6. Search optimization (Elasticsearch?)
+
+**Acceptance Criteria**:
+
+- [ ] Security audit: 0 critical, 0 high vulnerabilities
+- [ ] Penetration test passed
+- [ ] API p99 <300ms (improved from <500ms)
+- [ ] Web LCP <2s (improved from <2.5s)
+- [ ] Database queries all indexed
+- [ ] Redis caching implemented
+- [ ] Rate limiting active (100 req/min per user)
+- [ ] CDN serving static assets
+- [ ] Mobile app size <50MB
+
+**Dependencies**: Sprint 6 complete
+
+**Estimated Story Points**: 18 points
+
+---
+
+### Sprint 8: Deployment & Launch
+
+**Status**: 🔵 Not Started  
+**Duration**: January 17-30, 2026 (14 days planned)  
+**Focus**: Production deployment, monitoring, launch preparation
+
+**Key Features**:
+
+- Production infrastructure setup
+- CI/CD pipeline implementation
+- Monitoring and logging
 - Database migration to production
-- CI/CD pipeline setup
-- Monitoring & logging setup
+- Domain and SSL configuration
+- App store submission (iOS + Android)
 - Documentation finalization
-- User guide creation
-- Admin documentation
-- Release preparation
+- Soft launch and monitoring
 
 **Planned Tasks**:
 
 **Infrastructure**:
 
-1. Cloud provider setup (AWS/Azure/GCP)
-2. PostgreSQL production database
-3. Environment variables configuration
+1. Cloud provider setup (AWS/GCP/Azure)
+2. Production database (PostgreSQL managed)
+3. Environment variables management
 4. SSL/TLS certificates
-5. Domain setup & DNS configuration
-6. CDN setup for static assets
-7. Backup strategy implementation
+5. Domain setup + DNS
+6. CDN configuration
+7. Backup strategy
+8. Disaster recovery plan
 
 **Deployment**:
 
-1. Docker containerization
-2. Kubernetes/Docker Compose setup
+1. Docker containerization (all services)
+2. Kubernetes cluster setup (or Cloud Run/App Service)
 3. CI/CD pipeline (GitHub Actions)
 4. Automated testing in pipeline
-5. Blue-green deployment strategy
+5. Blue-green deployment
 6. Rollback procedures
+7. Database migration scripts
 
-**Monitoring & Logging**:
+**Monitoring**:
 
-1. Application monitoring (Prometheus/Grafana)
-2. Log aggregation (ELK Stack)
-3. Error tracking (Sentry)
-4. Uptime monitoring
-5. Performance monitoring (APM)
-6. Alert configuration
+1. Application monitoring (Datadog/New Relic)
+2. Error tracking (Sentry)
+3. Log aggregation (CloudWatch/ELK)
+4. Uptime monitoring (UptimeRobot)
+5. Alert configuration (PagerDuty/Slack)
+6. Performance dashboards
+
+**App Store**:
+
+1. iOS App Store submission
+2. Google Play Store submission
+3. App screenshots and descriptions
+4. Privacy policy and terms
+5. App store optimization (ASO)
 
 **Documentation**:
 
-1. API documentation review
-2. User guide (web + mobile)
-3. Admin documentation
-4. Deployment guide
+1. User guide (Web + Mobile)
+2. Admin documentation
+3. API documentation review
+4. Deployment runbook
 5. Troubleshooting guide
 6. Release notes
-7. Changelog
+7. Marketing materials
+
+**Launch**:
+
+1. Soft launch (limited users)
+2. Monitor metrics and errors
+3. Bug fixes if needed
+4. Full public launch
+5. Social media announcement
+6. User onboarding flow
+7. Analytics tracking
 
 **Acceptance Criteria**:
 
-- [ ] App deployed to production (web + mobile)
-- [ ] Database migrations run successfully
-- [ ] CI/CD pipeline functional (auto-deploy on merge)
-- [ ] Monitoring dashboards configured
-- [ ] Logging aggregation working
+- [ ] All services deployed to production
+- [ ] CI/CD pipeline working (auto-deploy)
+- [ ] Monitoring dashboards live
+- [ ] Alerts configured and tested
+- [ ] Database backups automated
 - [ ] SSL certificates active
-- [ ] Custom domain configured
-- [ ] Documentation complete (user + admin)
-- [ ] Release notes published
-- [ ] Backup & restore tested
-- [ ] Rollback procedure tested
-- [ ] Performance metrics meet SLA (<500ms p99)
+- [ ] Domain configured
+- [ ] iOS app in App Store
+- [ ] Android app in Play Store
+- [ ] User documentation complete
+- [ ] Soft launch successful (100+ users)
+- [ ] Full launch ready
 
-**Dependencies**: Sprint 5 must be 100% complete
+**Dependencies**: Sprint 7 complete
 
-**Estimated Story Points**: 15-20 points
-
-**Production Stack**:
-
-- Hosting: AWS/Azure/GCP
-- Database: PostgreSQL (managed service)
-- Container: Docker + Kubernetes
-- CI/CD: GitHub Actions
-- Monitoring: Prometheus + Grafana
-- Logging: ELK Stack or CloudWatch
-- CDN: CloudFront or Azure CDN
+**Estimated Story Points**: 20 points
 
 ---
 

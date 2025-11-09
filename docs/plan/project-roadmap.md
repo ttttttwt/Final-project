@@ -34,66 +34,103 @@ Sprints 1-2         Sprints 3-4          Sprints 5-8
 
 **Deliverables**: Working REST API covering courses, learning paths, progress, and auth flows with updated Postman suite
 
-### Phase 2: AI Features + Frontend (Week 3-6, Sprints 3-4)
+### Phase 2: Frontend + AI Features (Week 3-6, Sprints 3-5)
 
-**Goal**: AI features operational, frontend connected
+**Goal**: Frontend connected to existing APIs, then add AI features
 
-**Sprint 3**
+**Sprint 3** 🔵 In Progress (November 8-21, 2025)
 
-- [ ] Gemini API integration
-- [ ] Role-Play generator (EPIC 3)
-- [ ] Grammar Sandbox (EPIC 4)
-- [ ] Next.js web app setup
-- [ ] Authentication page
+- [ ] Next.js 14+ web app setup with TypeScript
+- [ ] Authentication pages (Login/Register) with JWT
+- [ ] Dashboard layout with navigation
+- [ ] Course listing and detail pages
+- [ ] Learning path display
+- [ ] Progress tracking UI
+- [ ] Profile management UI
+- [ ] Responsive design (mobile, tablet, desktop)
+- [ ] Form validation and error handling
+- [ ] Integration with Sprint 1-2 APIs
 
-**Sprint 4**
+**Sprint 4** 🔵 Not Started
 
-- [ ] Frontend dashboard
-- [ ] Lesson player UI
-- [ ] Role-play practice interface
-- [ ] React Native mobile setup
-- [ ] Mobile basic flows
+- [ ] React Native mobile app setup (Expo)
+- [ ] Mobile authentication flow
+- [ ] Tab navigation structure
+- [ ] Course browsing screens
+- [ ] Lesson viewer screen
+- [ ] Profile screen
+- [ ] Progress tracking screen
+- [ ] Basic offline support
+- [ ] Integration with backend APIs
 
-**Deliverables**: Web + Mobile apps with working AI features
+**Sprint 5** 🔵 Not Started
 
-### Phase 3: Testing & Polish (Week 7-8, Sprints 5-6)
+- [ ] Gemini API integration (Backend)
+- [ ] Role-Play generator service + API
+- [ ] Grammar Sandbox service + API
+- [ ] Flashcard generator
+- [ ] Role-play practice UI (Web)
+- [ ] Grammar sandbox UI (Web)
+- [ ] AI features in mobile app
+- [ ] AI usage tracking and monitoring
 
-**Goal**: Production-ready, tested application
+**Deliverables**: Fully functional Web + Mobile apps with AI-powered learning features
 
-**Sprint 5**
+### Phase 3: Testing & Deployment (Week 7-10, Sprints 6-8)
 
-- [ ] End-to-end testing
-- [ ] Bug fixes
+**Goal**: Production-ready, tested, deployed application
+
+**Sprint 6** 🔵 Not Started
+
+- [ ] End-to-end testing (Web + Mobile)
 - [ ] Performance optimization
-- [ ] Security audit
-- [ ] Load testing
+- [ ] Bug fixes from testing
+- [ ] Cross-browser testing
+- [ ] Mobile testing (iOS + Android)
+- [ ] Accessibility improvements
 
-**Sprint 6**
+**Sprint 7** 🔵 Not Started
 
-- [ ] Deployment setup
-- [ ] Database migration
-- [ ] Documentation finalization
+- [ ] Security audit & penetration testing
+- [ ] Load testing (100+ concurrent users)
+- [ ] Database query optimization
+- [ ] API response caching
+- [ ] Frontend bundle optimization
+- [ ] Mobile app performance tuning
+
+**Sprint 8** 🔵 Not Started
+
+- [ ] Production deployment setup (Cloud)
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Monitoring & logging setup
+- [ ] Database migration to production
+- [ ] SSL/TLS configuration
+- [ ] User documentation finalization
 - [ ] Release preparation
 
-**Deliverables**: Deployed application, user documentation
+**Deliverables**: Deployed application on production, comprehensive documentation
 
 ## Key Milestones
 
-| Milestone            | Status      | Completion Date  |
-| -------------------- | ----------- | ---------------- |
-| Backend MVP complete | ✅ Complete | October 28, 2025 |
-| All APIs functional  | ✅ Complete | November 6, 2025 |
-| AI features working  | 🔵 Planned  | TBD              |
-| Frontend complete    | 🔵 Planned  | TBD              |
-| Deployment ready     | 🔵 Planned  | TBD              |
+| Milestone             | Status         | Target Date       |
+| --------------------- | -------------- | ----------------- |
+| Backend MVP complete  | ✅ Complete    | October 28, 2025  |
+| All APIs functional   | ✅ Complete    | November 6, 2025  |
+| Web frontend complete | ⏳ In Progress | November 21, 2025 |
+| Mobile app complete   | 🔵 Planned     | December 5, 2025  |
+| AI features working   | 🔵 Planned     | December 19, 2025 |
+| Testing complete      | 🔵 Planned     | January 9, 2026   |
+| Deployment ready      | 🔵 Planned     | January 23, 2026  |
 
 ## Risk Mitigation
 
-| Risk                | Impact | Mitigation                 |
-| ------------------- | ------ | -------------------------- |
-| Gemini API delays   | High   | Have fallback, test early  |
-| Database scaling    | Medium | Use JSONB, proper indexing |
-| Frontend complexity | Medium | Use component library      |
+| Risk                  | Impact | Mitigation                          | Status |
+| --------------------- | ------ | ----------------------------------- | ------ |
+| Frontend complexity   | High   | Use Next.js + Tailwind, start early | ⏳     |
+| Gemini API delays     | Medium | Build without AI first, add later   | 🟢     |
+| Mobile compatibility  | Medium | Test early, use Expo                | 🔵     |
+| Database scaling      | Medium | Use JSONB, proper indexing          | ✅     |
+| Deployment complexity | Medium | Use Docker, CI/CD automation        | 🔵     |
 
 ## Success Criteria
 
