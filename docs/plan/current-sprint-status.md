@@ -3,7 +3,7 @@
 ## Sprint 3 — Frontend Development (Web)
 
 **Sprint**: 3 / 8 | **Duration**: Nov 8 – Nov 21, 2025 (14 days)  
-**Status**: ⏳ In Progress (Day 0) | **Progress**: 0/28 points (0%)
+**Status**: ⏳ In Progress (Day 1) | **Progress**: 4/28 points (14%)
 
 ### Focus
 
@@ -21,8 +21,8 @@
 
 | Epic                      | Status         | Progress |
 | ------------------------- | -------------- | -------- |
-| A: Project Setup & Config | 🔵 Not Started | 0/4 pts  |
-| B: Authentication Pages   | 🔵 Not Started | 0/5 pts  |
+| A: Project Setup & Config | ✅ Complete    | 4/4 pts  |
+| B: Authentication Pages   | 🔵 Next        | 0/5 pts  |
 | C: Dashboard & Layout     | 🔵 Not Started | 0/4 pts  |
 | D: Course & Learning Path | 🔵 Not Started | 0/7 pts  |
 | E: Progress & Profile     | 🔵 Not Started | 0/5 pts  |
@@ -30,15 +30,15 @@
 
 ### Current Tasks
 
-**Epic A: Project Setup & Configuration** (4 pts)
+**Epic A: Project Setup & Configuration** ✅ **COMPLETE** (4 pts)
 
-- [ ] A1: Next.js 14+ project initialization with TypeScript (1 pt)
-- [ ] A2: Tailwind CSS + shadcn/ui setup (0.5 pt)
-- [ ] A3: Zustand state management configuration (0.5 pt)
-- [ ] A4: Axios client + API integration setup (1 pt)
-- [ ] A5: Environment variables + build configuration (1 pt)
+- [x] A1: Next.js 14+ project initialization with TypeScript (1 pt)
+- [x] A2: Tailwind CSS + shadcn/ui setup (0.5 pt)
+- [x] A3: Zustand state management configuration (0.5 pt)
+- [x] A4: Axios client + API integration setup (1 pt)
+- [x] A5: Environment variables + build configuration (1 pt)
 
-**Epic B: Authentication Pages** (5 pts)
+**Epic B: Authentication Pages** 🔵 **NEXT UP** (5 pts)
 
 - [ ] B1: Login page design + form validation (1.5 pts)
 - [ ] B2: Register page with password confirmation (1.5 pts)
