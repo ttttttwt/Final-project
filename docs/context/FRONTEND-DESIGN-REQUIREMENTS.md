@@ -104,8 +104,16 @@ line-height: 1.5;
 
 ### Color Palette
 
+LEXIA offers two color scheme options. **Version B (Yellow Accent)** is recommended for its modern, professional appearance.
+
+---
+
+#### **Version A: Medium Green (Original)**
+
+Classic Medium-inspired palette with green as primary color.
+
 ```css
-/* Light Mode (Default) */
+/* Light Mode */
 --background: #ffffff;
 --foreground: #242424;
 --card: #f9f9f9;
@@ -123,6 +131,85 @@ line-height: 1.5;
 --accent: #5799ff;
 --muted: #9e9e9e;
 ```
+
+---
+
+#### **Version B: Yellow Accent (Recommended)** ⭐
+
+**Design Philosophy**: Minimal & Modern, inspired by Medium's clean aesthetic.
+
+**Overall Feel**: Refined – Readable – Professional
+
+**Light Mode**:
+
+| Role               | Color Name   | HEX Code | Usage                                      |
+| ------------------ | ------------ | -------- | ------------------------------------------ |
+| **Primary**        | Deep Blue    | #1A73E8  | Brand color (buttons, links, CTAs)         |
+| **Accent**         | Warm Yellow  | #FFB300  | Highlights (icons, tags, badges, emphasis) |
+| **Background**     | White        | #FFFFFF  | Main background                            |
+| **Surface/Card**   | Light Gray   | #F8F9FA  | Cards, panels, secondary surfaces          |
+| **Text Primary**   | Dark Gray    | #202124  | Primary text, headings                     |
+| **Text Secondary** | Medium Gray  | #5F6368  | Secondary text, captions                   |
+| **Border**         | Light Border | #E0E0E0  | Borders, dividers                          |
+| **Error**          | Red          | #EA4335  | Error states, destructive actions          |
+
+```css
+/* Light Mode (Version B) */
+--primary: #1a73e8; /* Deep Blue - brand color */
+--accent: #ffb300; /* Warm Yellow - highlights */
+--background: #ffffff; /* White */
+--surface: #f8f9fa; /* Light Gray - cards */
+--text-primary: #202124; /* Dark Gray - main text */
+--text-secondary: #5f6368; /* Medium Gray - secondary text */
+--border: #e0e0e0; /* Light Border */
+--error: #ea4335; /* Red - errors */
+```
+
+**🌙 Dark Mode (Version B)**:
+
+| Component          | Color Name   | HEX Code |
+| ------------------ | ------------ | -------- |
+| **Background**     | Dark Black   | #121212  |
+| **Surface**        | Dark Gray    | #1E1E1E  |
+| **Text Primary**   | Light Gray   | #E8EAED  |
+| **Text Secondary** | Medium Gray  | #9AA0A6  |
+| **Primary**        | Light Blue   | #8AB4F8  |
+| **Accent**         | Light Yellow | #FDD663  |
+
+```css
+/* Dark Mode (Version B) */
+--background: #121212; /* Dark Black */
+--surface: #1e1e1e; /* Dark Gray */
+--text-primary: #e8eaed; /* Light Gray */
+--text-secondary: #9aa0a6; /* Medium Gray */
+--primary: #8ab4f8; /* Light Blue - adjusted for dark mode */
+--accent: #fdd663; /* Light Yellow - adjusted for dark mode */
+--border: #2e2e2e; /* Dark Border */
+--error: #f28b82; /* Light Red - adjusted for dark mode */
+```
+
+---
+
+#### **Choosing a Color Scheme**
+
+**Use Version A (Green)** if:
+
+- You want a classic Medium-inspired look
+- Brand recognition with green is important
+- Calming, nature-inspired aesthetic desired
+
+**Use Version B (Yellow Accent)** ⭐ **Recommended** if:
+
+- Modern, professional appearance is priority
+- Need strong visual hierarchy (blue primary + yellow accent)
+- Better accessibility (blue/yellow have better contrast)
+- Target audience: working professionals (corporate feel)
+
+**Implementation Note**:
+
+- Choose ONE version and apply consistently across entire app
+- Version B is recommended for LEXIA's target audience (working professionals)
+- All examples in this document will use Version B unless specified
 
 ### Spacing & Layout
 
@@ -176,16 +263,115 @@ padding-y: 32px (Mobile), 48px (Tablet), 64px (Desktop);
 #### 3. Card Design
 
 ```tsx
-// Subtle shadows, clean borders
-<Card className="border border-border bg-card hover:shadow-lg transition-shadow">
+// Subtle shadows, clean borders (Version B colors)
+<Card className="border border-[#E0E0E0] bg-[#F8F9FA] hover:shadow-lg transition-shadow">
   <CardHeader>
-    <CardTitle className="text-2xl font-serif">Course Title</CardTitle>
-    <CardDescription className="text-muted-foreground">
-      Description
+    <CardTitle className="text-2xl font-serif text-[#202124]">
+      Course Title
+    </CardTitle>
+    <CardDescription className="text-[#5F6368]">
+      Intermediate • 24 lessons • 8 hours
     </CardDescription>
   </CardHeader>
-  <CardContent>{/* Content */}</CardContent>
+  <CardContent>
+    <div className="flex items-center gap-2 mb-4">
+      <Badge className="bg-[#FFB300] text-[#202124] hover:bg-[#FFB300]/90">
+        Featured
+      </Badge>
+      <Badge variant="outline" className="border-[#E0E0E0] text-[#5F6368]">
+        Business English
+      </Badge>
+    </div>
+    <Button className="w-full bg-[#1A73E8] hover:bg-[#1557B0] text-white">
+      Start Learning
+    </Button>
+  </CardContent>
 </Card>
+```
+
+#### 4. Button Variants (Version B)
+
+```tsx
+// Primary Button (Deep Blue)
+<Button className="bg-[#1A73E8] hover:bg-[#1557B0] text-white">
+  Primary Action
+</Button>
+
+// Secondary Button (Outline)
+<Button
+  variant="outline"
+  className="border-[#1A73E8] text-[#1A73E8] hover:bg-[#1A73E8]/10"
+>
+  Secondary Action
+</Button>
+
+// Accent Button (Yellow - for highlights)
+<Button className="bg-[#FFB300] hover:bg-[#E09F00] text-[#202124]">
+  Highlight Action
+</Button>
+
+// Destructive Button
+<Button
+  variant="destructive"
+  className="bg-[#EA4335] hover:bg-[#D33426] text-white"
+>
+  Delete
+</Button>
+```
+
+#### 5. Tag/Badge System (Version B)
+
+```tsx
+// Accent Tag (Yellow)
+<Badge className="bg-[#FFB300] text-[#202124]">
+  New
+</Badge>
+
+// Primary Tag (Blue)
+<Badge className="bg-[#1A73E8] text-white">
+  Premium
+</Badge>
+
+// Outline Tag
+<Badge variant="outline" className="border-[#E0E0E0] text-[#5F6368]">
+  Intermediate
+</Badge>
+
+// Success Tag
+<Badge className="bg-[#34A853] text-white">
+  Completed
+</Badge>
+```
+
+#### 6. Alert/Notification (Version B)
+
+```tsx
+// Info Alert (Primary Blue)
+<Alert className="border-[#1A73E8] bg-[#E8F0FE]">
+  <InfoIcon className="h-4 w-4 text-[#1A73E8]" />
+  <AlertTitle className="text-[#1A73E8]">Information</AlertTitle>
+  <AlertDescription className="text-[#5F6368]">
+    Your lesson progress has been saved.
+  </AlertDescription>
+</Alert>
+
+// Warning Alert (Yellow)
+<Alert className="border-[#FFB300] bg-[#FFF9E6]">
+  <AlertTriangle className="h-4 w-4 text-[#FFB300]" />
+  <AlertTitle className="text-[#202124]">Warning</AlertTitle>
+  <AlertDescription className="text-[#5F6368]">
+    You have 3 pending assignments due tomorrow.
+  </AlertDescription>
+</Alert>
+
+// Error Alert
+<Alert className="border-[#EA4335] bg-[#FCE8E6]">
+  <XCircle className="h-4 w-4 text-[#EA4335]" />
+  <AlertTitle className="text-[#EA4335]">Error</AlertTitle>
+  <AlertDescription className="text-[#5F6368]">
+    Failed to load lesson. Please try again.
+  </AlertDescription>
+</Alert>
 ```
 
 ## Responsive Design
@@ -237,13 +423,194 @@ xl: 1280px  /* Desktop medium */
 // Use next-themes for dark mode
 import { ThemeProvider } from "next-themes";
 
-// Tailwind dark mode classes
-<div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+// Version B Dark Mode with Tailwind classes
+<div className="bg-white dark:bg-[#121212] text-[#202124] dark:text-[#E8EAED]">
   {/* Content */}
 </div>;
 ```
 
 ### Requirements
+
+- ✅ System preference detection
+- ✅ Manual toggle in UI
+- ✅ Persistent user preference
+- ✅ Smooth transitions
+- ✅ All components support dark mode
+
+### Dark Mode Examples (Version B)
+
+#### Header (Dark Mode)
+
+```tsx
+<header className="border-b border-[#E0E0E0] dark:border-[#2E2E2E] bg-white/95 dark:bg-[#121212]/95 backdrop-blur">
+  <div className="container flex h-16 items-center justify-between px-6">
+    <Logo />
+    <Navigation />
+    <ThemeToggle /> {/* Light/Dark mode toggle */}
+    <UserMenu />
+  </div>
+</header>
+```
+
+#### Card (Dark Mode)
+
+```tsx
+<Card className="border border-[#E0E0E0] dark:border-[#2E2E2E] bg-[#F8F9FA] dark:bg-[#1E1E1E] hover:shadow-lg transition-shadow">
+  <CardHeader>
+    <CardTitle className="text-2xl font-serif text-[#202124] dark:text-[#E8EAED]">
+      Course Title
+    </CardTitle>
+    <CardDescription className="text-[#5F6368] dark:text-[#9AA0A6]">
+      Intermediate • 24 lessons
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <Badge className="bg-[#FFB300] dark:bg-[#FDD663] text-[#202124] dark:text-[#121212]">
+      Featured
+    </Badge>
+    <Button className="bg-[#1A73E8] dark:bg-[#8AB4F8] text-white dark:text-[#121212] hover:bg-[#1557B0] dark:hover:bg-[#A8C7FA]">
+      Start Learning
+    </Button>
+  </CardContent>
+</Card>
+```
+
+#### Alert (Dark Mode)
+
+```tsx
+// Info Alert in Dark Mode
+<Alert className="border-[#1A73E8] dark:border-[#8AB4F8] bg-[#E8F0FE] dark:bg-[#1E1E1E]">
+  <InfoIcon className="h-4 w-4 text-[#1A73E8] dark:text-[#8AB4F8]" />
+  <AlertTitle className="text-[#1A73E8] dark:text-[#8AB4F8]">
+    Information
+  </AlertTitle>
+  <AlertDescription className="text-[#5F6368] dark:text-[#9AA0A6]">
+    Your lesson progress has been saved.
+  </AlertDescription>
+</Alert>
+
+// Warning Alert in Dark Mode
+<Alert className="border-[#FFB300] dark:border-[#FDD663] bg-[#FFF9E6] dark:bg-[#1E1E1E]">
+  <AlertTriangle className="h-4 w-4 text-[#FFB300] dark:text-[#FDD663]" />
+  <AlertTitle className="text-[#202124] dark:text-[#E8EAED]">
+    Warning
+  </AlertTitle>
+  <AlertDescription className="text-[#5F6368] dark:text-[#9AA0A6]">
+    You have 3 pending assignments due tomorrow.
+  </AlertDescription>
+</Alert>
+```
+
+#### Theme Toggle Component
+
+```tsx
+"use client";
+
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
+
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="text-[#5F6368] dark:text-[#9AA0A6] hover:bg-[#F8F9FA] dark:hover:bg-[#1E1E1E]"
+    >
+      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
+}
+```
+
+### CSS Variables Setup (Version B)
+
+```css
+/* globals.css or app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode - Version B */
+    --primary: #1a73e8; /* Deep Blue */
+    --accent: #ffb300; /* Warm Yellow */
+    --background: #ffffff;
+    --surface: #f8f9fa;
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --border: #e0e0e0;
+    --error: #ea4335;
+  }
+
+  .dark {
+    /* Dark Mode - Version B */
+    --background: #121212;
+    --surface: #1e1e1e;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --primary: #8ab4f8; /* Light Blue for dark mode */
+    --accent: #fdd663; /* Light Yellow for dark mode */
+    --border: #2e2e2e;
+    --error: #f28b82;
+  }
+}
+
+/* Apply to body */
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+```
+
+### Tailwind Config Extension (Version B)
+
+```js
+// tailwind.config.js
+module.exports = {
+  darkMode: ["class"],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: "#1A73E8", // Deep Blue
+          light: "#8AB4F8", // Light Blue (dark mode)
+          dark: "#1557B0", // Darker Blue (hover)
+        },
+        accent: {
+          DEFAULT: "#FFB300", // Warm Yellow
+          light: "#FDD663", // Light Yellow (dark mode)
+          dark: "#E09F00", // Darker Yellow (hover)
+        },
+        background: {
+          DEFAULT: "#FFFFFF",
+          dark: "#121212",
+        },
+        surface: {
+          DEFAULT: "#F8F9FA",
+          dark: "#1E1E1E",
+        },
+        text: {
+          primary: "#202124",
+          "primary-dark": "#E8EAED",
+          secondary: "#5F6368",
+          "secondary-dark": "#9AA0A6",
+        },
+        border: {
+          DEFAULT: "#E0E0E0",
+          dark: "#2E2E2E",
+        },
+      },
+    },
+  },
+};
+```
 
 - ✅ System preference detection
 - ✅ Manual toggle in UI
