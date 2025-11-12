@@ -156,25 +156,27 @@ npx shadcn-ui@latest add button input card form toast dropdown-menu badge
 // src/store/authStore.ts
 export interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
-  login: (tokens: TokenResponse, user: User) => void;
-  logout: () => void;
-  setUser: (user: User) => void;
-  refreshAccessToken: () => Promise<void>;
+  loading: boolean;
+  // ❌ REMOVED: accessToken, refreshToken (Security: httpOnly cookies only)
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  loadUser: () => Promise<void>; // NEW: Fetch user profile from API
 }
 ```
 
+**🔐 Security Update**: Tokens stored in httpOnly cookies set by backend. NO client-side token storage.
+
 **Stores Required**:
 
-1. **authStore**: Authentication state and tokens
+1. **authStore**: User state and session management (NO tokens)
 2. **courseStore**: Course filters and state
 3. **progressStore**: Progress and streak data
 
 **Acceptance Criteria**:
 
-- [x] authStore created with localStorage persistence
+- [x] authStore created ~~with localStorage persistence~~ ❌ **NO token storage**
 - [x] courseStore created with filter state
 - [x] progressStore created with progress state
 - [x] All stores with TypeScript types
@@ -183,9 +185,11 @@ export interface AuthState {
 **Definition of Done**:
 
 - [x] 3 Zustand stores created
-- [x] localStorage integration for auth
+- [x] ~~localStorage integration for auth~~ ❌ **REMOVED** (httpOnly cookies only)
 - [x] TypeScript types defined
 - [x] Store actions tested
+
+**🔐 CRITICAL**: AuthState contains ONLY `{ user, isAuthenticated, loading }`. NO tokens.
 
 ---
 
@@ -201,54 +205,92 @@ export interface AuthState {
 // src/lib/api.ts
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true, // 🔐 Send httpOnly cookies automatically
   timeout: 30000,
 });
 
-// Request interceptor - add JWT token
+// Request interceptor - NO manual token setting
 api.interceptors.request.use((config) => {
-  const token = authStore.getState().accessToken;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  // ❌ REMOVED: Manual Authorization header
+  // ✅ Cookies sent automatically by browser
   return config;
 });
 
-// Response interceptor - handle 401, refresh token
+// Response interceptor - handle 401, refresh token, retry logic
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      // Attempt token refresh
-      // If refresh fails, logout user
+    const { response, config } = error;
+
+    // Handle 401 - Token refresh
+    if (response?.status === 401 && !config._retry) {
+      config._retry = true;
+      // Use Promise lock to prevent concurrent refresh
+      if (!refreshPromise) {
+        refreshPromise = authService.refreshSession().finally(() => {
+          refreshPromise = null;
+        });
+      }
+      try {
+        await refreshPromise;
+        return api(config); // Retry original request
+      } catch {
+        await authStore.getState().logout();
+        throw error;
+      }
     }
+
+    // Smart retry logic
+    const shouldRetry =
+      ["GET", "HEAD", "OPTIONS"].includes(config.method?.toUpperCase()) &&
+      (error.code === "ERR_NETWORK" || response?.status >= 500);
+
+    if (shouldRetry && (config._retryCount || 0) < 3) {
+      config._retryCount = (config._retryCount || 0) + 1;
+      const backoff = 300 * Math.pow(2, config._retryCount - 1); // Exponential
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+      return api(config);
+    }
+
     return Promise.reject(error);
   }
 );
 ```
 
+**🔐 Security Updates**:
+
+- ✅ `withCredentials: true` for automatic cookie sending
+- ❌ NO manual Authorization header (httpOnly cookies handle this)
+- ✅ Promise lock prevents concurrent refresh
+- ✅ Smart retry: ONLY GET/HEAD/OPTIONS (idempotent)
+- ✅ Exponential backoff: 300ms → 600ms → 1200ms
+
 **API Services Required**:
 
-1. **authService**: login, register, refreshToken, logout
+1. **authService**: login, register, refreshSession, logout
 2. **courseService**: getCourses, getCourseById, searchCourses
 3. **progressService**: getProgress, completeLesson, getStreak
 4. **profileService**: getProfile, updateProfile, uploadAvatar
 
 **Acceptance Criteria**:
 
-- [x] Axios instance configured with baseURL
-- [x] Request interceptor adds JWT token
+- [x] Axios instance configured with baseURL and withCredentials
+- [x] ~~Request interceptor adds JWT token~~ ❌ **REMOVED** (httpOnly cookies)
 - [x] Response interceptor handles 401/403
-- [x] Token refresh logic implemented
+- [x] Token refresh logic implemented with Promise lock
+- [x] Smart retry logic (GET/HEAD only, exponential backoff)
 - [x] 4 API service files created
 - [x] TypeScript types for all API responses
 - [x] Error handling with proper format
 
 **Definition of Done**:
 
-- [x] api.ts with interceptors
+- [x] api.ts with secure interceptors (no manual token handling)
 - [x] 4 service files with API functions
 - [x] Type definitions for requests/responses
 - [x] JSDoc comments on all functions
+
+**🔐 CRITICAL**: NO manual token management. Backend sets/reads httpOnly cookies.
 
 ---
 
@@ -356,8 +398,11 @@ type LoginFormData = z.infer<typeof loginSchema>;
 - [ ] Login page at /login route
 - [ ] Form validation with real-time feedback
 - [ ] API integration with authService.login()
-- [ ] JWT tokens stored in authStore
-- [ ] Error handling (401, network errors)
+- [ ] ~~JWT tokens stored in authStore~~ ❌ **REMOVED** (httpOnly cookies)
+- [ ] ✅ **Session established via httpOnly cookies** (backend sets automatically)
+- [ ] ✅ **User profile fetched** via authService.getProfile() after successful login
+- [ ] ✅ **User data stored in authStore** (user, isAuthenticated: true)
+- [ ] Error handling (401 → "Invalid credentials", network → "Connection failed", 500 → "Server error")
 - [ ] Loading spinner during submission
 - [ ] Redirect to /dashboard on success
 - [ ] Responsive design (mobile, tablet, desktop)
@@ -366,10 +411,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 - [ ] Login page component created
 - [ ] Form validation working
-- [ ] API integration tested
-- [ ] Error handling comprehensive
+- [ ] API integration tested (httpOnly cookies verified)
+- [ ] Error handling comprehensive (specific messages for each error type)
 - [ ] Responsive on all devices
-- [ ] Tests written (if applicable)
+- [ ] Tests written (cookie-based auth flow)
+
+**🔐 Security**: Backend sets httpOnly cookies on successful login. Client fetches user profile to populate authStore.
 
 ---
 
@@ -420,8 +467,11 @@ const registerSchema = z
 - [ ] Password strength indicator visual
 - [ ] Terms checkbox required
 - [ ] API integration with authService.register()
-- [ ] Auto-login and redirect to dashboard
-- [ ] Error handling (409, validation errors)
+- [ ] ~~Auto-login and redirect to dashboard~~ → Already logged in (backend sets cookies)
+- [ ] ✅ **Session established via httpOnly cookies** (backend sets on registration)
+- [ ] ✅ **User profile fetched** via authService.getProfile() after registration
+- [ ] ✅ **User data stored in authStore** (user, isAuthenticated: true)
+- [ ] Error handling (409 → "Email already registered. Please login.", 422 → inline errors, network, 500)
 - [ ] Responsive design
 
 **Definition of Done**:
@@ -429,9 +479,11 @@ const registerSchema = z
 - [ ] Register page created
 - [ ] Password strength indicator working
 - [ ] Form validation comprehensive
-- [ ] API integration tested
-- [ ] Auto-login after registration
-- [ ] Tests written
+- [ ] API integration tested (httpOnly cookies verified)
+- [ ] ~~Auto-login after registration~~ → Session already established by backend
+- [ ] Tests written (cookie-based registration flow)
+
+**🔐 Security**: Backend sets httpOnly cookies on successful registration. No client-side token handling.
 
 ---
 
@@ -482,24 +534,32 @@ const api = axios.create({
 
 **Acceptance Criteria**:
 
-- [ ] Token storage functions (get from cookie, clear via logout API)
-- [ ] Token expiry check function (decode JWT)
-- [ ] Token refresh in axios interceptor (automatic)
-- [ ] Mutex to prevent concurrent refreshes
-- [ ] Auto-logout on refresh failure
-- [ ] useAuth hook for token management
+- [ ] ~~Token storage functions~~ ❌ **NO CLIENT-SIDE TOKEN STORAGE**
+- [ ] ✅ **Session management via httpOnly cookies** (backend handles)
+- [ ] ~~Token expiry check function~~ ❌ **REMOVED** (backend validates tokens)
+- [ ] ✅ **Token refresh in axios interceptor** with Promise lock pattern (automatic)
+- [ ] ✅ **Mutex to prevent concurrent refreshes** (refreshPromise pattern)
+- [ ] ✅ **Auto-logout on refresh failure** (401 → refresh → 401 → logout)
+- [ ] ✅ **useAuth hook for session check** (calls getProfile API)
 - [ ] Token refresh tested comprehensively
-- [ ] Network error handling (retry 3 times)
+- [ ] Network error handling with smart retry (GET/HEAD only, exponential backoff)
 - [ ] Offline detection (navigator.onLine)
 - [ ] Security documented in session notes
 
 **Definition of Done**:
 
-- [ ] src/lib/auth.ts created
-- [ ] Token refresh logic in api.ts
-- [ ] useAuth hook created
-- [ ] All flows tested (login, refresh, logout)
-- [ ] Edge cases handled
+- [ ] ~~src/lib/auth.ts created~~ → Minimal utility functions only (no token handling)
+- [ ] Token refresh logic in api.ts with Promise lock
+- [ ] useAuth hook created (session check via getProfile)
+- [ ] All flows tested (login → refresh → logout)
+- [ ] Edge cases handled (concurrent 401s, network errors)
+
+**🔐 CRITICAL CHANGES**:
+
+- ❌ NO client-side token storage (localStorage, sessionStorage, Zustand)
+- ✅ Backend is source of truth for token validity
+- ✅ Client only calls APIs, never manages tokens
+- ✅ Promise lock prevents multiple concurrent refresh calls
 
 ---
 
@@ -511,29 +571,49 @@ const api = axios.create({
 
 **Technical Details**:
 
+**⚠️ IMPORTANT**: Next.js middleware shouldn't attempt to validate JWTs client-side. Use the backend session API instead so the server validates httpOnly cookies.
+
 ```typescript
 // src/middleware.ts
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get("accessToken");
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public routes
-  if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
+  // Public routes - allow without authentication
+  const publicRoutes = ["/login", "/register", "/", "/forgot-password"];
+  if (publicRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // Protected routes
-  if (!token) {
+  // Protected routes - check session via backend API
+  try {
+    // ❌ WRONG: Validate JWT or read/parse token on the client side in middleware
+    // ✅ CORRECT: Call backend session endpoint (backend reads httpOnly cookie securely)
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/session`,
+      {
+        headers: { Cookie: request.headers.get("cookie") || "" },
+      }
+    );
+
+    if (!response.ok) {
+      // Prevent redirect loop
+      if (pathname !== "/login") {
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+    }
+
+    return NextResponse.next();
+  } catch (error) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-
-  return NextResponse.next();
 }
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
 ```
+
+**🔐 Security Note**: Middleware calls backend session endpoint. Backend reads httpOnly cookie server-side and validates.
 
 **Protected Routes**:
 
@@ -548,6 +628,7 @@ export const config = {
 - /login
 - /register
 - / (home)
+- /forgot-password
 
 **Acceptance Criteria**:
 
@@ -580,62 +661,72 @@ export const config = {
 // src/store/authStore.ts
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
-  isLoading: boolean; // NEW
-  login: (tokens: TokenResponse, user: User) => void;
-  logout: () => void;
-  setUser: (user: User) => void;
-  loadUser: () => Promise<void>; // NEW
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  loadUser: () => Promise<void>;
 }
 
-const useAuthStore = create<AuthState>((set, get) => ({
+const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  accessToken: null,
-  refreshToken: null,
   isAuthenticated: false,
   isLoading: true,
 
   loadUser: async () => {
-    const token = getAccessToken();
-    if (token && !isTokenExpired(token)) {
-      try {
-        const user = await profileService.getProfile();
-        set({ user, accessToken: token, isAuthenticated: true });
-      } catch (error) {
-        clearTokens();
-      }
+    // Validate session via backend; backend reads httpOnly cookie
+    try {
+      const user = await profileService.getProfile();
+      set({ user, isAuthenticated: true, isLoading: false });
+    } catch {
+      set({ user: null, isAuthenticated: false, isLoading: false });
     }
-    set({ isLoading: false });
   },
+
+  login: async (email, password) => {
+    await authService.login({ email, password }); // backend sets cookies
+    const user = await profileService.getProfile();
+    set({ user, isAuthenticated: true });
+  },
+
+  logout: async () => {
+    await authService.logout();
+    set({ user: null, isAuthenticated: false });
+  },
+
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
 }));
 ```
 
+**🔐 Security Update**: NO token checking. Backend validates httpOnly cookie when getProfile is called.
+
 **User Initialization Flow**:
 
-1. On app mount, check localStorage for tokens
-2. If token exists and not expired, fetch user profile
-3. Update store with user data
-4. Set isLoading to false
-5. If token missing or expired, set isLoading to false
+1. On app mount, call loadUser()
+2. loadUser() calls authService.getProfile() → Backend validates httpOnly cookie
+3. If 200: User authenticated, update store with user data
+4. If 401: User not authenticated, set isAuthenticated: false
+5. Set isLoading: false
 
 **Acceptance Criteria**:
 
-- [ ] isLoading state added to store
-- [ ] loadUser() action implemented
-- [ ] loadUser() called on app mount
-- [ ] Loading screen shown while checking auth
-- [ ] User data loaded from API if token valid
-- [ ] Full auth flow tested (login → refresh → logout)
+- [ ] isLoading state added to store (initial: true)
+- [ ] loadUser() action implemented (calls getProfile API)
+- [ ] loadUser() called on app mount (\_app.tsx or layout.tsx)
+- [ ] Loading screen shown while isLoading === true
+- [ ] ~~User data loaded from API if token valid~~ → User data loaded if session valid
+- [ ] Full auth flow tested (login → session check → logout)
 
 **Definition of Done**:
 
-- [ ] Auth store updated
-- [ ] User initialization working
+- [ ] Auth store updated (NO token fields, only user/isAuthenticated/loading)
+- [ ] User initialization working (API-based session check)
 - [ ] Loading state handled
 - [ ] All auth flows tested
 - [ ] Documentation updated
+
+**🔐 CRITICAL**: AuthState structure: `{ user: User | null, isAuthenticated: boolean, loading: boolean }`. NO tokens.
 
 ---
 
@@ -1434,7 +1525,7 @@ const [settings, setSettings] = useState({
 
 ---
 
-## 🎯 EPIC F: Testing & Polish (3 points)
+## 🎯 EPIC F: Testing & Polish (4 points)
 
 ### Task F1: Form Validation Refinement (0.5 points)
 
@@ -1773,7 +1864,7 @@ Level 3 (Critical): Scope adjustment, re-planning
 
 ## �📊 Sprint 3 Summary
 
-### Total Story Points: 28
+### Total Story Points: 29
 
 | Epic                      | Story Points | Priority | Status         |
 | ------------------------- | ------------ | -------- | -------------- |
@@ -1782,7 +1873,7 @@ Level 3 (Critical): Scope adjustment, re-planning
 | C: Dashboard & Layout     | 4            | P0       | 🔵 Not Started |
 | D: Course & Learning Path | 7            | P0       | 🔵 Not Started |
 | E: Progress & Profile     | 5            | P0       | 🔵 Not Started |
-| F: Testing & Polish       | 3            | P0       | 🔵 Not Started |
+| F: Testing & Polish       | 4            | P0       | 🔵 Not Started |
 
 ### Technology Stack
 

@@ -52,11 +52,11 @@
 ```
 ✓ Login page with form validation
 ✓ Register page with password confirmation
-✓ JWT token management (localStorage)
-✓ Token refresh logic
-✓ Auth store (Zustand)
-✓ Protected route middleware
-✓ Logout functionality
+✓ Secure session management via httpOnly cookies (no localStorage)
+✓ Token refresh logic in axios interceptor (Promise lock)
+✓ Auth store (Zustand) without token fields
+✓ Protected route middleware calls backend /auth/session
+✓ Logout functionality (server clears cookies)
 ```
 
 **Day 5-7 (Nov 12-14): Layout & Dashboard** 🏠
@@ -177,12 +177,12 @@ npx shadcn-ui@latest add button input card form toast
 // src/store/authStore.ts
 export interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
-  refreshAccessToken: () => Promise<void>;
+  logout: () => Promise<void>;
+  loadUser: () => Promise<void>;
 }
 
 // src/store/courseStore.ts
@@ -199,25 +199,51 @@ export interface AuthState {
 // src/lib/api.ts
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+  timeout: 30000,
 });
 
-// Request interceptor (add JWT)
-api.interceptors.request.use((config) => {
-  const token = authStore.getState().accessToken;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// No manual Authorization header — cookies are sent automatically
+api.interceptors.request.use((config) => config);
 
-// Response interceptor (handle 401, refresh token)
+let refreshPromise: Promise<void> | null = null;
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Handle 401, trigger refresh token
+    const { response, config } = error;
+
+    if (response?.status === 401 && !config._retry) {
+      config._retry = true;
+      if (!refreshPromise) {
+        refreshPromise = authService.refreshSession().finally(() => {
+          refreshPromise = null;
+        });
+      }
+      try {
+        await refreshPromise;
+        return api(config);
+      } catch {
+        await authService.logout();
+        return Promise.reject(error);
+      }
+    }
+
+    const method = (config?.method || "").toUpperCase();
+    const shouldRetry =
+      ["GET", "HEAD", "OPTIONS"].includes(method) &&
+      (error.code === "ERR_NETWORK" || response?.status >= 500);
+
+    if (shouldRetry && (config._retryCount || 0) < 3) {
+      config._retryCount = (config._retryCount || 0) + 1;
+      const backoff =
+        300 * Math.pow(2, config._retryCount - 1) + Math.random() * 50;
+      await new Promise((r) => setTimeout(r, backoff));
+      return api(config);
+    }
+
+    return Promise.reject(error);
   }
 );
 ```
@@ -303,31 +329,20 @@ const registerSchema = z
 
 ---
 
-**B3: JWT Token Management** (1 pt)
+**B3: JWT Session Management (httpOnly cookies)** (1 pt)
 
 **Features**:
 
-- Store tokens in localStorage
-- Axios interceptor for adding Bearer token
-- Auto-refresh on 401
-- Token expiry check
-- Logout clears tokens
+- No client-side token storage (no localStorage/sessionStorage)
+- Axios sends cookies automatically with `withCredentials: true`
+- Auto-refresh on 401 using refresh cookie (Promise lock)
+- Logout calls backend to clear cookies
 
-**Implementation**:
+**Implementation Notes**:
 
 ```typescript
-// src/lib/auth.ts
-export const setTokens = (access: string, refresh: string) => {
-  localStorage.setItem("accessToken", access);
-  localStorage.setItem("refreshToken", refresh);
-};
-
-export const getAccessToken = () => localStorage.getItem("accessToken");
-
-export const clearTokens = () => {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-};
+// No token getters/setters needed; backend manages cookies via Set-Cookie (HttpOnly; Secure; SameSite=Strict)
+// Refresh handled in api.ts interceptor with a shared refreshPromise to avoid race conditions
 ```
 
 ---
@@ -343,16 +358,27 @@ export const clearTokens = () => {
 - Allow public routes (/login, /register)
 
 ```typescript
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get("accessToken");
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
-
-  if (!token && !isAuthRoute) {
-    return NextResponse.redirect(new URL("/login", request.url));
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const publicRoutes = ["/login", "/register", "/", "/forgot-password"];
+  if (publicRoutes.some((r) => pathname.startsWith(r))) {
+    return NextResponse.next();
   }
 
-  if (token && isAuthRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  try {
+    // Delegate auth validation to backend; it reads httpOnly cookies
+    const resp = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/session`,
+      {
+        headers: { Cookie: request.headers.get("cookie") || "" },
+      }
+    );
+    if (!resp.ok && pathname !== "/login") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    return NextResponse.next();
+  } catch {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 }
 ```
@@ -368,12 +394,11 @@ export function middleware(request: NextRequest) {
 ```typescript
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterDTO) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loadUser: () => Promise<void>;
 }
 ```

@@ -171,23 +171,27 @@
 - [x] Create `src/store/authStore.ts`
 - [x] Define AuthState interface:
   - [x] user: User | null
-  - [x] accessToken: string | null
-  - [x] refreshToken: string | null
   - [x] isAuthenticated: boolean
+  - [x] loading: boolean
+  - [x] ~~accessToken: string | null~~ ❌ **REMOVED** (Security: use httpOnly cookies)
+  - [x] ~~refreshToken: string | null~~ ❌ **REMOVED** (Security: use httpOnly cookies)
 - [x] Implement actions:
-  - [x] login(tokens, user)
-  - [x] logout()
+  - [x] login(email, password) → Call API, backend sets httpOnly cookies
+  - [x] logout() → Call API to clear httpOnly cookies
   - [x] setUser(user)
-  - [x] refreshAccessToken()
-- [x] Add localStorage persistence
+  - [x] loadUser() → Fetch user profile if authenticated
+  - [x] ~~refreshAccessToken()~~ ❌ **REMOVED** (Handled by Axios interceptor)
+- [x] ~~Add localStorage persistence~~ ❌ **REMOVED** (No token storage in client)
 - [x] Test store with sample data
 
 **Deliverables**:
 
 - ✅ src/store/authStore.ts (100+ lines)
-- ✅ Full authentication state management
-- ✅ localStorage integration
+- ✅ Cookie-based session management (NO token storage)
+- ✅ ~~localStorage integration~~ ❌ **REMOVED** (Security: httpOnly cookies only)
 - ✅ TypeScript types defined
+
+**🔐 Security Note**: Tokens are stored in httpOnly cookies set by backend (HttpOnly; Secure; SameSite=Strict). Client NEVER stores tokens in localStorage or state.
 
 #### A3.2: Create Additional Stores (0.2 points) ✅ COMPLETE
 
@@ -229,7 +233,7 @@
   - [x] timeout: 30000ms
   - [x] headers: 'Content-Type': 'application/json'
 - [x] Add request interceptor:
-  - [x] Add JWT Bearer token from cookie (axios sends automatically)
+  - [x] ~~Add JWT Bearer token from cookie~~ ❌ **NOT NEEDED** (Cookies sent automatically)
   - [x] Set withCredentials: true for cookie support
   - [x] Log requests in development
 - [x] Add response interceptor:
@@ -238,8 +242,16 @@
   - [x] Handle network errors (ERR_NETWORK, no internet)
   - [x] Handle timeout errors (ECONNABORTED)
   - [x] Handle server errors (500, 502, 503)
-  - [x] Add retry logic for network errors (3 attempts)
+  - [x] Add retry logic with **SMART RETRY RULES**:
+    - [x] ✅ **Retry ONLY for idempotent methods** (GET, HEAD, OPTIONS)
+    - [x] ❌ **DO NOT retry** POST, PUT, PATCH, DELETE
+    - [x] ✅ **Exponential backoff**: 300ms → 600ms → 1200ms (max 3 attempts)
+    - [x] ✅ **Add jitter** (±50ms random) to prevent thundering herd
+    - [x] ❌ **DO NOT retry** 401, 403, 404, 422 (client errors)
+    - [x] ✅ **Retry** network errors, timeout, 500, 502, 503, 504
   - [x] Return proper error format
+
+**🔐 Security Note**: NO manual Authorization header. Backend reads httpOnly cookie automatically.
 
 **Deliverables**:
 
@@ -377,6 +389,60 @@
 
 ---
 
+### Task B0: Security Consolidation Checklist (0 points) 🔐
+
+**Priority**: P0 | **Dependencies**: None | **Estimated**: 0 days (Documentation only)  
+**Status**: 🔵 Not Started | **Type**: Quality Gate
+
+#### Purpose:
+
+Ensure all authentication security requirements are met before proceeding with implementation.
+
+#### Security Checklist:
+
+**✅ Token Storage**:
+
+- [ ] Confirm NO localStorage/sessionStorage usage
+- [ ] Confirm NO token fields in AuthState (Zustand)
+- [ ] Confirm axios uses `withCredentials: true`
+- [ ] Document backend cookie settings: `HttpOnly; Secure; SameSite=Strict`
+
+**✅ API Client**:
+
+- [ ] Confirm NO manual Authorization header
+- [ ] Confirm retry logic ONLY for GET/HEAD/OPTIONS
+- [ ] Confirm exponential backoff: 300ms → 600ms → 1200ms
+- [ ] Confirm Promise lock for refresh (prevent concurrent)
+
+**✅ Middleware**:
+
+- [ ] Confirm uses backend `/auth/session` endpoint (not client-side cookie read)
+- [ ] Confirm prevents redirect loops
+- [ ] Document public routes: `/`, `/login`, `/register`, `/forgot-password`
+
+**✅ CSRF Protection**:
+
+- [ ] Note: SameSite=Strict provides basic protection
+- [ ] Note: Full CSRF token implementation in Sprint 7 (Security)
+- [ ] Document: Same-origin policy + CORS configuration
+
+**✅ Documentation**:
+
+- [ ] Update session notes with security decisions
+- [ ] Document why httpOnly cookies (XSS prevention)
+- [ ] Document auth flow: login → cookie → getProfile → authStore
+- [ ] Add OWASP compliance notes
+
+**Deliverables**:
+
+- [ ] Security checklist completed
+- [ ] Session documentation updated
+- [ ] Team aware of security constraints
+
+**🔐 CRITICAL**: This is a quality gate. All checkboxes must be verified before Task B1.
+
+---
+
 ### Task B1: Login Page (1.5 points)
 
 **Priority**: P0 | **Dependencies**: A1-A5 | **Estimated**: 1 day  
@@ -412,13 +478,17 @@
 
 - [ ] Integrate with authService.login()
 - [ ] Handle successful login:
-  - [ ] Store tokens in authStore
-  - [ ] Store user data in authStore
+  - [ ] ~~Store tokens in authStore~~ ❌ **NO TOKEN STORAGE** (httpOnly cookies)
+  - [ ] Backend sets httpOnly cookies automatically via `Set-Cookie` header
+  - [ ] Call authService.getProfile() to fetch user data
+  - [ ] Store user data in authStore (user, isAuthenticated: true)
   - [ ] Redirect to dashboard
 - [ ] Handle errors:
-  - [ ] Display error toast
+  - [ ] Display error toast with clear message
   - [ ] Show inline form errors
-  - [ ] Handle 401 (invalid credentials)
+  - [ ] Handle 401 (invalid credentials) → "Email or password incorrect"
+  - [ ] Handle network errors → "Connection failed. Please try again."
+  - [ ] Handle 500 → "Server error. Please try again later."
 - [ ] Add loading spinner during request
 - [ ] Test login flow end-to-end
 
@@ -426,9 +496,11 @@
 
 - [ ] Login page at /login
 - [ ] Full form validation
-- [ ] API integration working
+- [ ] API integration working (httpOnly cookies)
 - [ ] Responsive design
-- [ ] Error handling
+- [ ] Comprehensive error handling
+
+**🔐 Security**: Session established via httpOnly cookies. NO localStorage/sessionStorage usage.
 
 ---
 
@@ -469,12 +541,16 @@
 
 - [ ] Integrate with authService.register()
 - [ ] Handle successful registration:
-  - [ ] Auto-login after registration
+  - [ ] ~~Auto-login after registration~~ → Already logged in (backend sets cookies)
+  - [ ] Call authService.getProfile() to fetch user data
+  - [ ] Store user data in authStore
   - [ ] Redirect to dashboard
-  - [ ] Show success toast
+  - [ ] Show success toast: "Welcome to LEXIA!"
 - [ ] Handle errors:
-  - [ ] Display error toast
-  - [ ] Handle 409 (email already exists)
+  - [ ] Display error toast with specific message
+  - [ ] Handle 409 (email already exists) → "This email is already registered. Please login."
+  - [ ] Handle 422 (validation errors) → Show inline errors
+  - [ ] Handle network errors → "Connection failed. Please try again."
   - [ ] Show inline form errors
 - [ ] Add loading spinner
 - [ ] Test registration flow
@@ -484,8 +560,11 @@
 - [ ] Register page at /register
 - [ ] Password strength indicator
 - [ ] Full validation
-- [ ] API integration
+- [ ] API integration (httpOnly cookies)
 - [ ] Responsive design
+- [ ] Comprehensive error handling
+
+**🔐 Security**: Backend sets httpOnly cookies on successful registration. NO localStorage.
 
 ---
 
@@ -501,15 +580,16 @@
 **⚠️ SECURITY UPDATE**: Using httpOnly cookies instead of localStorage to prevent XSS attacks
 
 - [ ] Create `src/lib/auth.ts`
-- [ ] Implement token functions:
-  - [ ] getAccessToken() → read from cookie (axios sends automatically)
-  - [ ] getRefreshToken() → read from cookie
-  - [ ] clearTokens() → call logout API to clear httpOnly cookies
-  - [ ] Note: Backend sets cookies via `Set-Cookie` header with `HttpOnly; Secure; SameSite=Strict`
-- [ ] Add token expiry check:
-  - [ ] isTokenExpired(token) → decode JWT, check exp
+- [ ] ~~Implement token functions~~ ❌ **NO CLIENT-SIDE TOKEN STORAGE**:
+  - [ ] ~~getAccessToken()~~ → Cookies sent automatically by browser
+  - [ ] ~~getRefreshToken()~~ → Cookies sent automatically by browser
+  - [ ] ~~setTokens()~~ → Backend sets cookies via `Set-Cookie` header
+  - [ ] clearTokens() → Call logout API to clear httpOnly cookies server-side
+  - [ ] Note: Backend sets cookies: `Set-Cookie: accessToken=...; HttpOnly; Secure; SameSite=Strict`
+- [ ] ~~Add token expiry check~~ ❌ **NOT NEEDED** (Backend handles expiry):
+  - [ ] ~~isTokenExpired(token)~~ → Backend validates tokens
 - [ ] Document security decision in session notes
-- [ ] Test token storage works
+- [ ] Test session management works
 
 **Security Rationale**:
 
@@ -517,35 +597,62 @@
 - ✅ Secure flag ensures HTTPS-only transmission
 - ✅ SameSite=Strict prevents CSRF attacks
 - ✅ Complies with OWASP best practices
+- ✅ **NO client-side token storage** (localStorage, sessionStorage, Zustand)
+
+**🔐 CRITICAL**: Client NEVER stores, reads, or manages tokens. Only backend handles cookies.
 
 #### B3.2: Implement Token Refresh (0.4 points)
 
 - [ ] Update axios interceptor in api.ts
+- [ ] Implement **Promise Lock Pattern** to prevent concurrent refresh:
+
+  ```typescript
+  let refreshPromise: Promise<void> | null = null;
+
+  if (response.status === 401 && !config._retry) {
+    config._retry = true;
+    if (!refreshPromise) {
+      refreshPromise = authService.refreshSession().finally(() => {
+        refreshPromise = null;
+      });
+    }
+    await refreshPromise;
+    return api(config); // Retry original request
+  }
+  ```
+
 - [ ] On 401 response:
-  - [ ] Call authService.refreshToken() (backend will refresh via httpOnly cookie)
-  - [ ] Backend returns new access token in cookie
+  - [ ] Call authService.refreshSession() → Backend uses httpOnly refresh cookie
+  - [ ] Backend returns new access token in cookie (automatic)
   - [ ] Retry original request automatically
-  - [ ] If refresh fails (403/401) → logout user and redirect to /login
-- [ ] Prevent multiple concurrent refresh requests (use mutex/lock pattern)
+  - [ ] If refresh fails (403/401) → Call logout() and redirect to /login
 - [ ] Queue failed requests during refresh, replay after success
 - [ ] Add offline detection (navigator.onLine)
 - [ ] Test token refresh flow comprehensively
 
+**🔐 Security Note**: Refresh endpoint uses httpOnly refresh cookie. NO refresh token sent in request body.
+
 #### B3.3: Implement Auto-Logout (0.2 points)
 
 - [ ] Create useAuth hook in `src/hooks/useAuth.ts`
-- [ ] Add token expiry timer:
-  - [ ] Check token expiry on mount
-  - [ ] Set timeout to refresh before expiry
-  - [ ] Auto-logout if refresh fails
+- [ ] ~~Add token expiry timer~~ ❌ **NOT NEEDED** (Backend handles expiry):
+  - [ ] ~~Check token expiry on mount~~ → Backend validates automatically
+  - [ ] ~~Set timeout to refresh before expiry~~ → 401 triggers refresh
+  - [ ] Auto-logout only if refresh fails (401 → refresh → 401)
+- [ ] Implement session check on app mount:
+  - [ ] Call authService.getProfile() to verify session
+  - [ ] If 401 → User not authenticated
+  - [ ] If 200 → Update authStore with user data
 - [ ] Test auto-logout works
 
 **Deliverables**:
 
-- [ ] src/lib/auth.ts with token functions
-- [ ] Token refresh in axios interceptor
-- [ ] useAuth hook with auto-logout
+- [ ] ~~src/lib/auth.ts with token functions~~ → Minimal auth utils only
+- [ ] Token refresh in axios interceptor (Promise lock pattern)
+- [ ] useAuth hook with session check
 - [ ] All flows tested
+
+**🔐 CRITICAL CHANGE**: NO client-side token expiry checks. Backend is source of truth.
 
 ---
 
@@ -558,16 +665,22 @@
 
 #### B4.1: Create Middleware (0.3 points)
 
+**⚠️ IMPORTANT**: Next.js middleware CANNOT read httpOnly cookies securely. Use session API instead.
+
 - [ ] Create `src/middleware.ts`
 - [ ] Check authentication:
-  - [ ] Get token from cookies/localStorage
-  - [ ] If no token → redirect to /login
-  - [ ] If token expired → redirect to /login
-- [ ] Define public routes:
-  - [ ] /login, /register (allow unauthenticated)
-- [ ] Define protected routes:
-  - [ ] /dashboard, /courses, /progress, /profile
+  - [ ] ~~Get token from cookies~~ ❌ **CANNOT READ httpOnly cookies in middleware**
+  - [ ] **Alternative approach**: Call backend `/api/v1/auth/session` (reads httpOnly cookie server-side)
+  - [ ] If no session → redirect to /login
+  - [ ] If session expired → redirect to /login
+- [ ] Define public routes (allow without auth):
+  - [ ] `/login`, `/register`, `/`, `/forgot-password`
+- [ ] Define protected routes (require auth):
+  - [ ] `/dashboard`, `/courses/*`, `/progress`, `/profile`, `/settings`
+- [ ] **Prevent redirect loop**: Check `request.nextUrl.pathname !== '/login'` before redirecting
 - [ ] Test middleware redirects work
+
+**🔐 Security Note**: Middleware calls backend session endpoint. Backend reads httpOnly cookie and validates.
 
 #### B4.2: Create Protected Route Component (0.2 points)
 
@@ -597,14 +710,26 @@
 #### B5.1: Add User Loading State (0.3 points)
 
 - [ ] Update authStore with:
-  - [ ] isLoading: boolean
+  - [ ] isLoading: boolean (initial: true)
   - [ ] loadUser() action
+  - [ ] ~~accessToken, refreshToken~~ ❌ **REMOVED** (httpOnly cookies only)
 - [ ] Implement loadUser():
-  - [ ] Check localStorage for tokens
-  - [ ] Fetch user profile from API
-  - [ ] Update store with user data
-- [ ] Call loadUser() on app mount
-- [ ] Show loading screen while loading
+  - [ ] ~~Check localStorage for tokens~~ ❌ **NO TOKEN STORAGE**
+  - [ ] Call authService.getProfile() → Backend validates httpOnly cookie
+  - [ ] If 200: Update store with user data, set isAuthenticated: true
+  - [ ] If 401: User not logged in, set isAuthenticated: false
+  - [ ] Set isLoading: false
+- [ ] Call loadUser() on app mount (\_app.tsx or layout.tsx)
+- [ ] Show loading screen/spinner while isLoading === true
+
+**Deliverables**:
+
+- [ ] Updated authStore with loading state
+- [ ] loadUser() action implemented
+- [ ] Loading screen component
+- [ ] All auth flows tested
+
+**🔐 CRITICAL**: AuthState only contains: `{ user, isAuthenticated, loading }`. NO tokens.
 
 #### B5.2: Test Full Auth Flow (0.2 points)
 
@@ -1561,7 +1686,91 @@
 
 ---
 
-## � Sprint 3 Risks & Mitigations
+### Task F7: Comprehensive Test Matrix (0 points) 📋
+
+**Priority**: P0 | **Type**: Documentation | **Estimated**: 0 days  
+**Status**: 🔵 Ready for Reference
+
+#### Purpose:
+
+Detailed test scenarios mapped to specific test types and coverage areas.
+
+#### Test Matrix
+
+| Test Area             | Test Scenario                                     | Type        | Priority | File/Component        | Acceptance Criteria                                     |
+| --------------------- | ------------------------------------------------- | ----------- | -------- | --------------------- | ------------------------------------------------------- |
+| **Authentication**    |                                                   |             |          |                       |                                                         |
+| Login                 | Valid email + password → redirect to dashboard    | Integration | P0       | LoginForm.test.tsx    | User logged in, authStore updated, /dashboard loaded    |
+| Login                 | Invalid email format → show inline error          | Unit        | P0       | LoginForm.test.tsx    | Error message: "Invalid email address"                  |
+| Login                 | Password < 8 chars → show inline error            | Unit        | P0       | LoginForm.test.tsx    | Error message: "Password must be at least 8 characters" |
+| Login                 | 401 error → show toast "Invalid credentials"      | Integration | P0       | LoginForm.test.tsx    | Toast displayed, no redirect                            |
+| Login                 | Network error → show toast "Connection failed"    | Integration | P0       | LoginForm.test.tsx    | Toast with retry option                                 |
+| Register              | Valid data → auto-login → redirect to dashboard   | Integration | P0       | RegisterForm.test.tsx | User registered, logged in, /dashboard loaded           |
+| Register              | Email already exists (409) → show specific error  | Integration | P0       | RegisterForm.test.tsx | Toast: "Email already registered. Please login."        |
+| Register              | Passwords don't match → show inline error         | Unit        | P0       | RegisterForm.test.tsx | Error on confirmPassword field                          |
+| Register              | Weak password → show strength indicator           | Unit        | P1       | RegisterForm.test.tsx | Strength bar updates real-time                          |
+| **Token Management**  |                                                   |             |          |                       |                                                         |
+| httpOnly Cookies      | Login → backend sets httpOnly cookie              | Integration | P0       | authService.test.ts   | Cookie set with HttpOnly, Secure, SameSite=Strict       |
+| httpOnly Cookies      | No localStorage usage for tokens                  | Unit        | P0       | authStore.test.ts     | AuthState has NO accessToken/refreshToken fields        |
+| Token Refresh         | 401 → refresh → retry original request            | Integration | P0       | api.test.ts           | Refresh called once, original request retried           |
+| Token Refresh         | 401 → refresh fails → logout → redirect to /login | Integration | P0       | api.test.ts           | User logged out, redirected to login                    |
+| Token Refresh         | Concurrent 401s → only 1 refresh call             | Unit        | P0       | api.test.ts           | Promise lock prevents multiple refresh calls            |
+| **Axios Interceptor** |                                                   |             |          |                       |                                                         |
+| Retry Logic           | GET request network error → retry 3 times         | Unit        | P0       | api.test.ts           | 3 retries with exponential backoff                      |
+| Retry Logic           | POST request network error → NO retry             | Unit        | P0       | api.test.ts           | POST not retried (non-idempotent)                       |
+| Retry Logic           | 500 error on GET → retry 3 times                  | Unit        | P0       | api.test.ts           | Retry with 300ms, 600ms, 1200ms delays                  |
+| Retry Logic           | 404 error → NO retry                              | Unit        | P0       | api.test.ts           | Client error, no retry                                  |
+| **Middleware**        |                                                   |             |          |                       |                                                         |
+| Protected Routes      | Unauthenticated → /dashboard → redirect to /login | Integration | P0       | middleware.test.ts    | Redirected to /login                                    |
+| Protected Routes      | Authenticated → /dashboard → allow access         | Integration | P0       | middleware.test.ts    | Dashboard loaded                                        |
+| Protected Routes      | Public route /login → allow without auth          | Integration | P0       | middleware.test.ts    | Login page loaded                                       |
+| Redirect Loop         | Already on /login → don't redirect again          | Unit        | P0       | middleware.test.ts    | No infinite redirect loop                               |
+| **Accessibility**     |                                                   |             |          |                       |                                                         |
+| Focus                 | Tab key navigates login form fields correctly     | Unit/RTL    | P1       | LoginForm.test.tsx    | Focus order: email → password → remember → submit       |
+| ARIA                  | Login form errors have aria-describedby           | Unit/RTL    | P1       | LoginForm.test.tsx    | Error IDs match aria-describedby                        |
+| Keyboard              | Escape key closes dropdown menu                   | Unit/RTL    | P1       | Header.test.tsx       | Menu closed on Esc                                      |
+| Contrast              | All text has 4.5:1 contrast ratio                 | Manual      | P1       | Design system review  | DevTools contrast check passed                          |
+| **Learning Path**     |                                                   |             |          |                       |                                                         |
+| Display               | CEFR levels in correct order A1→C2                | Unit        | P1       | LearningPath.test.tsx | Levels rendered: A1, A2, B1, B2, C1, C2                 |
+| Display               | Current level highlighted                         | Unit        | P1       | LearningPath.test.tsx | Current level has highlight styling                     |
+| **Coverage**          |                                                   |             |          |                       |                                                         |
+| Global                | Overall coverage ≥ 60%                            | Coverage    | P0       | Jest coverage report  | Lines: 60%, Functions: 60%, Statements: 60%             |
+| Services              | API services coverage ≥ 80%                       | Coverage    | P0       | Jest coverage report  | authService, courseService, etc. ≥ 80%                  |
+
+**Test Execution Guide**:
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run coverage report
+npm run test:coverage
+
+# Run specific test file
+npm run test LoginForm.test.tsx
+
+# Run tests matching pattern
+npm run test -- --testNamePattern="Login"
+```
+
+**Priority Definitions**:
+
+- **P0**: Must pass before sprint completion
+- **P1**: Should pass, can defer to Sprint 4 if needed
+- **P2**: Nice to have, can be added later
+
+**Coverage Enforcement**:
+
+- Global: 60% minimum (enforced by jest.config.js)
+- Services: 80% minimum (enforced by jest.config.js)
+- Failing tests block PR merge
+
+---
+
+## 🔒 Sprint 3 Risks & Mitigations
 
 ### Critical Risks
 
