@@ -22,6 +22,7 @@
 - `docs/context/DATABASE-SCHEMA.md` - Database structure
 - `docs/context/API-SPECIFICATION.md` - API contracts
 - `docs/context/CODE-STANDARDS.md` - Coding conventions
+- `docs/context/FRONTEND-DESIGN-REQUIREMENTS.md` - ✨ **Medium-inspired UI Design**
 
 ---
 

@@ -9,6 +9,7 @@
 ### Focus
 
 - Next.js 14+ web application setup with TypeScript
+- **Design Style**: **Medium-inspired** (minimalist, content-first, readable) — see `/docs/context/FRONTEND-DESIGN-REQUIREMENTS.md`
 - Authentication UI (Login/Register) with **secure JWT (httpOnly cookies)**
 - Dashboard and navigation layout
 - Course browsing and enrollment UI
@@ -16,9 +17,11 @@
 - Progress tracking visualization
 - Profile management interface
 - Responsive design and form validation
+- **Dark mode support** (system preference + manual toggle)
 - Testing: 60%+ coverage (Jest + React Testing Library)
 - **Security**: httpOnly cookies, Error Boundary, comprehensive error handling
 - **Accessibility**: WCAG AA compliance (ARIA, keyboard nav, contrast)
+- **Performance**: LCP < 2.5s, FCP < 1.8s, optimized images/fonts
 
 ### Story Breakdown
 
