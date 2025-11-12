@@ -3,9 +3,9 @@
 **Sprint**: 3 / 8  
 **Duration**: November 8 – November 21, 2025 (14 days)  
 **Total Story Points**: 29 points (Updated from 28)  
-**Status**: ⏳ In Progress (Day 4)  
-**Completed**: 4/29 points (14%)  
-**Last Updated**: November 11, 2025 (Security & Quality Updates Applied)
+**Status**: ⏳ In Progress (Day 5)  
+**Completed**: 7/29 points (24%)  
+**Last Updated**: November 12, 2025 (Task B0, B1 & B2 Complete)
 
 ---
 
@@ -14,12 +14,12 @@
 | Epic                      | Tasks  | Subtasks | Completed | Total Points | Progress |
 | ------------------------- | ------ | -------- | --------- | ------------ | -------- |
 | A: Project Setup & Config | 5      | 12       | 12/12     | 4            | 100%     |
-| B: Authentication Pages   | 5      | 16       | 0/16      | 5            | 0%       |
+| B: Authentication Pages   | 5      | 16       | 6/16      | 5            | 60%      |
 | C: Dashboard & Layout     | 4      | 12       | 0/12      | 4            | 0%       |
 | D: Course & Learning Path | 5      | 18       | 0/18      | 7            | 0%       |
 | E: Progress & Profile     | 5      | 14       | 0/14      | 5            | 0%       |
 | F: Testing & Polish       | 6      | 18       | 0/18      | 4            | 0%       |
-| **TOTAL**                 | **30** | **90**   | **12/90** | **29**       | **14%**  |
+| **TOTAL**                 | **30** | **90**   | **18/90** | **29**       | **24%**  |
 
 **⚠️ Sprint Update**: Total story points increased from 28 to 29 points (+1 point) due to:
 
@@ -385,14 +385,15 @@
 
 ## 🎯 EPIC B: Authentication Pages (5 points)
 
-**Status**: 🔵 Next Up | **Progress**: 0/5 points (0%)
+**Status**: 🔵 In Progress | **Progress**: 1.5/5 points (30%)
 
 ---
 
 ### Task B0: Security Consolidation Checklist (0 points) 🔐
 
 **Priority**: P0 | **Dependencies**: None | **Estimated**: 0 days (Documentation only)  
-**Status**: 🔵 Not Started | **Type**: Quality Gate
+**Status**: ✅ Complete | **Type**: Quality Gate  
+**Started**: 2025-11-12 | **Completed**: 2025-11-12
 
 #### Purpose:
 
@@ -402,167 +403,205 @@ Ensure all authentication security requirements are met before proceeding with i
 
 **✅ Token Storage**:
 
-- [ ] Confirm NO localStorage/sessionStorage usage
-- [ ] Confirm NO token fields in AuthState (Zustand)
-- [ ] Confirm axios uses `withCredentials: true`
-- [ ] Document backend cookie settings: `HttpOnly; Secure; SameSite=Strict`
+- [x] Confirm NO localStorage/sessionStorage usage
+- [x] Confirm NO token fields in AuthState (Zustand)
+- [x] Confirm axios uses `withCredentials: true`
+- [x] Document backend cookie settings: `HttpOnly; Secure; SameSite=Strict`
 
 **✅ API Client**:
 
-- [ ] Confirm NO manual Authorization header
-- [ ] Confirm retry logic ONLY for GET/HEAD/OPTIONS
-- [ ] Confirm exponential backoff: 300ms → 600ms → 1200ms
-- [ ] Confirm Promise lock for refresh (prevent concurrent)
+- [x] Confirm NO manual Authorization header
+- [x] Confirm retry logic ONLY for GET/HEAD/OPTIONS
+- [x] Confirm exponential backoff: 300ms → 600ms → 1200ms
+- [x] Confirm Promise lock for refresh (prevent concurrent)
 
 **✅ Middleware**:
 
-- [ ] Confirm uses backend `/auth/session` endpoint (not client-side cookie read)
-- [ ] Confirm prevents redirect loops
-- [ ] Document public routes: `/`, `/login`, `/register`, `/forgot-password`
+- [x] Confirm uses backend `/auth/session` endpoint (not client-side cookie read)
+- [x] Confirm prevents redirect loops
+- [x] Document public routes: `/`, `/login`, `/register`, `/forgot-password`
 
 **✅ CSRF Protection**:
 
-- [ ] Note: SameSite=Strict provides basic protection
-- [ ] Note: Full CSRF token implementation in Sprint 7 (Security)
-- [ ] Document: Same-origin policy + CORS configuration
+- [x] Note: SameSite=Strict provides basic protection
+- [x] Note: Full CSRF token implementation in Sprint 7 (Security)
+- [x] Document: Same-origin policy + CORS configuration
 
 **✅ Documentation**:
 
-- [ ] Update session notes with security decisions
-- [ ] Document why httpOnly cookies (XSS prevention)
-- [ ] Document auth flow: login → cookie → getProfile → authStore
-- [ ] Add OWASP compliance notes
+- [x] Update session notes with security decisions
+- [x] Document why httpOnly cookies (XSS prevention)
+- [x] Document auth flow: login → cookie → getProfile → authStore
+- [x] Add OWASP compliance notes
 
 **Deliverables**:
 
-- [ ] Security checklist completed
-- [ ] Session documentation updated
-- [ ] Team aware of security constraints
+- [x] Security checklist completed ✅
+- [x] Session documentation updated ✅
+- [x] Team aware of security constraints ✅
+- [x] TASK-B0-SECURITY-CHECKLIST.md created (450+ lines) ✅
 
 **🔐 CRITICAL**: This is a quality gate. All checkboxes must be verified before Task B1.
 
 ---
 
-### Task B1: Login Page (1.5 points)
+### Task B1: Login Page (1.5 points) ✅ COMPLETE
 
 **Priority**: P0 | **Dependencies**: A1-A5 | **Estimated**: 1 day  
-**Status**: 🔵 Not Started | **Progress**: 0/1.5 points (0%)
+**Status**: ✅ Complete | **Progress**: 1.5/1.5 points (100%)  
+**Started**: 2025-11-12 | **Completed**: 2025-11-12
 
 #### Subtasks:
 
-#### B1.1: Create Login Page Layout (0.5 points)
+#### B1.1: Create Login Page Layout (0.5 points) ✅ COMPLETE
 
-- [ ] Create `src/app/(auth)/login/page.tsx`
-- [ ] Design page layout:
-  - [ ] Logo and branding
-  - [ ] Login form container
-  - [ ] Link to register page
-  - [ ] "Forgot password" link (placeholder)
-- [ ] Style with Tailwind CSS
-- [ ] Make responsive (mobile, tablet, desktop)
+**Status**: ✅ Complete | **Completed**: 2025-11-12
 
-#### B1.2: Create Login Form Component (0.5 points)
-
-- [ ] Create `src/components/auth/LoginForm.tsx`
-- [ ] Add form fields:
-  - [ ] Email input with validation
-  - [ ] Password input with show/hide toggle
-  - [ ] "Remember me" checkbox
-- [ ] Use React Hook Form + Zod validation:
-  - [ ] Email: required, valid format
-  - [ ] Password: required, min 8 chars
-- [ ] Display validation errors
-- [ ] Add loading state on submit button
-
-#### B1.3: Implement Login Logic (0.5 points)
-
-- [ ] Integrate with authService.login()
-- [ ] Handle successful login:
-  - [ ] ~~Store tokens in authStore~~ ❌ **NO TOKEN STORAGE** (httpOnly cookies)
-  - [ ] Backend sets httpOnly cookies automatically via `Set-Cookie` header
-  - [ ] Call authService.getProfile() to fetch user data
-  - [ ] Store user data in authStore (user, isAuthenticated: true)
-  - [ ] Redirect to dashboard
-- [ ] Handle errors:
-  - [ ] Display error toast with clear message
-  - [ ] Show inline form errors
-  - [ ] Handle 401 (invalid credentials) → "Email or password incorrect"
-  - [ ] Handle network errors → "Connection failed. Please try again."
-  - [ ] Handle 500 → "Server error. Please try again later."
-- [ ] Add loading spinner during request
-- [ ] Test login flow end-to-end
+- [x] Create `src/app/(auth)/login/page.tsx`
+- [x] Design page layout:
+  - [x] Logo and branding
+  - [x] Login form container
+  - [x] Link to register page
+  - [x] "Forgot password" link (placeholder)
+- [x] Style with Tailwind CSS
+- [x] Make responsive (mobile, tablet, desktop)
 
 **Deliverables**:
 
-- [ ] Login page at /login
-- [ ] Full form validation
-- [ ] API integration working (httpOnly cookies)
-- [ ] Responsive design
-- [ ] Comprehensive error handling
+- ✅ Login page at /login route
+- ✅ Gradient background (blue → purple)
+- ✅ Card-based layout with shadow
+- ✅ LEXIA logo placeholder
+- ✅ Responsive design (320px - 1920px)
+
+#### B1.2: Create Login Form Component (0.5 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-11-12
+
+- [x] Create `src/components/auth/LoginForm.tsx` ← Integrated into page.tsx
+- [x] Add form fields:
+  - [x] Email input with validation
+  - [x] Password input with show/hide toggle
+  - [x] "Remember me" checkbox
+- [x] Use React Hook Form + Zod validation:
+  - [x] Email: required, valid format
+  - [x] Password: required, min 8 chars
+- [x] Display validation errors
+- [x] Add loading state on submit button
+
+**Deliverables**:
+
+- ✅ Form fields with real-time validation
+- ✅ Password show/hide toggle with Eye/EyeOff icons
+- ✅ Remember me checkbox
+- ✅ Loading spinner (Loader2 icon)
+- ✅ Disabled inputs during submission
+
+#### B1.3: Implement Login Logic (0.5 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-11-12
+
+- [x] Integrate with authService.login()
+- [x] Handle successful login:
+  - [x] ~~Store tokens in authStore~~ ❌ **NO TOKEN STORAGE** (httpOnly cookies)
+  - [x] Backend sets httpOnly cookies automatically via `Set-Cookie` header
+  - [x] Call authService.getProfile() to fetch user data (via authStore.login())
+  - [x] Store user data in authStore (user, isAuthenticated: true)
+  - [x] Redirect to dashboard
+- [x] Handle errors:
+  - [x] Display error toast with clear message
+  - [x] Show inline form errors
+  - [x] Handle 401 (invalid credentials) → "Email or password incorrect"
+  - [x] Handle network errors → "Connection failed. Please try again."
+  - [x] Handle 500 → "Server error. Please try again later."
+  - [x] Handle timeout errors → "Request timeout"
+  - [x] Handle 422 validation errors
+- [x] Add loading spinner during request
+- [x] Test login flow end-to-end
+
+**Deliverables**:
+
+- [x] Login page at /login ✅
+- [x] Full form validation ✅
+- [x] API integration working (httpOnly cookies) ✅
+- [x] Responsive design ✅
+- [x] Comprehensive error handling ✅
+- [x] Toast notifications (sonner) ✅
+- [x] Accessibility (ARIA labels, keyboard nav) ✅
 
 **🔐 Security**: Session established via httpOnly cookies. NO localStorage/sessionStorage usage.
 
 ---
 
-### Task B2: Register Page (1.5 points)
+### Task B2: Register Page (1.5 points) ✅ COMPLETE
 
 **Priority**: P0 | **Dependencies**: B1 | **Estimated**: 1 day  
-**Status**: 🔵 Not Started | **Progress**: 0/1.5 points (0%)
+**Status**: ✅ Complete | **Progress**: 1.5/1.5 points (100%)  
+**Started**: 2025-11-12 | **Completed**: 2025-11-12
 
 #### Subtasks:
 
-#### B2.1: Create Register Page Layout (0.5 points)
+#### B2.1: Create Register Page Layout (0.5 points) ✅ COMPLETE
 
-- [ ] Create `src/app/(auth)/register/page.tsx`
-- [ ] Design page layout:
-  - [ ] Logo and branding
-  - [ ] Registration form container
-  - [ ] Link to login page
-  - [ ] Terms and conditions
-- [ ] Style with Tailwind CSS
-- [ ] Make responsive
+**Status**: ✅ Complete | **Completed**: 2025-11-12
 
-#### B2.2: Create Register Form Component (0.5 points)
+- [x] Create `src/app/(auth)/register/page.tsx`
+- [x] Design page layout:
+  - [x] Logo and branding
+  - [x] Registration form container
+  - [x] Link to login page
+  - [x] Terms and conditions
+- [x] Style with Tailwind CSS
+- [x] Make responsive
 
-- [ ] Create `src/components/auth/RegisterForm.tsx`
-- [ ] Add form fields:
-  - [ ] Email input
-  - [ ] Password input with strength indicator
-  - [ ] Confirm password input
-  - [ ] Terms checkbox
-- [ ] Use React Hook Form + Zod validation:
-  - [ ] Email: required, valid format
-  - [ ] Password: required, min 8, uppercase, lowercase, number
-  - [ ] Confirm password: must match password
-  - [ ] Terms: must be accepted
-- [ ] Display validation errors in real-time
+#### B2.2: Create Register Form Component (0.5 points) ✅ COMPLETE
 
-#### B2.3: Implement Register Logic (0.5 points)
+**Status**: ✅ Complete | **Completed**: 2025-11-12
 
-- [ ] Integrate with authService.register()
-- [ ] Handle successful registration:
-  - [ ] ~~Auto-login after registration~~ → Already logged in (backend sets cookies)
-  - [ ] Call authService.getProfile() to fetch user data
-  - [ ] Store user data in authStore
-  - [ ] Redirect to dashboard
-  - [ ] Show success toast: "Welcome to LEXIA!"
-- [ ] Handle errors:
-  - [ ] Display error toast with specific message
-  - [ ] Handle 409 (email already exists) → "This email is already registered. Please login."
-  - [ ] Handle 422 (validation errors) → Show inline errors
-  - [ ] Handle network errors → "Connection failed. Please try again."
-  - [ ] Show inline form errors
-- [ ] Add loading spinner
-- [ ] Test registration flow
+- [x] Create `src/components/auth/RegisterForm.tsx` ← Integrated into page.tsx
+- [x] Add form fields:
+  - [x] Email input
+  - [x] Password input with strength indicator
+  - [x] Confirm password input
+  - [x] Terms checkbox
+- [x] Use React Hook Form + Zod validation:
+  - [x] Email: required, valid format
+  - [x] Password: required, min 8, uppercase, lowercase, number
+  - [x] Confirm password: must match password
+  - [x] Terms: must be accepted
+- [x] Display validation errors in real-time
+
+#### B2.3: Implement Register Logic (0.5 points) ✅ COMPLETE
+
+**Status**: ✅ Complete | **Completed**: 2025-11-12
+
+- [x] Integrate with authService.register()
+- [x] Handle successful registration:
+  - [x] ~~Auto-login after registration~~ → Already logged in (backend sets cookies)
+  - [x] User data already in authStore from register() call
+  - [x] Redirect to dashboard
+  - [x] Show success toast: "Welcome to LEXIA!"
+- [x] Handle errors:
+  - [x] Display error toast with specific message
+  - [x] Handle 409 (email already exists) → "This email is already registered. Please login."
+  - [x] Handle 422 (validation errors) → Show inline errors
+  - [x] Handle network errors → "Connection failed. Please try again."
+  - [x] Handle timeout errors → "Server is taking too long"
+  - [x] Handle 500+ server errors → "Something went wrong on our end"
+  - [x] Show inline form errors
+- [x] Add loading spinner
+- [x] Test registration flow
 
 **Deliverables**:
 
-- [ ] Register page at /register
-- [ ] Password strength indicator
-- [ ] Full validation
-- [ ] API integration (httpOnly cookies)
-- [ ] Responsive design
-- [ ] Comprehensive error handling
+- [x] Register page at /register ✅
+- [x] Password strength indicator (4 levels: Weak/Fair/Good/Strong) ✅
+- [x] Password requirements checklist (4 checks with icons) ✅
+- [x] Full validation (React Hook Form + Zod) ✅
+- [x] API integration (httpOnly cookies) ✅
+- [x] Responsive design (320px - 1920px) ✅
+- [x] Comprehensive error handling (5 error types) ✅
+- [x] Checkbox component installed from shadcn/ui ✅
 
 **🔐 Security**: Backend sets httpOnly cookies on successful registration. NO localStorage.
 
