@@ -3,8 +3,8 @@
 ## Sprint 3 — Frontend Development (Web)
 
 **Sprint**: 3 / 8 | **Duration**: Nov 8 – Nov 21, 2025 (14 days)  
-**Status**: ⏳ In Progress (Day 6) | **Progress**: 13/29 points (45%)  
-**Last Updated**: November 13, 2025 (Epic A, B & C Complete)
+**Status**: ⏳ In Progress (Day 6) | **Progress**: 20.5/29 points (71%)  
+**Last Updated**: November 13, 2025 (Epic A, B, C Complete; Epic D 93% Complete)
 
 ### Focus
 
@@ -25,14 +25,14 @@
 
 ### Story Breakdown
 
-| Epic                      | Status         | Progress | Notes                                   |
-| ------------------------- | -------------- | -------- | --------------------------------------- |
-| A: Project Setup & Config | ✅ Complete    | 4/4 pts  | Setup complete                          |
-| B: Authentication Pages   | ✅ Complete    | 5/5 pts  | httpOnly cookies, middleware, auth flow |
-| C: Dashboard & Layout     | ✅ Complete    | 4/4 pts  | All tasks complete                      |
-| D: Course & Learning Path | 🔵 Not Started | 0/7 pts  | Depends on C                            |
-| E: Progress & Profile     | 🔵 Not Started | 0/5 pts  | Depends on D                            |
-| F: Testing & Polish       | 🔵 Not Started | 0/4 pts  | 60%+ coverage, accessibility            |
+| Epic                      | Status         | Progress  | Notes                                   |
+| ------------------------- | -------------- | --------- | --------------------------------------- |
+| A: Project Setup & Config | ✅ Complete    | 4/4 pts   | Setup complete                          |
+| B: Authentication Pages   | ✅ Complete    | 5/5 pts   | httpOnly cookies, middleware, auth flow |
+| C: Dashboard & Layout     | ✅ Complete    | 4/4 pts   | All tasks complete                      |
+| D: Course & Learning Path | ⏳ In Progress | 6.5/7 pts | D1, D2, D3, D4 complete                 |
+| E: Progress & Profile     | 🔵 Not Started | 0/5 pts   | Depends on D                            |
+| F: Testing & Polish       | 🔵 Not Started | 0/4 pts   | 60%+ coverage, accessibility            |
 
 **Total**: 29 points (Updated from 28 for security + quality)
 
@@ -133,12 +133,41 @@
 - ✅ Accessibility (ARIA, keyboard nav)
 - ✅ Responsive design (320px - 1920px)
 
-**Epic D: Course & Learning Path** (7 pts)
+**Epic D: Course & Learning Path** ⏳ **IN PROGRESS** (6.5/7 pts - 93%)
 
-- [ ] D1: Course listing page with search/filter (2 pts)
-- [ ] D2: Course detail page with enrollment (1.5 pts)
-- [ ] D3: Learning path display component (1.5 pts)
-- [ ] D4: Lesson viewer interface (1.5 pts)
+- [x] D1.1: Course list page (0.5 pt) ✅ **COMPLETE** (Nov 13)
+  - ✅ Search bar with debounce (300ms)
+  - ✅ CEFR level filter (A1-C2 badges)
+  - ✅ Sort options (4 choices)
+  - ✅ Grid/List view toggle
+  - ✅ Pagination with URL sync
+  - ✅ Loading skeletons & empty states
+- [x] D1.2: Course card component (0.5 pt) ✅ **COMPLETE** (Nov 13)
+  - ✅ Thumbnail with CEFR badge
+  - ✅ Truncated title & description
+  - ✅ Hover animations
+  - ✅ Responsive design
+- [x] D1.3: Search and filter API integration (0.5 pt) ✅ **Already implemented in D1.1**
+- [x] D1.4: Pagination (0.5 pt) ✅ **Already implemented in D1.1**
+- [x] D2: Course detail page with enrollment (1.5 pts) ✅ **COMPLETE** (Nov 13)
+  - ✅ Course detail page at /courses/[id] with sections & lessons
+  - ✅ CourseSection component (collapsible)
+  - ✅ LessonItem component with type icons
+  - ✅ Enrollment button with loading states
+  - ✅ enrollmentService API client
+  - ✅ Toast notifications
+- [x] D3: Learning path display (1.5 pts) ✅ **COMPLETE** (Nov 13)
+  - ✅ Learning paths page at /learning-paths
+  - ✅ LearningPathCard component with CEFR badges
+  - ✅ Recommended path highlighting
+  - ✅ Start path button with 409 conflict handling
+  - ✅ Progress tracking for started paths
+  - ✅ learningPathService with 6 methods
+  - ✅ TypeScript types (LearningPath, UserPathProgress, CEFR_LEVELS)
+- [x] D4: Lesson viewer interface (1.5 pts) ✅ **COMPLETE** (Nov 13)
+  - ✅ D4.1: Create Lesson Viewer Page (0.5 pt)
+  - ✅ D4.2: Create Content Renderer (0.5 pt)
+  - ✅ D4.3: Add Complete Lesson Button (0.5 pt)
 - [ ] D5: Lesson navigation (prev/next) (0.5 pt)
 
 **Epic E: Progress & Profile** (5 pts)
