@@ -3,8 +3,8 @@
 ## Sprint 3 — Frontend Development (Web)
 
 **Sprint**: 3 / 8 | **Duration**: Nov 8 – Nov 21, 2025 (14 days)  
-**Status**: ⏳ In Progress (Day 4) | **Progress**: 4/29 points (14%)  
-**Last Updated**: November 11, 2025 (Security & Quality Updates Applied)
+**Status**: ⏳ In Progress (Day 5) | **Progress**: 9/29 points (31%)  
+**Last Updated**: November 12, 2025 (Epic B Complete - Authentication Pages 100%)
 
 ### Focus
 
@@ -25,14 +25,14 @@
 
 ### Story Breakdown
 
-| Epic                      | Status         | Progress | Notes                                    |
-| ------------------------- | -------------- | -------- | ---------------------------------------- |
-| A: Project Setup & Config | ✅ Complete    | 4/4 pts  | Setup complete                           |
-| B: Authentication Pages   | 🔵 Next        | 0/5 pts  | ⚠️ Using httpOnly cookies (security fix) |
-| C: Dashboard & Layout     | 🔵 Not Started | 0/4 pts  | Depends on B                             |
-| D: Course & Learning Path | 🔵 Not Started | 0/7 pts  | Depends on C                             |
-| E: Progress & Profile     | 🔵 Not Started | 0/5 pts  | Depends on D                             |
-| F: Testing & Polish       | 🔵 Not Started | 0/4 pts  | +1 pt for quality improvements           |
+| Epic                      | Status         | Progress | Notes                                   |
+| ------------------------- | -------------- | -------- | --------------------------------------- |
+| A: Project Setup & Config | ✅ Complete    | 4/4 pts  | Setup complete                          |
+| B: Authentication Pages   | ✅ Complete    | 5/5 pts  | httpOnly cookies, middleware, auth flow |
+| C: Dashboard & Layout     | 🔵 Next        | 0/4 pts  | Main layout, sidebar, header            |
+| D: Course & Learning Path | 🔵 Not Started | 0/7 pts  | Depends on C                            |
+| E: Progress & Profile     | 🔵 Not Started | 0/5 pts  | Depends on D                            |
+| F: Testing & Polish       | 🔵 Not Started | 0/4 pts  | 60%+ coverage, accessibility            |
 
 **Total**: 29 points (Updated from 28 for security + quality)
 
@@ -46,23 +46,44 @@
 - [x] A4: Axios client + API integration setup (1 pt)
 - [x] A5: Environment variables + build configuration (1 pt)
 
-**📊 Velocity Alert**: Currently at 1 pt/day (target: 2.1 pts/day). Need to accelerate in Epic B-C.
+**📊 Velocity Alert**: Currently at 1.8 pts/day (target: 2.1 pts/day). Epic B complete! On track for C-D.
 
-**🔐 Security Update (Nov 11)**: Epic B updated to use httpOnly cookies instead of localStorage for JWT tokens (OWASP compliance).
+**🔐 Security Update (Nov 11)**: Epic B implemented with httpOnly cookies instead of localStorage for JWT tokens (OWASP compliance). ✅ **COMPLETE**
 
-**Epic B: Authentication Pages** 🔵 **NEXT UP** (5 pts)
+**Epic B: Authentication Pages** ✅ **COMPLETE** (5 pts - 100%)
 
-- [ ] B1: Login page design + form validation (1.5 pts)
-- [ ] B2: Register page with password confirmation (1.5 pts)
-- [ ] B3: JWT token management (httpOnly cookies + refresh) - **⚠️ Security-critical** (1 pt)
-  - Use httpOnly cookies (not localStorage)
-  - Backend sets cookies with HttpOnly, Secure, SameSite flags
-  - Axios sends cookies automatically with `withCredentials: true`
-  - Enhanced error handling (network, timeout, retry logic)
-- [ ] B4: Protected routes middleware (0.5 pt)
-- [ ] B5: Auth context/store (Zustand) (0.5 pt)
+- [x] B1: Login page design + form validation (1.5 pts) ✅ **COMPLETE** (Nov 12)
+- [x] B2: Register page with password confirmation (1.5 pts) ✅ **COMPLETE** (Nov 12)
+- [x] B3: JWT token management (httpOnly cookies + refresh) (1 pt) ✅ **COMPLETE** (Nov 12)
+  - ✅ B3.1: Token Storage - httpOnly cookies implementation (NO client-side storage)
+  - ✅ B3.2: Token Refresh - Promise lock pattern, request queue, offline detection
+  - ✅ B3.3: Auto-Logout - AuthProvider, ProtectedRoute, session initialization
+  - ✅ Enhanced error handling (network, timeout, retry logic with exponential backoff)
+  - ✅ Session persists across page reloads
+- [x] B4: Protected routes middleware (0.5 pt) ✅ **COMPLETE** (Nov 12)
+  - ✅ Next.js middleware calling backend /users/profile for validation
+  - ✅ Redirects with returnUrl parameter
+  - ✅ Public routes configuration
+  - ✅ Asset exclusion for performance
+- [x] B5: Auth store refinement (0.5 pt) ✅ **COMPLETE** (Nov 12)
+  - ✅ Fixed initial loading state (false → true)
+  - ✅ Created LoadingScreen component
+  - ✅ Simplified AuthProvider logic
 
-**Epic C: Dashboard & Layout** (4 pts)
+**🎊 Epic B Achievements**:
+
+- ✅ Complete authentication flow (login → register → logout)
+- ✅ httpOnly cookies for XSS protection
+- ✅ Server-side middleware protection
+- ✅ Client-side ProtectedRoute component
+- ✅ Promise lock prevents concurrent token refresh
+- ✅ Comprehensive error handling
+- ✅ Session persistence across page reloads
+- ✅ Loading states prevent UI flashing
+- ✅ Responsive design (320px - 1920px)
+- ✅ Accessibility (ARIA labels, keyboard nav)
+
+**Epic C: Dashboard & Layout** 🔵 **NEXT UP** (4 pts)
 
 - [ ] C1: Main layout with sidebar navigation (1.5 pts)
 - [ ] C2: Header with user profile dropdown (0.5 pt)
@@ -105,7 +126,11 @@
 
 **Next Up** 📋
 
-- Start with Epic A: Project Setup (Day 1-2)
+- **Epic C: Dashboard & Layout** (4 points)
+  - C1: Main Layout with Sidebar (1.5 pts)
+  - C2: Header with User Dropdown (0.5 pt)
+  - C3: Responsive Navigation (1 pt)
+  - C4: Dashboard Home Page (1 pt)
 
 ---
 
