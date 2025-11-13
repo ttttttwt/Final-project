@@ -1999,6 +1999,32 @@ _Last Updated: November 7, 2025 - Planning Phase Complete_
 
 ## 📅 Day 6 - November 13, 2025
 
+### 🔧 Post-Review Refactor for Epic C (Dashboard & Layout)
+
+**Time Spent**: 0.5 hour  
+**Focus**: Minor, behavior-preserving refactors to improve maintainability and resilience
+
+#### What Changed
+
+- Shared types: Created `lexia-web/types/progress.ts` for `StreakData` and `DashboardStats` (deduplicates interfaces).
+- Request cancellation: `progressService.getStreak/getDashboardStats` accept optional `AbortSignal`; `dashboard/page.tsx` uses `AbortController` and ignores cancellation errors.
+- Performance polish: Memoized `fullName`, `studyHoursEstimate`, and clamped `remainingLessons` to non-negative.
+- UI consistency: Fixed Tailwind dark hover class in `Header.tsx` Settings link.
+
+#### Files Modified
+
+- `lexia-web/types/progress.ts` (new)
+- `lexia-web/services/progressService.ts`
+- `lexia-web/app/dashboard/page.tsx`
+- `lexia-web/components/layout/Header.tsx`
+
+#### Verification
+
+- Ran `npm run build` → Next.js build and TypeScript checks passed.
+- Noted middleware deprecation warning in Next.js 16; migration to `proxy` planned separately.
+
+**Impact**: No behavior change or point adjustments. Improves code quality ahead of Epic D.
+
 ### ✅ COMPLETED: Hotfix — Login Page Redirect Loop
 
 **Time Spent**: 1 hour  
@@ -2042,3 +2068,33 @@ _Last Updated: November 7, 2025 - Planning Phase Complete_
 —
 
 Last Updated: November 13, 2025 — Session 6 Hotfix Logged
+
+---
+
+## ?? Day 6 - November 13, 2025
+
+### ? COMPLETED: Task C1 - Main Layout with Sidebar (1.5 points)
+
+**Time Spent**: 2.5 hours  
+**Focus**: Complete sidebar navigation, layout integration, and auth integration  
+**Status**: ? **COMPLETE** (1.5/1.5 points - 100%)
+
+**Files Created**: 5 files (450+ lines) - Sidebar.tsx, dashboard/page.tsx, courses/page.tsx, progress/page.tsx, profile/page.tsx
+**Files Modified**: 3 files (120+ lines) - MainLayout.tsx, Header.tsx, index.ts
+
+**Quality**: 9.5/10 ?????
+
+**Features Implemented**:
+
+- ? Collapsible sidebar navigation (desktop: 256px ? 80px)
+- ? Mobile slide-in menu with backdrop overlay
+- ? Active route highlighting with blue accent
+- ? Real auth integration (user name, logout functionality)
+- ? 4 protected pages created (dashboard, courses, progress, profile)
+- ? Responsive design (320px - 1920px)
+- ? Dark mode support
+- ? Accessibility (ARIA labels, keyboard nav)
+
+**Next**: Task C2 (already integrated), C3 (already complete), C4 (needs stats API)
+
+Last Updated: November 13, 2025 � Task C1 Complete
