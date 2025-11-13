@@ -1994,3 +1994,51 @@ npm run dev
 ---
 
 _Last Updated: November 7, 2025 - Planning Phase Complete_
+
+---
+
+## 📅 Day 6 - November 13, 2025
+
+### ✅ COMPLETED: Hotfix — Login Page Redirect Loop
+
+**Time Spent**: 1 hour  
+**Focus**: Stop infinite reload on `/login` caused by nested `returnUrl` and eager profile fetches  
+**Status**: ✅ FIXED
+
+#### 🔎 Root Cause
+
+- Frontend attempted to load `/users/profile` while already on auth pages → 401.
+- Refresh endpoint returned 400; interceptor redirected to `/login` with `returnUrl` even when already on `/login`.
+- This produced recursively nested `returnUrl` and a reload loop.
+
+#### 🔧 Changes Applied (Frontend: `lexia-web`)
+
+- `lib/api.ts`: Harden 401 handling
+
+  - Detect auth pages (`/login`, `/register`, `/forgot-password`) and avoid redirect loops.
+  - Sanitize `returnUrl`; do not attach when already on `/login`.
+  - Use `window.location.replace` to avoid history stacking.
+  - Clean pre-existing nested `returnUrl` via `history.replaceState` when on `/login`.
+
+- `components/auth/AuthProvider.tsx`: Guard session init on auth pages
+
+  - Skip `loadUser()` when current route is an auth page to prevent 401/refresh churn.
+
+- `lib/auth.ts`: Safer `redirectToLogin`
+  - Never set `/login` as `returnUrl`; prefer replace semantics to avoid loops.
+
+#### ✅ Verification
+
+- Open incognito → navigate directly to `/login` → page remains stable (no loop).
+- Hit a protected route while logged out → redirected once to `/login?returnUrl=/protected`.
+- After successful login → redirected to intended `returnUrl`.
+- Refresh on `/login` no longer nests `returnUrl` params.
+
+#### 📌 Follow-ups
+
+- Review `middleware.ts` for additional hardening and consider Next.js 16 “proxy” migration (deprecation notice).
+- Add unit tests around redirect utility and interceptor guards in Sprint F (testing).
+
+—
+
+Last Updated: November 13, 2025 — Session 6 Hotfix Logged
