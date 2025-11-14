@@ -3,8 +3,8 @@
 ## Sprint 3 — Frontend Development (Web)
 
 **Sprint**: 3 / 8 | **Duration**: Nov 8 – Nov 21, 2025 (14 days)  
-**Status**: ⏳ In Progress (Day 6) | **Progress**: 20.5/29 points (71%)  
-**Last Updated**: November 13, 2025 (Epic A, B, C Complete; Epic D 93% Complete)
+**Status**: ⏳ In Progress (Day 7) | **Progress**: 21/29 points (72%)  
+**Last Updated**: November 14, 2025 (Epic A, B, C, D Complete)
 
 ### Focus
 
@@ -25,14 +25,14 @@
 
 ### Story Breakdown
 
-| Epic                      | Status         | Progress  | Notes                                   |
-| ------------------------- | -------------- | --------- | --------------------------------------- |
-| A: Project Setup & Config | ✅ Complete    | 4/4 pts   | Setup complete                          |
-| B: Authentication Pages   | ✅ Complete    | 5/5 pts   | httpOnly cookies, middleware, auth flow |
-| C: Dashboard & Layout     | ✅ Complete    | 4/4 pts   | All tasks complete                      |
-| D: Course & Learning Path | ⏳ In Progress | 6.5/7 pts | D1, D2, D3, D4 complete                 |
-| E: Progress & Profile     | 🔵 Not Started | 0/5 pts   | Depends on D                            |
-| F: Testing & Polish       | 🔵 Not Started | 0/4 pts   | 60%+ coverage, accessibility            |
+| Epic                      | Status         | Progress | Notes                        |
+| ------------------------- | -------------- | -------- | ---------------------------- |
+| A: Project Setup & Config | ✅ Complete    | 4/4 pts  | Setup complete               |
+| B: Authentication Pages   | ✅ Complete    | 5/5 pts  | httpOnly cookies, middleware |
+| C: Dashboard & Layout     | ✅ Complete    | 4/4 pts  | All tasks complete           |
+| D: Course & Learning Path | ✅ Complete    | 7/7 pts  | All D1-D5 tasks complete     |
+| E: Progress & Profile     | 🔵 Not Started | 0/5 pts  | Next priority                |
+| F: Testing & Polish       | 🔵 Not Started | 0/4 pts  | 60%+ coverage, accessibility |
 
 **Total**: 29 points (Updated from 28 for security + quality)
 
@@ -133,7 +133,7 @@
 - ✅ Accessibility (ARIA, keyboard nav)
 - ✅ Responsive design (320px - 1920px)
 
-**Epic D: Course & Learning Path** ⏳ **IN PROGRESS** (6.5/7 pts - 93%)
+**Epic D: Course & Learning Path** ✅ **COMPLETE** (7/7 pts - 100%)
 
 - [x] D1.1: Course list page (0.5 pt) ✅ **COMPLETE** (Nov 13)
   - ✅ Search bar with debounce (300ms)
@@ -168,7 +168,12 @@
   - ✅ D4.1: Create Lesson Viewer Page (0.5 pt)
   - ✅ D4.2: Create Content Renderer (0.5 pt)
   - ✅ D4.3: Add Complete Lesson Button (0.5 pt)
-- [ ] D5: Lesson navigation (prev/next) (0.5 pt)
+- [x] D5: Lesson navigation (prev/next) (0.5 pt) ✅ **COMPLETE** (Nov 14)
+  - ✅ LessonNavigation component with prev/next buttons
+  - ✅ useLessonNavigation hook for navigation logic
+  - ✅ Progress indicator (Lesson X of Y)
+  - ✅ Cross-section navigation support
+  - ✅ Disabled states for first/last lessons
 
 **Epic E: Progress & Profile** (5 pts)
 
