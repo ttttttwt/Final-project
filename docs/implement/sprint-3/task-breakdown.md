@@ -187,11 +187,14 @@
 **Deliverables**:
 
 - ✅ src/store/authStore.ts (100+ lines)
-- ✅ Cookie-based session management (NO token storage)
-- ✅ ~~localStorage integration~~ ❌ **REMOVED** (Security: httpOnly cookies only)
+- ✅ localStorage token management (temporary approach)
 - ✅ TypeScript types defined
 
-**🔐 Security Note**: Tokens are stored in httpOnly cookies set by backend (HttpOnly; Secure; SameSite=Strict). Client NEVER stores tokens in localStorage or state.
+**🔐 Security Note (Updated Nov 18, 2025)**:
+
+- **Current**: Tokens stored in `localStorage` and sent via `Authorization: Bearer` header
+- **Future**: Will migrate to httpOnly cookies for better XSS protection
+- **Rationale**: localStorage approach chosen for initial implementation simplicity
 
 #### A3.2: Create Additional Stores (0.2 points) ✅ COMPLETE
 
@@ -251,7 +254,11 @@
     - [x] ✅ **Retry** network errors, timeout, 500, 502, 503, 504
   - [x] Return proper error format
 
-**🔐 Security Note**: NO manual Authorization header. Backend reads httpOnly cookie automatically.
+**🔐 Security Note (Updated Nov 18, 2025)**:
+
+- **Current**: Manual `Authorization: Bearer` header with token from localStorage
+- **Implementation**: Request interceptor adds token from localStorage to every request
+- **Future**: Will migrate to httpOnly cookies (backend sets, browser sends automatically)
 
 **Deliverables**:
 

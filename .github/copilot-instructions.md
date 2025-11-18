@@ -91,8 +91,8 @@ public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterDTO dto) {
 **JWT Token Handling**:
 
 - Access: 15 min, Refresh: 7 days
-- Set httpOnly cookies (HttpOnly; Secure; SameSite=Strict)
-- Hash tokens before DB (SHA-256)
+- Return tokens in response body (stored in localStorage on frontend)
+- Hash refresh tokens before DB (SHA-256)
 - Never log tokens
 
 **Gemini API Integration**
@@ -135,16 +135,21 @@ src/
 **Security Rules (CRITICAL)**:
 
 ```typescript
-// ✅ DO: httpOnly cookies (XSS protected)
+// ✅ DO: localStorage for tokens (temporary approach)
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true, // Sends cookies automatically
 });
 
-// Backend sets: Set-Cookie: accessToken=...; HttpOnly; Secure; SameSite=Strict
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-// ❌ NEVER: localStorage for tokens (XSS vulnerable)
-// ❌ localStorage.setItem("accessToken", token);
+// Note: Will migrate to httpOnly cookies for better XSS protection later
 ```
 
 **API Error Handling**:
@@ -266,14 +271,14 @@ describe("LoginForm", () => {
 
 **Backend**:
 
-- ❌ Store plain-text passwords/tokens
-- ❌ Log sensitive data
+- ❌ Store plain-text passwords/refresh tokens
+- ❌ Log sensitive data (passwords, tokens)
 - ❌ Skip tests (70% minimum)
 - ❌ Use generic `Exception` catches
 
 **Frontend**:
 
-- ❌ Store tokens in localStorage (use httpOnly cookies)
+- ❌ Store passwords or sensitive data in localStorage
 - ❌ Skip form validation (use Zod)
 - ❌ Ignore error states (network, timeout, server)
 - ❌ Forget loading states/skeletons
@@ -291,14 +296,14 @@ describe("LoginForm", () => {
 **Backend**:
 
 - ✅ Bcrypt passwords (cost 12)
-- ✅ Set httpOnly cookies for JWT
-- ✅ Hash tokens before DB (SHA-256)
+- ✅ Return JWT in response body
+- ✅ Hash refresh tokens before DB (SHA-256)
 - ✅ Validate all inputs
 - ✅ Use DTOs for APIs
 
 **Frontend**:
 
-- ✅ httpOnly cookies (not localStorage)
+- ✅ localStorage for tokens (temporary, will migrate to httpOnly cookies)
 - ✅ Validate forms (React Hook Form + Zod)
 - ✅ Handle all errors (network, timeout, 500)
 - ✅ Add retry logic (3 attempts)
@@ -348,7 +353,7 @@ describe("LoginForm", () => {
 
 - ✅ Tests pass (100%)
 - ✅ Coverage ≥ 60% (Services ≥ 80%)
-- ✅ No XSS vulnerabilities (httpOnly cookies)
+- ✅ Token management implemented correctly
 - ✅ Responsive (320px - 1920px)
 - ✅ WCAG AA compliant
 
@@ -411,15 +416,15 @@ Each development session must create a comprehensive summary in `docs/implement/
 **Backend**:
 
 - [ ] Passwords Bcrypt (cost 12)
-- [ ] JWT in httpOnly cookies (HttpOnly; Secure; SameSite=Strict)
-- [ ] Tokens hashed in DB (SHA-256)
+- [ ] JWT returned in response body
+- [ ] Refresh tokens hashed in DB (SHA-256)
 - [ ] All inputs validated
 - [ ] No secrets in logs/code
 
 **Frontend**:
 
-- [ ] httpOnly cookies (NOT localStorage)
-- [ ] axios withCredentials: true
+- [ ] localStorage for tokens with Authorization header
+- [ ] Clear tokens on logout
 - [ ] Form validation (Zod)
 - [ ] Error handling (network, timeout, 500)
 - [ ] Retry logic (3 attempts)

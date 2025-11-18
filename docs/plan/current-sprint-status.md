@@ -8,28 +8,10 @@
 
 ### Focus
 
-- Next.js 14+ web application setup with TypeScript
-- **Design Style**: **Medium-inspired** (minimalist, content-first, readable) — see `/docs/context/FRONTEND-DESIGN-REQUIREMENTS.md`
-- Authentication UI (Login/Register) with **secure JWT (httpOnly cookies)**
-- Dashboard and navigation layout
-- Course browsing and enrollment UI
-- Learning path display
-- Progress tracking visualization
-- Profile management interface
-- Responsive design and form validation
-- **Dark mode support** (system preference + manual toggle)
-- Testing: 60%+ coverage (Jest + React Testing Library)
-- **Security**: httpOnly cookies, Error Boundary, comprehensive error handling
-- **Accessibility**: WCAG AA compliance (ARIA, keyboard nav, contrast)
-- **Performance**: LCP < 2.5s, FCP < 1.8s, optimized images/fonts
-
 ### Story Breakdown
 
 | Epic                      | Status      | Progress  | Notes                        |
 | ------------------------- | ----------- | --------- | ---------------------------- |
-| A: Project Setup & Config | ✅ Complete | 4/4 pts   | Setup complete               |
-| B: Authentication Pages   | ✅ Complete | 5/5 pts   | httpOnly cookies, middleware |
-| C: Dashboard & Layout     | ✅ Complete | 4/4 pts   | All tasks complete           |
 | D: Course & Learning Path | ✅ Complete | 7/7 pts   | All D1-D5 tasks complete     |
 | E: Progress & Profile     | ✅ Complete | 5/5 pts   | E1-E5 complete               |
 | F: Testing & Polish       | ✅ Complete | 4.5/4 pts | All F1-F6 complete + WCAG AA |
@@ -40,26 +22,13 @@
 
 **Epic A: Project Setup & Configuration** ✅ **COMPLETE** (4 pts)
 
-- [x] A1: Next.js 14+ project initialization with TypeScript (1 pt)
-- [x] A2: Tailwind CSS + shadcn/ui setup (0.5 pt)
-- [x] A3: Zustand state management configuration (0.5 pt)
-- [x] A4: Axios client + API integration setup (1 pt)
-- [x] A5: Environment variables + build configuration (1 pt)
-
 **📊 Velocity Alert**: Currently at 1.8 pts/day (target: 2.1 pts/day). Epic B complete! On track for C-D.
 
-**🔐 Security Update (Nov 11)**: Epic B implemented with httpOnly cookies instead of localStorage for JWT tokens (OWASP compliance). ✅ **COMPLETE**
+- ✅ B3.3: Auto-Logout - AuthProvider, ProtectedRoute, session initialization
 
-**Epic B: Authentication Pages** ✅ **COMPLETE** (5 pts - 100%)
+> **🔐 Security Update (Nov 18)**: Frontend token handling temporarily reverted to localStorage + Authorization header to reduce implementation friction for Sprint 3. Middleware now fails open because tokens are not accessible on the edge. Backend APIs + ProtectedRoute enforce authentication until Sprint 6 reintroduces httpOnly cookies.
 
-- [x] B1: Login page design + form validation (1.5 pts) ✅ **COMPLETE** (Nov 12)
-- [x] B2: Register page with password confirmation (1.5 pts) ✅ **COMPLETE** (Nov 12)
-- [x] B3: JWT token management (httpOnly cookies + refresh) (1 pt) ✅ **COMPLETE** (Nov 12)
-  - ✅ B3.1: Token Storage - httpOnly cookies implementation (NO client-side storage)
-  - ✅ B3.2: Token Refresh - Promise lock pattern, request queue, offline detection
-  - ✅ B3.3: Auto-Logout - AuthProvider, ProtectedRoute, session initialization
-  - ✅ Enhanced error handling (network, timeout, retry logic with exponential backoff)
-  - ✅ Session persists across page reloads
+- ✅ Session persists across page reloads
 - [x] B4: Protected routes middleware (0.5 pt) ✅ **COMPLETE** (Nov 12)
   - ✅ Next.js middleware calling backend /users/profile for validation
   - ✅ Redirects with returnUrl parameter
@@ -73,8 +42,8 @@
 **🎊 Epic B Achievements**:
 
 - ✅ Complete authentication flow (login → register → logout)
-- ✅ httpOnly cookies for XSS protection
-- ✅ Server-side middleware protection
+- ✅ Configurable token strategy (currently localStorage + Authorization header; httpOnly cookies scheduled for Sprint 6)
+- ✅ Server-side middleware implementation (temporarily fail-open while tokens live in localStorage)
 - ✅ Client-side ProtectedRoute component
 - ✅ Promise lock prevents concurrent token refresh
 - ✅ Comprehensive error handling
@@ -82,6 +51,8 @@
 - ✅ Loading states prevent UI flashing
 - ✅ Responsive design (320px - 1920px)
 - ✅ Accessibility (ARIA labels, keyboard nav)
+
+> ⚠️ Until Sprint 6, rely on backend APIs + ProtectedRoute for enforcement while middleware remains fail-open.
 
 **Epic C: Dashboard & Layout** ✅ **COMPLETE** (4 pts - 100%)
 

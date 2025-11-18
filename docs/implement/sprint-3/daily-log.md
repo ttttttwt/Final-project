@@ -1,3 +1,61 @@
+## 2025-11-18
+
+### 📝 DOCUMENTATION UPDATE: Token Storage Strategy Change
+
+**Time Spent**: 15 minutes  
+**Focus**: Update documentation to reflect localStorage token approach  
+**Status**: ✅ **COMPLETE**
+
+#### 🎯 What Changed
+
+**Previous Approach** (httpOnly cookies):
+
+- Tokens stored in httpOnly cookies by backend
+- Automatic cookie sending via `withCredentials: true`
+- No client-side token access (XSS protected)
+
+**New Approach** (localStorage - temporary):
+
+- Backend returns tokens in response body
+- Frontend stores in `localStorage.setItem('accessToken', token)`
+- Axios interceptor adds `Authorization: Bearer` header
+- Simpler implementation for Sprint 3
+- **Future**: Will migrate to httpOnly cookies for production
+
+#### 📁 Files Updated
+
+1. `.github/copilot-instructions.md` - Updated all security sections
+2. `docs/implement/sprint-3/task-breakdown.md` - Added notes to Epic A3, A4
+3. `docs/implement/sprint-3/sprint-3-backlog.md` - Updated Epic A, B security notes
+4. `docs/implement/sprint-3/daily-log.md` - Added this change log
+
+#### 🔐 Security Considerations
+
+**Trade-offs**:
+
+- ✅ Easier to implement and debug
+- ✅ Compatible with current backend implementation
+- ⚠️ Vulnerable to XSS attacks (tokens accessible via JavaScript)
+- ⚠️ Requires manual token management in interceptors
+
+**Mitigation Strategy**:
+
+- Validate all user inputs to prevent XSS
+- Use Content Security Policy (CSP) headers
+- Sanitize all rendered content
+- Plan migration to httpOnly cookies before production
+
+#### 📊 Impact Assessment
+
+- **Development Speed**: ⬆️ Faster (no cookie configuration)
+- **Security**: ⬇️ Lower (XSS risk)
+- **Debugging**: ⬆️ Easier (tokens visible in DevTools)
+- **Production Readiness**: ⚠️ Requires migration
+
+**Decision**: Accept temporary security trade-off for Sprint 3 velocity. Schedule httpOnly cookie migration for Sprint 6 (Security Audit phase).
+
+---
+
 ## 2025-11-17
 
 ### ✅ COMPLETED: Task F6 - Accessibility Audit (0.5 points)
