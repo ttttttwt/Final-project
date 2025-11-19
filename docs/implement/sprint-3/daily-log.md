@@ -56,6 +56,32 @@
 
 ---
 
+### 🔧 BUG FIX: Backend `/users/profile` returning 404 for authenticated users
+
+**Time Spent**: 30 minutes
+**Focus**: Fix backend user profile retrieval for authenticated users when principal is a User object
+**Status**: ✅ **FIXED**
+
+#### 🎯 What We Accomplished
+
+1. Identified the root cause: `getCurrentUserId()` used `authentication.getName()` which returned the `toString()` form of the principal (User object) if the Principal is a domain `User`, causing `userRepository.findByEmail(email)` to fail and return 404.
+2. Implemented fix in `UserProfileServiceImpl.getCurrentUserId()` to check for `principal instanceof User` first and return the ID directly; fall back to email lookup when necessary.
+3. Added a unit test case `testGetCurrentUserProfile_WithUserPrincipal_ReturnsUserProfileDTO` to cover the `Authentication` principal-as-User scenario and prevent regressions.
+
+#### 📁 Files Updated
+
+1. `backend/src/main/java/com/lexia/backend/service/impl/UserProfileServiceImpl.java` – Updated `getCurrentUserId()` to prefer `User` principal and avoid toString mismatch when fetching by email.
+2. `backend/src/test/java/com/lexia/backend/service/UserProfileServiceTest.java` – Added test for principal-as-User scenario and adjusted mocks accordingly.
+
+#### 🧪 Tests
+
+- Ran backend unit tests: `./gradlew test` — all tests passed.
+
+#### 🔍 Notes
+
+- This resolves a 404 experienced in the frontend when calling `GET /api/v1/users/profile` with a valid JWT because the authentication principal was previously a `User` object (set by `JwtAuthFilter`).
+- No API contract changed; only internal service logic adjusted to account for `Authentication` principal types.
+
 ## 2025-11-17
 
 ### ✅ COMPLETED: Task F6 - Accessibility Audit (0.5 points)

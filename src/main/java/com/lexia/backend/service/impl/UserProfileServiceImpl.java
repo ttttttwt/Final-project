@@ -219,7 +219,19 @@ public class UserProfileServiceImpl implements UserProfileService {
             throw new UserNotFoundException("No authenticated user found");
         }
 
-        String email = authentication.getName();
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof User) {
+            return ((User) principal).getId();
+        }
+
+        String email;
+        if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+            email = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+        } else {
+            email = authentication.getName();
+        }
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     LOG.warn("User not found for email: {}", email);

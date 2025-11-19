@@ -237,6 +237,30 @@ class UserProfileServiceTest {
         SecurityContextHolder.clearContext();
     }
 
+    @Test
+    void testGetCurrentUserProfile_WithUserPrincipal_ReturnsUserProfileDTO() {
+        // Arrange
+        SecurityContextHolder.setContext(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(testUser); // Principal is User object
+        when(userProfileRepository.findByUserId(testUserId)).thenReturn(Optional.of(testProfile));
+
+        // Act
+        UserProfileDTO result = userProfileService.getCurrentUserProfile();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(testUserId, result.getUserId());
+
+        // Verify we didn't look up by email because we got ID from principal
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(userProfileRepository).findByUserId(testUserId);
+
+        // Cleanup
+        SecurityContextHolder.clearContext();
+    }
+
     // ========== updateProfile() Tests ==========
 
     @Test
