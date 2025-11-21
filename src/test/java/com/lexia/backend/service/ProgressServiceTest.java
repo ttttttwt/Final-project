@@ -39,6 +39,8 @@ class ProgressServiceTest {
     @Mock
     private EnrollmentRepository enrollmentRepository;
     @Mock
+    private com.lexia.backend.repository.CourseRepository courseRepository;
+    @Mock
     private EnrollmentService enrollmentService;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -187,5 +189,23 @@ class ProgressServiceTest {
         assertEquals(2, streak.getCurrentStreak());
         assertEquals(2, streak.getLongestStreak());
         assertEquals(2, streak.getTotalActiveDays());
+    }
+    @Test
+    void getCourseProgress_WithValidData_ShouldReturnProgress() {
+        when(courseRepository.findById(anyLong())).thenReturn(Optional.of(testCourse));
+        when(lessonProgressRepository.findByUserIdAndCourseId(any(), anyLong())).thenReturn(Collections.emptyList());
+
+        com.lexia.backend.dto.CourseProgressDTO result = progressService.getCourseProgress(testUser, 1L);
+
+        assertNotNull(result);
+        assertEquals(testCourse.getId(), result.getCourseId());
+    }
+
+    @Test
+    void getCourseProgress_WhenCourseNotFound_ShouldThrowException() {
+        when(courseRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(com.lexia.backend.exception.ResourceNotFoundException.class,
+                () -> progressService.getCourseProgress(testUser, 99L));
     }
 }

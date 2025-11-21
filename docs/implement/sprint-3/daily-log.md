@@ -1,4 +1,84 @@
+## 2025-11-20
+
+### ✅ COMPLETED: Backend Endpoint - Lesson Completion Tracking
+
+**Time Spent**: 45 minutes  
+**Focus**: Implement `GET /api/v1/progress/courses/{courseId}/lessons` endpoint  
+**Status**: ✅ **COMPLETE**
+
+#### 🎯 What We Accomplished
+
+1. **Service Layer Updates**
+   - Added `getCourseProgress(User user, Long courseId)` method to `ProgressService` interface
+   - Implemented method in `ProgressServiceImpl`:
+     - Injected `CourseRepository` dependency
+     - Validates course existence (throws `ResourceNotFoundException` if not found)
+     - Fetches all lesson progress using `LessonProgressRepository.findByUserIdAndCourseId`
+     - Calculates total lessons from course sections
+     - Maps data to DTO using existing `ProgressMapper.toCourseProgressDTO`
+
+2. **Controller Layer Enhancement**
+   - Added `GET /api/v1/progress/courses/{courseId}/lessons` endpoint to `ProgressController`
+   - Returns `CourseProgressDTO` containing:
+     - Course ID, title, CEFR level
+     - Total lessons count
+     - Completed lessons count
+     - Progress percentage (0-100)
+     - List of `LessonProgressSummary` with individual lesson completion status
+
+3. **Unit Tests**
+   - Updated `ProgressServiceTest.java`:
+     - Added `getCourseProgress_WithValidData_ShouldReturnProgress` test
+     - Added `getCourseProgress_WhenCourseNotFound_ShouldThrowException` test
+   - Created `ProgressControllerTest.java`:
+     - Added `getCourseProgress_ShouldReturnProgress` test (validates 200 OK and response structure)
+
+#### 📁 Files Created/Modified
+
+**Modified** (4 files):
+- ✅ `backend/src/main/java/com/lexia/backend/service/ProgressService.java` - Added getCourseProgress method signature
+- ✅ `backend/src/main/java/com/lexia/backend/service/impl/ProgressServiceImpl.java` - Injected CourseRepository, implemented getCourseProgress
+- ✅ `backend/src/main/java/com/lexia/backend/controller/ProgressController.java` - Added GET /courses/{courseId}/lessons endpoint
+- ✅ `backend/src/test/java/com/lexia/backend/service/ProgressServiceTest.java` - Added 2 unit tests
+
+**Created** (1 file):
+- ✅ `backend/src/test/java/com/lexia/backend/controller/ProgressControllerTest.java` - Created controller test suite
+
+#### 🧪 Test Results
+
+```
+./gradlew test --tests com.lexia.backend.service.ProgressServiceTest
+BUILD SUCCESSFUL in 15s
+
+./gradlew test --tests com.lexia.backend.controller.ProgressControllerTest
+BUILD SUCCESSFUL in 15s
+```
+
+All tests passed ✅
+
+#### 🔍 Technical Notes
+
+- **Reused Existing Components**: Implementation leverages existing `LessonProgressRepository.findByUserIdAndCourseId` query and `ProgressMapper.toCourseProgressDTO` mapping utility, ensuring consistency with other progress endpoints.
+- **Error Handling**: Throws `ResourceNotFoundException` when course ID is invalid, which is caught by `GlobalExceptionHandler` and returned as 404 response.
+- **Read-Only Transaction**: Method annotated with `@Transactional(readOnly = true)` for optimal database performance.
+- **Comprehensive Response**: Returns complete lesson-by-lesson breakdown including lesson ID, title, type, section, status, score, and attempts.
+
+#### 📊 Impact
+
+**Frontend Integration**:
+- Unblocks Epic E2 (Lesson Completion Tracking UI)
+- Enables lesson checkmarks display on course detail pages
+- Allows progress tracking visualization on lesson viewer
+
+**API Specification**:
+- New endpoint documented with OpenAPI annotations
+- Example responses included for 200 OK and 404 Not Found
+- Consistent with existing Progress API design patterns
+
+---
+
 ## 2025-11-18
+
 
 ### 📝 DOCUMENTATION UPDATE: Token Storage Strategy Change
 

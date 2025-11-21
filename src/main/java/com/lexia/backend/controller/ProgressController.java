@@ -160,6 +160,37 @@ public class ProgressController {
     }
 
     /**
+     * Get the authenticated user's progress for a specific course.
+     * 
+     * @param user     the authenticated user (injected by Spring Security)
+     * @param courseId the course ID
+     * @return 200 OK with course progress information
+     */
+    @GetMapping(value = "/courses/{courseId}/lessons", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get course progress", description = "Retrieves the completion status of all lessons in a specific course for the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved course progress", content = @Content(mediaType = "application/json", schema = @Schema(implementation = com.lexia.backend.dto.CourseProgressDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Course not found", content = @Content(mediaType = "application/json", examples = @ExampleObject(name = "Course Not Found", value = """
+                    {
+                      "status": 404,
+                      "error": "Resource Not Found",
+                      "message": "Course not found with id: 1",
+                      "path": "/api/v1/progress/courses/1/lessons",
+                      "timestamp": "2025-11-05T10:30:00"
+                    }
+                    """)))
+    })
+    public ResponseEntity<com.lexia.backend.dto.CourseProgressDTO> getCourseProgress(
+            @AuthenticationPrincipal User user,
+            @Parameter(description = "ID of the course", required = true, example = "1") @PathVariable Long courseId) {
+
+        LOG.info("Fetching progress for user {} in course {}", user.getEmail(), courseId);
+        com.lexia.backend.dto.CourseProgressDTO progress = progressService.getCourseProgress(user, courseId);
+        
+        return ResponseEntity.ok(progress);
+    }
+
+    /**
      * Get the authenticated user's learning streak.
      * 
      * @param user the authenticated user (injected by Spring Security)

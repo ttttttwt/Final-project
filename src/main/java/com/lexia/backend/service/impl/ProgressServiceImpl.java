@@ -35,6 +35,7 @@ public class ProgressServiceImpl implements ProgressService {
 
     private final LessonProgressRepository lessonProgressRepository;
     private final LessonRepository lessonRepository;
+    private final com.lexia.backend.repository.CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentService enrollmentService;
     private final ObjectMapper objectMapper;
@@ -105,6 +106,30 @@ public class ProgressServiceImpl implements ProgressService {
 
         // Build and return DTO
         return buildLessonProgressDTO(progress);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public com.lexia.backend.dto.CourseProgressDTO getCourseProgress(User user, Long courseId) {
+        log.debug("Fetching course progress for user {} and course {}", user.getId(), courseId);
+
+        // Verify course exists
+        com.lexia.backend.entity.Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new com.lexia.backend.exception.ResourceNotFoundException("Course not found with id: " + courseId));
+
+        // Get all lesson progress for this course
+        List<LessonProgress> lessonProgressList = lessonProgressRepository.findByUserIdAndCourseId(user.getId(), courseId);
+
+        // Calculate total lessons
+        int totalLessons = course.getSections().stream()
+                .mapToInt(section -> section.getLessons().size())
+                .sum();
+
+        // Map to DTO
+        return com.lexia.backend.mapper.ProgressMapper.toCourseProgressDTO(course, lessonProgressList, totalLessons);
     }
 
     /**

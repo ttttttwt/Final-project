@@ -64,6 +64,15 @@ public interface ProgressService {
     LessonProgressDTO completeLesson(User user, Long lessonId, String resultDetailsJson);
 
     /**
+     * Retrieves progress for all lessons in a specific course for the authenticated user.
+     * 
+     * @param user     the authenticated user
+     * @param courseId the course ID
+     * @return DTO containing course progress summary and lesson-by-lesson status
+     */
+    com.lexia.backend.dto.CourseProgressDTO getCourseProgress(User user, Long courseId);
+
+    /**
      * Calculates the user's current learning streak.
      * 
      * <p>

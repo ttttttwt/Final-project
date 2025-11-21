@@ -3,8 +3,8 @@
 ## Sprint 3 — Frontend Development (Web)
 
 **Sprint**: 3 / 8 | **Duration**: Nov 8 – Nov 21, 2025 (14 days)  
-**Status**: ⏳ In Progress (Day 10) | **Progress**: 29.5/29 points (101.7%)  
-**Last Updated**: November 17, 2025 (Epic A, B, C, D, E, F Complete)
+**Status**: ⏳ In Progress (Day 13) | **Progress**: 29.5/29 points (101.7%)  
+**Last Updated**: November 20, 2025 (All Epics Complete + Backend Endpoint Added)
 
 ### Focus
 
@@ -157,11 +157,11 @@
   - ✅ Responsive design, loading states, dark mode
 - [x] E2: Lesson completion tracking UI (1 pt) ✅ **COMPLETE** (Nov 14)
   - ✅ E2.1: CourseCard progress bars and completion badges
-  - ✅ E2.2: LessonItem checkmarks (UI ready, pending backend endpoint)
+  - ✅ E2.2: LessonItem checkmarks (UI ready, **backend endpoint implemented Nov 20**)
   - ✅ E2.3: Confetti animation (verified working)
   - ✅ Enrollment integration in courses page
   - ✅ Progress indicators on course cards
-  - ⚠️ **NOTE**: Lesson-level completion status requires backend endpoint `GET /progress/courses/{courseId}/lessons` (not yet implemented). Frontend UI is ready but cannot display individual lesson checkmarks until backend API is available.
+  - ✅ **UPDATE (Nov 20)**: Backend endpoint `GET /api/v1/progress/courses/{courseId}/lessons` now implemented. Frontend can now display individual lesson checkmarks using `CourseProgressDTO` response.
 - [x] E3: Profile management page (1 pt) ✅ **COMPLETE** (Nov 14)
   - ✅ E3.1: Extended User type with full profile fields (bio, phone, timezone, language, learningGoal)
   - ✅ E3.2: Created ProfileForm component (250+ lines) with React Hook Form + Zod validation
