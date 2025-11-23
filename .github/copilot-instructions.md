@@ -4,7 +4,8 @@
 
 **LEXIA** - AI English Learning Platform for Working Professionals  
 **Backend**: Spring Boot 3.x | Java 17 | PostgreSQL | JWT  
-**Frontend**: Next.js 14+ | TypeScript | Tailwind CSS | Zustand
+**Frontend Web**: Next.js 14+ | TypeScript | Tailwind CSS | Zustand  
+**Frontend Mobile**: React Native (Expo) | TypeScript | React Navigation | Zustand
 
 ---
 
@@ -21,7 +22,8 @@
 - `docs/context/ARCHITECTURE.md` - System design
 - `docs/context/DATABASE-SCHEMA.md` - Database structure
 - `docs/context/API-SPECIFICATION.md` - API contracts
-- `docs/context/CODE-STANDARDS.md` - Coding conventions
+- `docs/context/CODING-STANDARDS.md` - Coding conventions & standards (1)
+- `docs/context/CODE-STANDARDS.md` - Coding conventions (2)
 - `docs/context/FRONTEND-DESIGN-REQUIREMENTS.md` - ✨ **Medium-inspired UI Design**
 
 ---
@@ -54,215 +56,64 @@
 
 ---
 
-## 💻 Code Standards
+## 💻 Project Structure
+
+> **Note**: For detailed coding standards, examples, and best practices, see `docs/context/CODING-STANDARDS.md`
 
 ### Backend (Spring Boot)
 
-**Package Structure**:
-
 ```
-com.lexia.api/
-├── auth/         # JWT, login
-├── user/         # User management
-├── course/       # Courses/lessons
-├── ai/           # Gemini integration
-└── common/       # Shared utilities
-```
-
-**Security Rules (CRITICAL)**
-
-```java
-// ✅ DO
-@PostMapping("/register")
-public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterDTO dto) {
-    String hashed = passwordEncoder.encode(dto.getPassword()); // Bcrypt cost 12
-    User user = userService.create(dto.getEmail(), hashed);
-    LOG.info("User registered: {}", user.getEmail());
-    return ResponseEntity.ok(UserMapper.toDTO(user));
-}
-
-// ❌ NEVER
-- Plain-text passwords/tokens
-- Log sensitive data
-- Expose entities directly
-- Hardcode secrets
+com.lexia.backend/
+├── auth/              # JWT, Security filters
+├── controller/        # REST API endpoints
+├── service/           # Business logic
+│   ├── impl/          # Service implementations
+├── repository/        # JPA repositories
+├── entity/            # JPA entities
+├── dto/               # Data Transfer Objects
+├── mapper/            # Entity-DTO mappers
+├── config/            # Configuration classes
+├── exception/         # Custom exceptions
+├── validation/        # Custom validators
+├── specification/     # JPA Specifications
+├── util/              # Utility classes
+├── converter/         # Custom converters
+├── seeder/            # Database seeders
+└── common/            # Shared utilities
 ```
 
-**JWT Token Handling**:
-
-- Access: 15 min, Refresh: 7 days
-- Return tokens in response body (stored in localStorage on frontend)
-- Hash refresh tokens before DB (SHA-256)
-- Never log tokens
-
-**Gemini API Integration**
-
-```java
-@Retryable(maxAttempts = 3)
-public RolePlayDTO generateRolePlay(String context) {
-    try {
-        String response = geminiClient.generate(prompt);
-        aiUsageLogRepository.save(new AIUsageLog(...)); // Track cost
-        return parseResponse(response);
-    } catch (TimeoutException e) {
-        return getFallbackScenario(); // Always have fallback
-    }
-}
-```
-
-**Testing**: Unit + Integration, 70%+ coverage, Services ≥ 80%
-
----
-
-### Frontend (Next.js)
-
-**Project Structure**:
+### Frontend Web (Next.js)
 
 ```
-src/
-├── app/           # Next.js App Router pages
-├── components/    # React components
-│   ├── ui/        # shadcn/ui components
-│   ├── auth/      # Auth components
-│   ├── courses/   # Course components
-│   └── layout/    # Layout components
-├── lib/           # Utilities, API client
-├── services/      # API service functions
-├── store/         # Zustand stores
-└── types/         # TypeScript types
+lexia-web/
+├── app/                    # Next.js App Router pages
+├── components/            # React components
+├── services/             # API service functions
+├── store/                # Zustand stores
+├── types/                # TypeScript types
+├── lib/                  # Utilities, helpers
+├── hooks/                # Custom React hooks
+├── tests/                # Test files
+└── public/               # Static assets
 ```
 
-**Security Rules (CRITICAL)**:
+### Mobile (React Native + Expo)
 
-```typescript
-// ✅ DO: localStorage for tokens (temporary approach)
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-});
-
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Note: Will migrate to httpOnly cookies for better XSS protection later
 ```
-
-**API Error Handling**:
-
-```typescript
-// ✅ Comprehensive error handling
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    // Network errors
-    if (error.code === "ERR_NETWORK") {
-      toast.error("No internet connection");
-      return Promise.reject({ code: "NETWORK" });
-    }
-
-    // Timeout
-    if (error.code === "ECONNABORTED") {
-      toast.error("Request timeout");
-      return retryRequest(error.config, 3); // Retry 3 times
-    }
-
-    // Server errors
-    if (error.response?.status >= 500) {
-      toast.error("Server error");
-      return retryRequest(error.config, 3);
-    }
-
-    // 401 - Refresh token
-    if (error.response?.status === 401) {
-      return handleTokenRefresh(error);
-    }
-
-    return Promise.reject(error);
-  }
-);
-```
-
-**Component Standards**:
-
-```typescript
-// ✅ DO: Type-safe components with validation
-interface LoginFormProps {
-  onSuccess: () => void;
-}
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(8, "Min 8 characters"),
-});
-
-export function LoginForm({ onSuccess }: LoginFormProps) {
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-  });
-
-  const onSubmit = async (data: z.infer<typeof loginSchema>) => {
-    try {
-      await authService.login(data);
-      toast.success("Login successful");
-      onSuccess();
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
-
-  return <form onSubmit={form.handleSubmit(onSubmit)}>...</form>;
-}
-```
-
-**Responsive Design**:
-
-```typescript
-// ✅ Mobile-first, test all breakpoints
-// 320px (Mobile S), 375px (Mobile M), 768px (Tablet)
-// 1024px (Desktop S), 1280px (Desktop M), 1920px (Desktop L)
-
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  {/* Mobile: 1 column, Tablet: 2 columns, Desktop: 3 columns */}
-</div>
-```
-
-**Accessibility (WCAG AA)**:
-
-```typescript
-// ✅ ARIA labels, keyboard nav, contrast
-<button aria-label="Close dialog" onClick={onClose}>
-  <X className="h-4 w-4" aria-hidden="true" />
-</button>
-
-<input
-  aria-describedby="email-error"
-  aria-invalid={errors.email ? "true" : "false"}
-/>
-{errors.email && <span id="email-error">{errors.email.message}</span>}
-```
-
-**Testing (Jest + RTL)**:
-
-```typescript
-// ✅ 60%+ coverage (global), 80%+ (services)
-describe("LoginForm", () => {
-  it("validates email format", async () => {
-    render(<LoginForm onSuccess={jest.fn()} />);
-
-    const emailInput = screen.getByLabelText(/email/i);
-    await userEvent.type(emailInput, "invalid");
-
-    const submitBtn = screen.getByRole("button", { name: /login/i });
-    await userEvent.click(submitBtn);
-
-    expect(screen.getByText(/invalid email/i)).toBeInTheDocument();
-  });
-});
+lexia-mobile/
+├── app/                    # Screen components
+│   ├── auth/              # Auth screens
+│   ├── tabs/              # Tab navigation screens
+│   ├── courses/           # Course screens
+│   └── lessons/           # Lesson screens
+├── components/            # Reusable components
+├── services/             # API service functions
+├── store/                # Zustand stores
+├── types/                # TypeScript types
+├── assets/               # Static assets
+├── App.tsx               # Root component
+├── index.ts              # Entry point
+└── app.json              # Expo configuration
 ```
 
 ---
@@ -276,7 +127,7 @@ describe("LoginForm", () => {
 - ❌ Skip tests (70% minimum)
 - ❌ Use generic `Exception` catches
 
-**Frontend**:
+**Frontend (Web)**:
 
 - ❌ Store passwords or sensitive data in localStorage
 - ❌ Skip form validation (use Zod)
@@ -284,6 +135,15 @@ describe("LoginForm", () => {
 - ❌ Forget loading states/skeletons
 - ❌ Skip accessibility (ARIA, keyboard nav)
 - ❌ Use `<img>` (use Next.js `<Image>`)
+
+**Mobile**:
+
+- ❌ Store sensitive data in plain AsyncStorage (except tokens)
+- ❌ Skip platform-specific handling (iOS/Android)
+- ❌ Ignore navigation type safety
+- ❌ Forget error boundaries
+- ❌ Skip accessibility labels
+- ❌ Use inline styles without StyleSheet
 
 **Both**:
 
@@ -301,7 +161,7 @@ describe("LoginForm", () => {
 - ✅ Validate all inputs
 - ✅ Use DTOs for APIs
 
-**Frontend**:
+**Frontend (Web)**:
 
 - ✅ localStorage for tokens (temporary, will migrate to httpOnly cookies)
 - ✅ Validate forms (React Hook Form + Zod)
@@ -310,6 +170,18 @@ describe("LoginForm", () => {
 - ✅ Test responsive (320px - 1920px)
 - ✅ ARIA labels + keyboard nav
 - ✅ TypeScript strict mode
+
+**Mobile**:
+
+- ✅ AsyncStorage for tokens with proper encryption consideration
+- ✅ Validate all inputs (manual validation or libraries)
+- ✅ Handle all errors (network, timeout, server)
+- ✅ Add retry logic (3 attempts)
+- ✅ Test on iOS & Android
+- ✅ Accessibility labels (accessible, accessibilityLabel)
+- ✅ TypeScript strict mode
+- ✅ Use React Native Paper for consistent UI
+- ✅ Type-safe navigation (React Navigation types)
 
 **Both**:
 
@@ -330,7 +202,7 @@ describe("LoginForm", () => {
 **During Dev**:
 
 1. Code + Tests
-2. **Backend**: `./gradlew test` | **Frontend**: `npm test`
+2. **Backend**: `./gradlew test` | **Frontend Web**: `npm test` | **Mobile**: `npm test` (in lexia-mobile)
 3. Update daily-log.md
 
 **End Session**:
@@ -349,13 +221,21 @@ describe("LoginForm", () => {
 - ✅ Coverage ≥ 70% (Services ≥ 80%)
 - ✅ API response < 500ms
 
-**Frontend**:
+**Frontend (Web)**:
 
 - ✅ Tests pass (100%)
 - ✅ Coverage ≥ 60% (Services ≥ 80%)
 - ✅ Token management implemented correctly
 - ✅ Responsive (320px - 1920px)
 - ✅ WCAG AA compliant
+
+**Mobile**:
+
+- ✅ Tests pass (100%)
+- ✅ Coverage ≥ 60% (Services ≥ 80%)
+- ✅ Token management with AsyncStorage
+- ✅ Works on iOS & Android
+- ✅ Accessibility labels present
 
 **Both**:
 
@@ -421,11 +301,20 @@ Each development session must create a comprehensive summary in `docs/implement/
 - [ ] All inputs validated
 - [ ] No secrets in logs/code
 
-**Frontend**:
+**Frontend (Web)**:
 
 - [ ] localStorage for tokens with Authorization header
 - [ ] Clear tokens on logout
 - [ ] Form validation (Zod)
+- [ ] Error handling (network, timeout, 500)
+- [ ] Retry logic (3 attempts)
+- [ ] No sensitive data in client code
+
+**Mobile**:
+
+- [ ] AsyncStorage for tokens with Authorization header
+- [ ] Clear tokens on logout (AsyncStorage.multiRemove)
+- [ ] Input validation
 - [ ] Error handling (network, timeout, 500)
 - [ ] Retry logic (3 attempts)
 - [ ] No sensitive data in client code
@@ -443,7 +332,7 @@ Each development session must create a comprehensive summary in `docs/implement/
 
 ---
 
-## 📱 Responsive Checklist
+## 📱 Responsive Checklist (Web)
 
 - [ ] 320px - Mobile S (iPhone SE)
 - [ ] 375px - Mobile M (iPhone 12/13)
@@ -453,6 +342,18 @@ Each development session must create a comprehensive summary in `docs/implement/
 - [ ] 1920px - Desktop L (Full HD)
 - [ ] No horizontal scroll
 - [ ] Touch targets ≥ 44px
+
+## 📱 Mobile Testing Checklist
+
+- [ ] iOS Simulator (iPhone 14/15)
+- [ ] Android Emulator (Pixel 6)
+- [ ] Physical devices (if available)
+- [ ] Portrait & Landscape orientations
+- [ ] Touch targets ≥ 44px
+- [ ] Safe area insets (notch/home indicator)
+- [ ] Keyboard handling (avoid overlapping inputs)
+- [ ] Pull-to-refresh (where applicable)
+- [ ] Network error states (offline mode)
 
 ---
 

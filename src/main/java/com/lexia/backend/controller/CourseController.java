@@ -25,6 +25,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.lexia.backend.entity.User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -171,22 +174,29 @@ public class CourseController {
             @Parameter(description = "Filter by title (partial match)", example = "business") @RequestParam(required = false) String title,
             @Parameter(description = "Filter by CEFR level", example = "B1") @RequestParam(required = false) String cefrLevel,
             @Parameter(description = "Filter by publication status", example = "true") @RequestParam(required = false) Boolean isPublished,
+            @Parameter(description = "Filter by enrollment status", example = "true") @RequestParam(required = false) Boolean isEnrolled,
             @Parameter(description = "Page number (0-based)", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size (max 100)", example = "10") @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sort field and direction", example = "title,asc") @RequestParam(defaultValue = "createdAt,desc") String sort) {
 
-        LOG.info("Searching courses - title: {}, cefrLevel: {}, isPublished: {}, page: {}, size: {}",
-                title, cefrLevel, isPublished, page, size);
+        LOG.info("Searching courses - title: {}, cefrLevel: {}, isPublished: {}, isEnrolled: {}, page: {}, size: {}",
+                title, cefrLevel, isPublished, isEnrolled, page, size);
 
         // Build search DTO
         CourseSearchDTO searchDTO = CourseSearchDTO.builder()
                 .title(title)
                 .cefrLevel(cefrLevel)
                 .isPublished(isPublished)
+                .isEnrolled(isEnrolled)
                 .page(page)
                 .size(Math.min(size, 100))
                 .sort(sort)
                 .build();
+
+        // If enrollment filter is used, we need the user ID
+        if (isEnrolled != null) {
+            searchDTO.setUserId(getCurrentUserId());
+        }
 
         Page<CourseDTO> courses = courseService.search(searchDTO);
 
@@ -357,5 +367,17 @@ public class CourseController {
                 : Sort.Direction.DESC;
 
         return PageRequest.of(page, size, Sort.by(direction, sortField));
+    }
+
+    /**
+     * Helper method to get current user ID from security context.
+     */
+    private java.util.UUID getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof User) {
+            return ((User) authentication.getPrincipal()).getId();
+        }
+        // Fallback or return null if not authenticated (though endpoints are secured)
+        return null;
     }
 }

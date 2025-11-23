@@ -248,4 +248,47 @@ public class ProgressController {
 
         return ResponseEntity.ok(streak);
     }
+    /**
+     * Get dashboard overview for the authenticated user.
+     * 
+     * @param user the authenticated user (injected by Spring Security)
+     * @return 200 OK with dashboard overview data
+     */
+    @GetMapping(value = "/dashboard", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get dashboard overview", description = "Retrieves aggregated dashboard data including stats, weekly goals, recent activity, and recommendations.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved dashboard data", content = @Content(mediaType = "application/json", schema = @Schema(implementation = com.lexia.backend.dto.DashboardOverviewDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(mediaType = "application/json"))
+    })
+    public ResponseEntity<com.lexia.backend.dto.DashboardOverviewDTO> getDashboardOverview(
+            @AuthenticationPrincipal User user) {
+
+        LOG.info("Fetching dashboard overview for user {}", user.getEmail());
+        com.lexia.backend.dto.DashboardOverviewDTO dashboardData = progressService.getDashboardOverview(user);
+        
+        return ResponseEntity.ok(dashboardData);
+    }
+
+    /**
+     * Get progress summary for the authenticated user.
+     * 
+     * @param user the authenticated user
+     * @param days number of days to look back (default 30)
+     * @return 200 OK with progress summary
+     */
+    @GetMapping(value = "/summary", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get progress summary", description = "Retrieves progress summary and daily activity stats for the specified number of days.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved progress summary", content = @Content(mediaType = "application/json", schema = @Schema(implementation = com.lexia.backend.dto.ProgressSummaryDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(mediaType = "application/json"))
+    })
+    public ResponseEntity<com.lexia.backend.dto.ProgressSummaryDTO> getProgressSummary(
+            @AuthenticationPrincipal User user,
+            @Parameter(description = "Number of days to look back", example = "30") @RequestParam(defaultValue = "30") int days) {
+
+        LOG.info("Fetching progress summary for user {} ({} days)", user.getEmail(), days);
+        com.lexia.backend.dto.ProgressSummaryDTO summary = progressService.getProgressSummary(user, days);
+
+        return ResponseEntity.ok(summary);
+    }
 }

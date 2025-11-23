@@ -77,4 +77,20 @@ public class CourseSearchDTO {
      */
     @Schema(description = "Sort field and direction (e.g., 'createdAt,desc' or 'title,asc')", example = "createdAt,desc", nullable = true)
     private String sort;
+
+    /**
+     * Filter by enrollment status.
+     * true = enrolled courses only
+     * false = not enrolled courses only
+     * null = all courses
+     */
+    @Schema(description = "Filter by enrollment status", example = "true", nullable = true)
+    private Boolean isEnrolled;
+
+    /**
+     * User ID for enrollment filtering.
+     * Extracted from security context, not part of API request body.
+     */
+    @Schema(hidden = true)
+    private java.util.UUID userId;
 }

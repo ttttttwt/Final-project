@@ -284,6 +284,139 @@ public class ProgressServiceImpl implements ProgressService {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public com.lexia.backend.dto.DashboardOverviewDTO getDashboardOverview(User user) {
+        log.debug("Fetching dashboard overview for user {}", user.getId());
+
+        // 1. Get Streak Data
+        StreakDTO streak = getStreak(user);
+
+        // 2. Get Enrollments & Stats
+        List<Enrollment> enrollments = enrollmentRepository.findByUserId(user.getId());
+        int enrolledCourses = enrollments.size();
+        
+        // Calculate completed lessons across all courses
+        // We can use a count query for better performance
+        long completedLessonsCount = lessonProgressRepository.countByUserIdAndCompletedAtBetween(
+                user.getId(), 
+                java.time.LocalDateTime.of(1970, 1, 1, 0, 0), // From beginning
+                java.time.LocalDateTime.now()
+        );
+
+        // Estimate total lessons (can be refined by summing up actual course lessons)
+        int totalLessons = enrolledCourses * 20; // Approximation if not easily available
+
+        // Calculate average score
+        List<LessonProgress> allProgress = lessonProgressRepository.findByUserId(user.getId());
+        double averageScore = allProgress.stream()
+                .filter(p -> p.getScore() != null)
+                .mapToInt(LessonProgress::getScore)
+                .average()
+                .orElse(0.0);
+
+        // Calculate total study time (mocked for now as we don't track time per session yet)
+        int totalStudyMinutes = (int) completedLessonsCount * 15; 
+
+        com.lexia.backend.dto.DashboardStatsDTO stats = com.lexia.backend.dto.DashboardStatsDTO.builder()
+                .enrolledCourses(enrolledCourses)
+                .completedLessons((int) completedLessonsCount)
+                .totalLessons(totalLessons)
+                .currentStreak(streak.getCurrentStreak())
+                .longestStreak(streak.getLongestStreak())
+                .totalStudyMinutes(totalStudyMinutes)
+                .averageScore(Math.round(averageScore * 10.0) / 10.0)
+                .build();
+
+        // 3. Get Recent Activity (Top 5)
+        List<LessonProgress> recentProgress = lessonProgressRepository.findCompletedByUserId(user.getId());
+        List<com.lexia.backend.dto.ActivityDTO> recentActivities = recentProgress.stream()
+                .limit(5)
+                .map(p -> com.lexia.backend.dto.ActivityDTO.builder()
+                        .id(p.getId().toString())
+                        .type("LESSON_COMPLETED")
+                        .description("Completed lesson: " + p.getLesson().getTitle())
+                        .timestamp(p.getCompletedAt())
+                        .link("/courses/" + p.getLesson().getSection().getCourse().getId() + "/lessons/" + p.getLesson().getId())
+                        .score(p.getScore() != null ? p.getScore() : 0)
+                        .build())
+                .collect(Collectors.toList());
+
+        // 4. Generate Weekly Goals (Mock logic for now)
+        // In a real app, these would be stored in a GoalRepository
+        List<com.lexia.backend.dto.GoalDTO> weeklyGoals = new ArrayList<>();
+        
+        // Goal 1: Complete 5 lessons this week
+        LocalDate startOfWeek = LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        long lessonsThisWeek = lessonProgressRepository.countByUserIdAndCompletedAtBetween(
+                user.getId(),
+                startOfWeek.atStartOfDay(),
+                java.time.LocalDateTime.now()
+        );
+        
+        weeklyGoals.add(com.lexia.backend.dto.GoalDTO.builder()
+                .id("goal-weekly-lessons")
+                .title("Weekly Warrior")
+                .description("Complete 5 lessons this week")
+                .currentProgress((int) lessonsThisWeek)
+                .targetProgress(5)
+                .unit("lessons")
+                .isCompleted(lessonsThisWeek >= 5)
+                .build());
+
+        // Goal 2: Maintain streak
+        weeklyGoals.add(com.lexia.backend.dto.GoalDTO.builder()
+                .id("goal-streak")
+                .title("Consistency is Key")
+                .description("Reach a 3-day streak")
+                .currentProgress(streak.getCurrentStreak())
+                .targetProgress(3)
+                .unit("days")
+                .isCompleted(streak.getCurrentStreak() >= 3)
+                .build());
+
+        // 5. Generate Recommendations
+        List<com.lexia.backend.dto.RecommendationDTO> recommendations = new ArrayList<>();
+        
+        if (streak.getCurrentStreak() < 3) {
+             recommendations.add(com.lexia.backend.dto.RecommendationDTO.builder()
+                    .id("rec-streak")
+                    .title("Build your streak")
+                    .description("Study for 10 minutes today to keep your streak alive!")
+                    .type("TIP")
+                    .reason("Streak is at risk")
+                    .build());
+        }
+
+        if (averageScore < 70 && averageScore > 0) {
+            recommendations.add(com.lexia.backend.dto.RecommendationDTO.builder()
+                    .id("rec-review")
+                    .title("Review recent lessons")
+                    .description("Try retaking lessons with lower scores to improve mastery.")
+                    .type("LESSON")
+                    .reason("Average score below 70%")
+                    .build());
+        } else {
+             recommendations.add(com.lexia.backend.dto.RecommendationDTO.builder()
+                    .id("rec-challenge")
+                    .title("Challenge yourself")
+                    .description("You're doing great! Try a Speaking lesson next.")
+                    .type("CHALLENGE")
+                    .reason("High performance")
+                    .build());
+        }
+
+        return com.lexia.backend.dto.DashboardOverviewDTO.builder()
+                .stats(stats)
+                .weeklyGoals(weeklyGoals)
+                .recentActivities(recentActivities)
+                .recommendations(recommendations)
+                .build();
+    }
+
+    /**
      * Finds the longest consecutive streak in all history.
      */
     private int calculateLongestStreak(List<LocalDate> sortedDates) {
@@ -309,5 +442,70 @@ public class ProgressServiceImpl implements ProgressService {
         }
 
         return longestStreak;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public com.lexia.backend.dto.ProgressSummaryDTO getProgressSummary(User user, int days) {
+        log.debug("Fetching progress summary for user {} over last {} days", user.getId(), days);
+
+        // Calculate date range
+        java.time.LocalDateTime endDate = java.time.LocalDateTime.now();
+        java.time.LocalDateTime startDate = endDate.minusDays(days);
+
+        // Fetch completed lessons in range
+        List<LessonProgress> completedLessons = lessonProgressRepository.findCompletedByUserIdBetween(
+                user.getId(),
+                startDate,
+                endDate);
+
+        // Group by date
+        Map<String, List<LessonProgress>> lessonsByDate = completedLessons.stream()
+                .collect(Collectors.groupingBy(
+                        lp -> lp.getCompletedAt().toLocalDate().toString()));
+
+        // Generate daily activities filling in missing days
+        List<com.lexia.backend.dto.DailyActivityDTO> dailyActivities = new ArrayList<>();
+        long totalLessonsCompleted = 0;
+        long totalTimeSpentMinutes = 0;
+
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            String dateStr = date.toString();
+            List<LessonProgress> dailyProgress = lessonsByDate.getOrDefault(dateStr, Collections.emptyList());
+
+            int dailyLessons = dailyProgress.size();
+            // Estimate time spent: 15 mins per lesson (since we don't track actual time yet)
+            int dailyTime = dailyLessons * 15;
+
+            dailyActivities.add(com.lexia.backend.dto.DailyActivityDTO.builder()
+                    .date(dateStr)
+                    .lessonsCompleted(dailyLessons)
+                    .timeSpentMinutes(dailyTime)
+                    .build());
+
+            totalLessonsCompleted += dailyLessons;
+            totalTimeSpentMinutes += dailyTime;
+        }
+
+        // Calculate active days (days with at least one lesson)
+        int activeDays = (int) dailyActivities.stream()
+                .filter(d -> d.getLessonsCompleted() > 0)
+                .count();
+
+        long averageTimePerLesson = totalLessonsCompleted > 0
+                ? totalTimeSpentMinutes / totalLessonsCompleted
+                : 0;
+
+        return com.lexia.backend.dto.ProgressSummaryDTO.builder()
+                .totalLessonsCompleted(totalLessonsCompleted)
+                .totalTimeSpentMinutes(totalTimeSpentMinutes)
+                .averageTimePerLesson(averageTimePerLesson)
+                .activeDays(activeDays)
+                .dailyActivities(dailyActivities)
+                .build();
     }
 }

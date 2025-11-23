@@ -1,15 +1,18 @@
 package com.lexia.backend.specification;
 
 import com.lexia.backend.entity.Course;
+import com.lexia.backend.entity.Enrollment;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * JPA Specifications for dynamic Course entity queries.
@@ -208,6 +211,51 @@ public class CourseSpecifications {
      * @param isPublished the publication status to filter by
      * @return composite specification combining all provided criteria
      */
+    /**
+     * Specification for filtering courses by enrollment status.
+     * 
+     * @param userId     the user ID to check enrollment for
+     * @param isEnrolled true to find enrolled courses, false for non-enrolled
+     * @return specification that matches courses based on enrollment status
+     */
+    public static Specification<Course> isEnrolled(UUID userId, Boolean isEnrolled) {
+        return (Root<Course> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
+            if (isEnrolled == null || userId == null) {
+                return cb.conjunction(); // Always true
+            }
+
+            // Subquery to check for enrollment
+            Subquery<Enrollment> subquery = query.subquery(Enrollment.class);
+            Root<Enrollment> enrollmentRoot = subquery.from(Enrollment.class);
+            
+            subquery.select(enrollmentRoot)
+                    .where(cb.and(
+                            cb.equal(enrollmentRoot.get("course"), root),
+                            cb.equal(enrollmentRoot.get("userId"), userId)
+                    ));
+
+            if (isEnrolled) {
+                return cb.exists(subquery);
+            } else {
+                return cb.not(cb.exists(subquery));
+            }
+        };
+    }
+
+    /**
+     * Composite specification combining multiple search criteria.
+     * This is a convenience method for common search scenarios.
+     * 
+     * <p>
+     * Combines title, CEFR level, and publication status filters using AND logic.
+     * Null or blank values are ignored.
+     * </p>
+     * 
+     * @param title       the title keyword to search for
+     * @param cefrLevel   the CEFR level to filter by
+     * @param isPublished the publication status to filter by
+     * @return composite specification combining all provided criteria
+     */
     public static Specification<Course> searchCourses(String title, String cefrLevel, Boolean isPublished) {
         return hasTitle(title)
                 .and(hasCefrLevel(cefrLevel))
@@ -229,11 +277,14 @@ public class CourseSpecifications {
             String title,
             String cefrLevel,
             Boolean isPublished,
+            Boolean isEnrolled,
+            UUID userId,
             LocalDateTime createdAfter,
             LocalDateTime createdBefore) {
         return hasTitle(title)
                 .and(hasCefrLevel(cefrLevel))
                 .and(isPublished(isPublished))
+                .and(isEnrolled(userId, isEnrolled))
                 .and(createdBetween(createdAfter, createdBefore));
     }
 }

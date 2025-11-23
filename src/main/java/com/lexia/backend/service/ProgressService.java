@@ -73,6 +73,15 @@ public interface ProgressService {
     com.lexia.backend.dto.CourseProgressDTO getCourseProgress(User user, Long courseId);
 
     /**
+     * Retrieves aggregated dashboard overview data for the authenticated user.
+     * Includes stats, weekly goals, recent activity, and recommendations.
+     * 
+     * @param user the authenticated user
+     * @return DTO containing all dashboard data
+     */
+    com.lexia.backend.dto.DashboardOverviewDTO getDashboardOverview(User user);
+
+    /**
      * Calculates the user's current learning streak.
      * 
      * <p>
@@ -86,4 +95,13 @@ public interface ProgressService {
      * @return DTO containing current streak, longest streak, and activity stats
      */
     StreakDTO getStreak(User user);
+
+    /**
+     * Retrieves progress summary for the authenticated user over a specified period.
+     * 
+     * @param user the authenticated user
+     * @param days number of days to look back
+     * @return DTO containing progress summary and daily activities
+     */
+    com.lexia.backend.dto.ProgressSummaryDTO getProgressSummary(User user, int days);
 }

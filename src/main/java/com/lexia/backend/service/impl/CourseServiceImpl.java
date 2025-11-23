@@ -225,6 +225,8 @@ public class CourseServiceImpl implements CourseService {
                 searchDTO.getTitle(),
                 searchDTO.getCefrLevel(),
                 searchDTO.getIsPublished(),
+                searchDTO.getIsEnrolled(),
+                searchDTO.getUserId(),
                 searchDTO.getCreatedAfter(),
                 searchDTO.getCreatedBefore());
 

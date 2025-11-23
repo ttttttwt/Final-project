@@ -1,12 +1,81 @@
 # LEXIA - Current Sprint Status
 
-## Sprint 3 — Frontend Development (Web)
+## Sprint 4 — Mobile App Development
+
+**Sprint**: 4 / 8 | **Duration**: Nov 23 – Dec 10, 2025 (18 days)  
+**Status**: 🔵 Ready to Start (Day 0) | **Progress**: 0/43 points (0%)  
+**Last Updated**: November 23, 2025 (Plan Reviewed and Approved)
+
+---
+
+## 📱 Sprint 4 Overview
+
+**Goal**: Build the foundation of the Lexia Mobile App using React Native (Expo) and integrate with the Backend API.
+
+**Key Deliverables**:
+
+- ✅ Complete mobile app setup (Expo + TypeScript + React Query)
+- ✅ Authentication flow (Login + Register + Token management)
+- ✅ Tab navigation (Home, Courses, Progress, Profile)
+- ✅ Core features (Course list, detail, lesson viewer)
+- ✅ Offline support (React Query caching + download lessons)
+- ✅ Testing (≥60% global, ≥80% services)
+
+**Velocity Target**: 2.4 pts/day (43 points / 18 days)
+
+---
+
+## 📋 Sprint 4 Story Breakdown
+
+| Epic                      | Status         | Progress | Notes                                     |
+| ------------------------- | -------------- | -------- | ----------------------------------------- |
+| A: Project Initialization | 🔵 Not Started | 0/7 pts  | Setup, dependencies, testing, linting     |
+| B: Authentication         | 🔵 Not Started | 0/8 pts  | Login, register, token refresh, biometric |
+| C: Navigation & Layout    | 🔵 Not Started | 0/4 pts  | Tab + stack navigation, auth gate         |
+| D: Core Features          | 🔵 Not Started | 0/10 pts | Home, courses, detail, lesson viewer      |
+| E: Progress & Offline     | 🔵 Not Started | 0/8 pts  | Progress screen, React Query, offline     |
+| F: Testing & Performance  | 🔵 Not Started | 0/6 pts  | Unit tests, integration tests, profiling  |
+
+**Total**: 43 points over 18 days
+
+### Current Tasks (Day 0)
+
+**Next Up**: Epic A - Project Initialization (7 points)
+
+- [ ] **A1**: Initialize Expo project with TypeScript (0.5 pt)
+- [ ] **A2**: Configure ESLint, Prettier, and absolute imports (0.5 pt)
+- [ ] **A3**: Setup directory structure (0.5 pt)
+- [ ] **A4**: Configure Axios client with interceptors (1 pt)
+- [ ] **A5**: Define base types (0.5 pt)
+- [ ] **A6**: Install missing dependencies (1 pt)
+- [ ] **A7**: Configure test environment (1 pt)
+- [ ] **A8**: Setup ESLint rules + Prettier (0.5 pt)
+
+**Timeline**: Day 1-2 (November 23-24)
+
+**Resources**:
+
+- 📄 Sprint Plan: `docs/plan/sprint-4-plan.md`
+- 📄 Offline Strategy: `docs/implement/sprint-4/offline-strategy.md`
+- 📄 Setup Tasks: `docs/implement/sprint-4/setup-tasks-a6-a8.md`
+- 📄 Plan Review: `docs/implement/sprint-4/plan-review-updates.md`
+
+**Key Decisions Made**:
+
+- ✅ React Query (TanStack Query v5) confirmed for offline support
+- ✅ Timeline extended to 18 days (realistic velocity: 2.4 pts/day)
+- ✅ Testing epic added (6 points)
+- ✅ Performance targets defined (launch <3s, 60fps, <200MB memory)
+
+---
+
+## Sprint 3 — Frontend Development (Web) ✅ COMPLETE
 
 **Sprint**: 3 / 8 | **Duration**: Nov 8 – Nov 21, 2025 (14 days)  
-**Status**: ⏳ In Progress (Day 13) | **Progress**: 29.5/29 points (101.7%)  
-**Last Updated**: November 20, 2025 (All Epics Complete + Backend Endpoint Added)
+**Status**: ✅ Complete (100%) | **Progress**: 29.5/29 points (101.7%)  
+**Completed**: November 20, 2025
 
-### Focus
+### Achievements
 
 ### Story Breakdown
 
