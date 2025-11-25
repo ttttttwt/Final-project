@@ -1565,7 +1565,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ### Phase 2: Core Features (Week 3-5)
 
-- [ ] Dashboard page (stats cards, recent activity)
+- [x] Dashboard page (stats cards, recent activity)
 - [ ] User management (list, create, edit, delete) - ADMIN only
 - [ ] Course management (list, create, edit, delete)
 - [ ] Section management (CRUD within course edit page)

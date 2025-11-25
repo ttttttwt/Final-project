@@ -3,8 +3,8 @@
 ## Sprint 4 — Mobile App Development
 
 **Sprint**: 4 / 8 | **Duration**: Nov 24 – Dec 11, 2025 (18 days)  
-**Status**: 🟢 In Progress (Day 1) | **Progress**: 0/43 points (0%)  
-**Last Updated**: November 24, 2025 (Epic B & D4 Updated, Task Breakdown Created)
+**Status**: 🟢 In Progress (Day 3) | **Progress**: 9.5/43 points (22.1%)  
+**Last Updated**: November 25, 2025 (Epic A: 100% ✅ | Epic B: B1+B4 Complete ✅)
 
 ---
 
@@ -15,52 +15,163 @@
 **Key Deliverables**:
 
 - ✅ Complete mobile app setup (Expo + TypeScript + React Query)
-- ✅ Authentication flow (Login + Register + Token management)
-- ✅ Tab navigation (Home, Courses, Progress, Profile)
-- ✅ Core features (Course list, detail, lesson viewer)
-- ✅ Offline support (React Query caching + download lessons)
-- ✅ Testing (≥50% global → 60% Sprint 5, ≥80% services)
+- 🔄 Authentication flow (Login + Register + Token management) - **50% DONE**
+- ⬜ Tab navigation (Home, Courses, Progress, Profile)
+- ⬜ Core features (Course list, detail, lesson viewer)
+- ⬜ Offline support (React Query caching + download lessons)
+- ⬜ Testing (≥50% global → 60% Sprint 5, ≥80% services)
 
 **Velocity Target**: 2.4 pts/day (43 points / 18 days)
 
-**Recent Updates** (Nov 24):
+**Recent Updates** (Nov 25 - Evening Session):
 
-- ✅ **Epic B clarified**: B4 (token storage) vs B6 (axios interceptor) - no overlap
-- ✅ **Epic D4 detailed**: Quiz data structure, submission API, scoring logic documented
-- ✅ **Task breakdown created**: Day-by-day plan in `task-breakdown.md`
-- ⚠️ **Coverage target adjusted**: 50% global for Sprint 4 (realistic), 60% in Sprint 5
+- ✅ **B1 Complete**: Auth Store + AuthProvider with session management (150+ lines)
+- ✅ **B4 Complete**: Token storage verified (5 helpers working in api.ts)
+- ✅ **Auth Service**: Created authService.ts (login, register, logout, getProfile)
+- ✅ **Screens Updated**: LoginScreen + RegisterScreen use auth store
+- ✅ **Path Aliases**: Fixed TypeScript imports (@/ working)
+- 📊 **Velocity**: 3.2 pts/day (Day 3) - exceeding target! 🚀
+- 🎯 **Next**: Epic B (B2, B3, B5) - Form validation with React Hook Form + Zod
 
 ---
 
 ## 📋 Sprint 4 Story Breakdown
 
-- [ ] **A1**: Initialize Expo project with TypeScript (0.5 pt)
-  - `npx create-expo-app lexia-mobile --template expo-template-blank-typescript`
-  - Test on iOS/Android simulator
-- [ ] **A2**: Configure ESLint, Prettier, and absolute imports (0.5 pt)
+- [x] **A1**: Initialize Expo project with TypeScript (0.5 pt) ✅ **COMPLETE**
+  - ✅ Expo TypeScript template created
+  - ✅ React Native 0.76.5 + Expo SDK 52
+- [x] **A2**: Configure ESLint, Prettier, and absolute imports (0.5 pt) ✅ **COMPLETE** (Nov 25)
 
-  - Create `eslint.config.js` (mirror web config)
-  - Create `prettier.config.js`
-  - Configure `tsconfig.json` with path aliases (`@/` → `./`)
+  - ✅ ESLint v8.57.0 + React Native plugin
+  - ✅ Prettier v3.1.0 matching web config
+  - ✅ Path aliases configured in tsconfig.json
 
-- [ ] **A3**: Setup directory structure (0.5 pt)
+- [x] **A3**: Setup directory structure (0.5 pt) ✅ **COMPLETE**
 
-  - Create folders: `app/`, `components/`, `services/`, `store/`, `types/`, `hooks/`, `utils/`, `assets/`
-  - Create `README.md` documenting structure
+  - ✅ Folders created: `app/`, `components/`, `services/`, `store/`, `types/`
+  - ✅ Mirror structure from web app
 
-- [ ] **A4**: Configure Axios client with interceptors (1 pt)
+- [x] **A4**: Configure Axios client with interceptors (1 pt) ✅ **COMPLETE** (Nov 25 Late)
 
-  - Create `services/api.ts`
-  - Setup base Axios instance (baseURL, timeout 30s)
-  - **Copy logic from `lexia-web/lib/api.ts`**
+  - ✅ Complete `services/api.ts` (345 lines)
+  - ✅ Promise lock pattern (prevent concurrent refresh)
+  - ✅ Failed request queue management
+  - ✅ Token refresh with AsyncStorage
+  - ✅ Network connectivity check (NetInfo)
+  - ✅ Retry logic with exponential backoff
+  - ✅ Comprehensive error handling (401, network, timeout, 5xx)
+  - ✅ Token storage helpers (save, get, clear)
 
-- [ ] **A5**: Define base types (0.5 pt)
+- [x] **A5**: Define base types (0.5 pt) ✅ **COMPLETE** (Nov 25 Late)
 
-  - Create `types/index.ts`
-  - Types: `User`, `Course`, `Lesson`, `TokenResponse`
+  - ✅ Complete `types/index.ts` (200+ lines)
+  - ✅ User, Auth types (LoginRequest, RegisterRequest, TokenResponse)
+  - ✅ Course, Section, Enrollment types
+  - ✅ Lesson types (READING, LISTENING, QUIZ, SPEAKING)
+  - ✅ Lesson content types (ReadingContent, ListeningContent, etc.)
+  - ✅ Progress and Learning Path types
 
-- [ ] **A6**: Install missing dependencies (0.5 pt) - **HIGH PRIORITY**
-  - See dependency list in `task-breakdown.md`
+- [x] **A6**: Install missing dependencies (0.5 pt) ✅ **COMPLETE** (Nov 25)
+  - ✅ React Query v5.56.0 + AsyncStorage persister
+  - ✅ Zod v3.22.4 + React Hook Form v7.49.0
+  - ✅ NetInfo v11.3.0
+  - ✅ Charts (Chart Kit + SVG)
+  - ✅ Markdown Display v7.0.0
+  - ✅ Fast Image v8.6.3
+- [x] **A7**: Configure test environment (1 pt) ✅ **COMPLETE** (Nov 25)
+  - ✅ Jest v29.7.0 configured
+  - ✅ Testing Library v12.4.0
+  - ✅ Coverage thresholds: 60% global, 80% services
+  - ✅ Sample tests passing (4/4)
+- [x] **A8**: Setup ESLint + Prettier (1 pt) ✅ **COMPLETE** (Nov 25)
+  - ✅ ESLint v8.57.0 + React Native plugin
+  - ✅ Prettier v3.1.0
+  - ✅ 0 errors, 20 warnings (acceptable)
+  - ✅ All files formatted
+
+**🎊 Epic A: 7/7 points (100%) - COMPLETE ✅**
+
+---
+
+### Epic B: Authentication (8 pts)
+
+**Status**: 🔄 In Progress (2/8 pts - 25%)  
+**Timeline**: Day 3-6 (November 25-29)
+
+- [x] **B1**: Auth Store + AuthProvider (1 pt) ✅ **COMPLETE** (Nov 25 Evening)
+  - ✅ Complete auth store with login, register, logout, loadUser actions
+  - ✅ Error handling and loading states
+  - ✅ Integration with token storage helpers from api.ts
+  - ✅ Auto-login on app launch via loadUser()
+  - ✅ AppState listener for token validation on app resume
+  - ✅ Splash screen during session initialization
+  - ✅ AuthProvider component (85 lines)
+  - ✅ Auth store (150+ lines)
+- [x] **Auth Service**: Created authService.ts (45 lines)
+  - ✅ login() - POST /auth/login
+  - ✅ register() - POST /auth/register
+  - ✅ logout() - POST /auth/logout
+  - ✅ getProfile() - GET /users/profile
+- [ ] **B2**: Login Screen with form validation (1 pt) - **50% DONE**
+  - ✅ UI exists, integrated with auth store
+  - ⬜ Add React Hook Form + Zod validation
+  - ⬜ Real-time error feedback
+  - ⬜ Loading/disabled states
+- [ ] **B3**: Register Screen with form validation (1 pt) - **50% DONE**
+  - ✅ UI exists with confirmPassword field
+  - ✅ Basic validation (password match, min length)
+  - ⬜ Add React Hook Form + Zod schema
+  - ⬜ Real-time validation feedback
+- [x] **B4**: Token Storage & Auto-login (1 pt) ✅ **VERIFIED** (Nov 25)
+  - ✅ saveTokens() - AsyncStorage.multiSet (4 keys)
+  - ✅ getAccessToken() - Retrieve access token
+  - ✅ getRefreshToken() - Retrieve refresh token
+  - ✅ getTokenType() - Returns "Bearer" by default
+  - ✅ clearTokens() - AsyncStorage.multiRemove all tokens
+  - ✅ All helpers working in api.ts (lines 57-103)
+  - ✅ Auto-login on app launch (AuthProvider)
+  - ✅ AppState listener for token validation on resume
+- [ ] **B5**: Auth Error Handling (1 pt) - **PARTIAL**
+  - ✅ Basic error handling in auth store
+  - ⬜ User-friendly messages for 400/401/500/network
+  - ⬜ Retry logic (3 attempts with backoff)
+  - ⬜ "No internet" banner when offline (NetInfo)
+- [x] **B6**: Axios Interceptor + Token Refresh (1.5 pts) ✅ **COMPLETE** (Already done in A4)
+  - ✅ Request interceptor attaches Authorization header
+  - ✅ Response interceptor detects 401
+  - ✅ Promise lock prevents concurrent refresh
+  - ✅ Failed request queue management
+  - ✅ Token refresh with /auth/refresh endpoint
+  - ✅ Auto-logout on refresh failure
+- [ ] **B7**: Biometric Auth (TouchID/FaceID) (1 pt) - **OPTIONAL** (Defer to Sprint 5)
+
+**🎊 Epic B Achievements (Nov 25)**:
+
+- ✅ Complete auth store foundation (login, register, logout, loadUser)
+- ✅ Token storage verified (5 helpers working)
+- ✅ Session management (auto-login, AppState listener)
+- ✅ Auth service layer created
+- ✅ Screens integrated with store
+- ✅ Path aliases configured (@/ imports)
+- ✅ TypeScript: 0 errors, ESLint: 0 errors, Tests: 4/4 passing
+
+**Files Created/Modified (Nov 25)**:
+
+- Created: `services/authService.ts` (45 lines)
+- Modified: `store/authStore.ts` (150+ lines - complete rewrite)
+- Modified: `components/AuthProvider.tsx` (85 lines - complete rewrite)
+- Modified: `app/auth/LoginScreen.tsx` (updated to use store)
+- Modified: `app/auth/RegisterScreen.tsx` (updated to use store)
+- Modified: `tsconfig.json` (added path aliases)
+- **Total**: ~400+ lines of production code
+
+**Next Steps** (Day 4 - Nov 26):
+
+- B2: Complete Login Screen with React Hook Form + Zod
+- B3: Complete Register Screen with React Hook Form + Zod
+- B5: Enhance error handling (network errors, retry banner)
+
+---
 
 ### Admin Site Tasks (Parallel Track)
 
@@ -70,9 +181,9 @@
   - ✅ Setup directory structure & routing
   - ✅ Verify build
 
-**End of Day Check**: ✅ Project compiles, ESLint passes, Axios client configured
+**End of Day Check (Day 3)**: ✅ B1+B4 complete, TypeScript ✅, ESLint ✅, Tests ✅
 
-**Timeline**: Day 1-3 (November 24-26) - **Adjusted from Day 1-2**
+**Timeline**: Day 1-3 (November 24-25) - ✅ **AHEAD OF SCHEDULE** (B1+B4 done early!)
 
 **Resources**:
 
