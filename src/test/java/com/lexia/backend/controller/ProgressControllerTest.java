@@ -1,6 +1,7 @@
 package com.lexia.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lexia.backend.auth.CustomUserDetailsService;
+import com.lexia.backend.auth.JwtTokenProvider;
 import com.lexia.backend.dto.CourseProgressDTO;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.service.ProgressService;
@@ -9,12 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,11 +34,14 @@ class ProgressControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private ProgressService progressService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private CourseProgressDTO testProgress;
 
@@ -51,9 +58,18 @@ class ProgressControllerTest {
     }
 
     @Test
-    @WithMockUser
     void getCourseProgress_ShouldReturnProgress() throws Exception {
-        when(progressService.getCourseProgress(any(), eq(1L))).thenReturn(testProgress);
+        // Mock User
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setEmail("test@example.com");
+
+        // Set Authentication in Context
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                user, null, Collections.emptyList());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        when(progressService.getCourseProgress(any(User.class), eq(1L))).thenReturn(testProgress);
 
         mockMvc.perform(get("/api/v1/progress/courses/1/lessons")
                 .contentType(MediaType.APPLICATION_JSON))

@@ -78,33 +78,39 @@
     - Form validation (Zod: firstName/lastName required, email format, password min 8 chars + confirmation match)
     - Loading/error states
     - Success → auto-login → navigate to Home
-- [ ] **B4**: Implement Token Management (AsyncStorage, Auto-login, Logout) (1.5 pts)
+- [ ] **B4**: Implement Token Storage & Auto-login (1.5 pts)
+  - **Focus**: AsyncStorage operations, app launch behavior
   - **Acceptance**:
-    - Access token + refresh token stored in AsyncStorage
-    - Token expiry handling (401 → try refresh → if fails, clear storage + redirect to Login)
-    - Auto-login on app launch if token valid (check expiry)
-    - Logout clears AsyncStorage completely (`AsyncStorage.clear()`)
-    - Handle app backgrounding (refresh token if expired on resume)
-    - Show re-login dialog on token expiry (not crash)
+    - Access token + refresh token stored in AsyncStorage with keys: `@lexia/access_token`, `@lexia/refresh_token`, `@lexia/token_type`
+    - Helper functions: `saveTokens()`, `getAccessToken()`, `getRefreshToken()`, `clearTokens()`
+    - Auto-login on app launch: Check AsyncStorage → if token exists and not expired → restore auth state → navigate to Home
+    - Logout clears AsyncStorage completely (`AsyncStorage.multiRemove(['@lexia/access_token', '@lexia/refresh_token', '@lexia/token_type'])`)
+    - Handle app backgrounding: On app resume (AppState listener), check token expiry → refresh if needed
+    - Show splash screen during token validation (prevents UI flash)
 - [ ] **B5**: Handle Auth Errors (Invalid credentials, Network error, Server error) (1 pt)
   - **Acceptance**:
     - User-friendly error messages for 400/401/500/network timeout
     - Retry logic for network errors (3 attempts with exponential backoff)
-    - "No internet" banner when offline
-- [ ] **B6**: Implement token refresh logic (401 interceptor) (1.5 pts)
+    - "No internet" banner when offline (use NetInfo)
+    - Error handling in login/register flows
+- [ ] **B6**: Implement Axios Interceptor with Token Refresh (1.5 pts)
+  - **Focus**: 401 detection, refresh flow, request retry
   - **Acceptance**:
-    - Axios response interceptor detects 401
-    - Calls `/auth/refresh` with refresh token
-    - Updates access token in AsyncStorage
-    - Retries original failed request
-    - Promise lock prevents concurrent refresh calls
-    - If refresh fails (401/403), logout user
-    - **Copy logic from `lexia-web/services/authService.ts`**
+    - **Request interceptor**: Attach Authorization header from AsyncStorage (`Bearer ${accessToken}`)
+    - **Response interceptor**: Detect 401 status code
+    - **Refresh flow**: Call `POST /auth/refresh` with refresh token from AsyncStorage
+    - **Promise lock**: Prevent concurrent refresh calls (use `isRefreshing` flag + `refreshPromise`)
+    - **Queue failed requests**: Store failed requests during refresh, retry all after success
+    - **Update tokens**: Save new access token + optional rotated refresh token to AsyncStorage
+    - **Retry original request**: Re-execute failed request with new token
+    - **Logout on refresh failure**: If refresh returns 401/403 → clear AsyncStorage → navigate to Login
+    - **Copy token refresh logic from `lexia-web/lib/api.ts`** (lines 90-180)
+    - Handle edge cases: Missing refresh token, network error during refresh
 - [ ] **B7**: Add biometric authentication (TouchID/FaceID) - **OPTIONAL** (1 pt)
   - **Acceptance**:
     - Use `expo-local-authentication`
     - "Enable biometric login" toggle in settings
-    - Store flag in AsyncStorage
+    - Store flag in AsyncStorage (`@lexia/biometric_enabled`)
     - On app launch, if enabled, prompt for biometric
     - Fallback to password login if biometric fails
 
@@ -158,17 +164,24 @@
   - Display Lesson Content based on type:
     - **READING**: Markdown rendering (`react-native-markdown-display`)
     - **LISTENING**: Audio player (expo-av)
-    - **QUIZ**: Interactive quiz UI (radio buttons, checkboxes)
+    - **QUIZ**: Interactive quiz UI (radio buttons, checkboxes, true/false)
     - **SPEAKING**: Record audio button (expo-av) - basic UI only
   - "Complete Lesson" button
   - Progress indicator (Lesson X of Y)
   - **Acceptance**:
-    - Markdown rendering with proper styling
-    - Audio playback controls (play/pause/seek)
-    - Quiz interactions (select answer, submit, show results)
-    - Complete lesson API call with retry logic (3 attempts)
-    - Loading state, success feedback (toast + confetti animation)
-    - Handle lesson completion API call retry on failure
+    - **READING**: Markdown content rendered with proper styling (headings, lists, code blocks)
+    - **LISTENING**: Audio playback controls (play/pause/seek), display transcript, vocabulary list with timestamps
+    - **QUIZ**:
+      - Parse quiz data from backend (see `DATABASE-SCHEMA.md` QUIZ lesson schema)
+      - Question types: `multiple_choice` (radio buttons), `true_false` (toggle), `fill_blank` (text input), `matching` (drag-drop - basic)
+      - Display timer if `timeLimit` exists
+      - Submit answers to backend: `POST /api/v1/progress/lessons/{lessonId}/submit` with body: `{ "answers": [{ "questionId": 1, "answer": 0 }], "score": 85 }`
+      - Show results: Score, correct/incorrect feedback, explanations
+      - Passing score indicator (green if score >= `passingScore`, red otherwise)
+    - **SPEAKING**: Record button, playback recorded audio (local only, no submission in Sprint 4)
+    - Complete lesson API call: `POST /api/v1/progress/lessons/{lessonId}/complete` with retry logic (3 attempts)
+    - Loading state during API calls, success feedback (toast + confetti animation if quiz passed)
+    - Error handling: Network errors, timeout, server errors
 - [ ] **D5**: **Profile Screen** (1 pt)
   - View Profile Details (Avatar, Name, Email, CEFR Level, Streak)
   - Edit Profile button (navigate to edit screen)

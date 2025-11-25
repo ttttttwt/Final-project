@@ -2,9 +2,9 @@
 
 ## Sprint 4 — Mobile App Development
 
-**Sprint**: 4 / 8 | **Duration**: Nov 23 – Dec 10, 2025 (18 days)  
-**Status**: 🔵 Ready to Start (Day 0) | **Progress**: 0/43 points (0%)  
-**Last Updated**: November 23, 2025 (Plan Reviewed and Approved)
+**Sprint**: 4 / 8 | **Duration**: Nov 24 – Dec 11, 2025 (18 days)  
+**Status**: 🟢 In Progress (Day 1) | **Progress**: 0/43 points (0%)  
+**Last Updated**: November 24, 2025 (Epic B & D4 Updated, Task Breakdown Created)
 
 ---
 
@@ -19,53 +19,77 @@
 - ✅ Tab navigation (Home, Courses, Progress, Profile)
 - ✅ Core features (Course list, detail, lesson viewer)
 - ✅ Offline support (React Query caching + download lessons)
-- ✅ Testing (≥60% global, ≥80% services)
+- ✅ Testing (≥50% global → 60% Sprint 5, ≥80% services)
 
 **Velocity Target**: 2.4 pts/day (43 points / 18 days)
+
+**Recent Updates** (Nov 24):
+
+- ✅ **Epic B clarified**: B4 (token storage) vs B6 (axios interceptor) - no overlap
+- ✅ **Epic D4 detailed**: Quiz data structure, submission API, scoring logic documented
+- ✅ **Task breakdown created**: Day-by-day plan in `task-breakdown.md`
+- ⚠️ **Coverage target adjusted**: 50% global for Sprint 4 (realistic), 60% in Sprint 5
 
 ---
 
 ## 📋 Sprint 4 Story Breakdown
 
-| Epic                      | Status         | Progress | Notes                                     |
-| ------------------------- | -------------- | -------- | ----------------------------------------- |
-| A: Project Initialization | 🔵 Not Started | 0/7 pts  | Setup, dependencies, testing, linting     |
-| B: Authentication         | 🔵 Not Started | 0/8 pts  | Login, register, token refresh, biometric |
-| C: Navigation & Layout    | 🔵 Not Started | 0/4 pts  | Tab + stack navigation, auth gate         |
-| D: Core Features          | 🔵 Not Started | 0/10 pts | Home, courses, detail, lesson viewer      |
-| E: Progress & Offline     | 🔵 Not Started | 0/8 pts  | Progress screen, React Query, offline     |
-| F: Testing & Performance  | 🔵 Not Started | 0/6 pts  | Unit tests, integration tests, profiling  |
-
-**Total**: 43 points over 18 days
-
-### Current Tasks (Day 0)
-
-**Next Up**: Epic A - Project Initialization (7 points)
-
 - [ ] **A1**: Initialize Expo project with TypeScript (0.5 pt)
+  - `npx create-expo-app lexia-mobile --template expo-template-blank-typescript`
+  - Test on iOS/Android simulator
 - [ ] **A2**: Configure ESLint, Prettier, and absolute imports (0.5 pt)
-- [ ] **A3**: Setup directory structure (0.5 pt)
-- [ ] **A4**: Configure Axios client with interceptors (1 pt)
-- [ ] **A5**: Define base types (0.5 pt)
-- [ ] **A6**: Install missing dependencies (1 pt)
-- [ ] **A7**: Configure test environment (1 pt)
-- [ ] **A8**: Setup ESLint rules + Prettier (0.5 pt)
 
-**Timeline**: Day 1-2 (November 23-24)
+  - Create `eslint.config.js` (mirror web config)
+  - Create `prettier.config.js`
+  - Configure `tsconfig.json` with path aliases (`@/` → `./`)
+
+- [ ] **A3**: Setup directory structure (0.5 pt)
+
+  - Create folders: `app/`, `components/`, `services/`, `store/`, `types/`, `hooks/`, `utils/`, `assets/`
+  - Create `README.md` documenting structure
+
+- [ ] **A4**: Configure Axios client with interceptors (1 pt)
+
+  - Create `services/api.ts`
+  - Setup base Axios instance (baseURL, timeout 30s)
+  - **Copy logic from `lexia-web/lib/api.ts`**
+
+- [ ] **A5**: Define base types (0.5 pt)
+
+  - Create `types/index.ts`
+  - Types: `User`, `Course`, `Lesson`, `TokenResponse`
+
+- [ ] **A6**: Install missing dependencies (0.5 pt) - **HIGH PRIORITY**
+  - See dependency list in `task-breakdown.md`
+
+### Admin Site Tasks (Parallel Track)
+
+- [x] **Admin-1**: Project Initialization (2 pts) ✅ **COMPLETE** (Nov 24)
+  - ✅ Initialize Vite + React + TypeScript
+  - ✅ Configure Tailwind CSS v3 & shadcn/ui
+  - ✅ Setup directory structure & routing
+  - ✅ Verify build
+
+**End of Day Check**: ✅ Project compiles, ESLint passes, Axios client configured
+
+**Timeline**: Day 1-3 (November 24-26) - **Adjusted from Day 1-2**
 
 **Resources**:
 
 - 📄 Sprint Plan: `docs/plan/sprint-4-plan.md`
-- 📄 Offline Strategy: `docs/implement/sprint-4/offline-strategy.md`
-- 📄 Setup Tasks: `docs/implement/sprint-4/setup-tasks-a6-a8.md`
-- 📄 Plan Review: `docs/implement/sprint-4/plan-review-updates.md`
+- 📄 Task Breakdown: `docs/implement/sprint-4/task-breakdown.md` ✨ **NEW**
+- 📄 Web API Client: `lexia-web/lib/api.ts` (reference for token refresh logic)
+- 📄 Web Auth Service: `lexia-web/services/authService.ts` (reference for auth flow)
 
-**Key Decisions Made**:
+**Key Decisions Made** (Nov 24):
 
 - ✅ React Query (TanStack Query v5) confirmed for offline support
-- ✅ Timeline extended to 18 days (realistic velocity: 2.4 pts/day)
-- ✅ Testing epic added (6 points)
-- ✅ Performance targets defined (launch <3s, 60fps, <200MB memory)
+- ✅ Timeline adjusted: Day 1-3 for setup (realistic)
+- ✅ Epic B clarified: B4 focuses on AsyncStorage, B6 focuses on Axios interceptor
+- ✅ Epic D4 detailed: Quiz data structure from `DATABASE-SCHEMA.md`
+- ✅ Coverage target: 50% global (Sprint 4) → 60% (Sprint 5)
+- ✅ Performance targets: launch <3s, 60fps, <200MB memory, bundle <50MB
+- ⚠️ Push notifications backend API not ready - defer D6 device token registration to Sprint 5
 
 ---
 

@@ -488,6 +488,8 @@ class CourseRepositoryTest {
                 "English",
                 "A1",
                 true,
+                null,
+                null,
                 oneDayAgo,
                 oneDayLater);
 
