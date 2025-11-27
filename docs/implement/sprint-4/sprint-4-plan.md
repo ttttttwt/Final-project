@@ -1,9 +1,23 @@
 # Sprint 4 Plan: Mobile App Development
 
 **Sprint**: 4 / 8
-**Duration**: November 23 – December 10, 2025 (18 days)
-**Status**: 🔵 Not Started
+**Duration**: November 24 – December 11, 2025 (18 days)
+**Status**: 🟢 In Progress (Day 9) | **Progress**: 16.5/43 pts (38.4%)
 **Goal**: Build the foundation of the Lexia Mobile App using React Native (Expo) and integrate with the Backend API.
+**Last Updated**: November 27, 2025
+
+## 🎯 Current Progress Summary
+
+| Epic                      | Points | Status         | Completion |
+| ------------------------- | ------ | -------------- | ---------- |
+| A: Project Initialization | 7/7    | ✅ Complete    | 100%       |
+| B: Authentication         | 5/8    | 🟢 Mostly Done | 62.5%      |
+| C: Navigation & Layout    | 4/4    | ✅ Complete    | 100%       |
+| D: Core Features          | 0/10   | ⬜ Not Started | 0%         |
+| E: Progress & Offline     | 0/8    | ⬜ Not Started | 0%         |
+| F: Testing & Performance  | 0/6    | ⬜ Not Started | 0%         |
+
+**Velocity**: 5.5 pts/day (target: 2.4) - exceeding target! 🚀
 
 ## 📱 Technical Stack
 
@@ -26,21 +40,21 @@
 
 ### Epic A: Project Initialization (7 pts)
 
-- [ ] **A1**: Initialize Expo project with TypeScript (0.5 pt)
+- [x] **A1**: Initialize Expo project with TypeScript (0.5 pt) ✅
   - **Acceptance**: Expo SDK 50+ installed, app runs on iOS/Android simulator
-- [ ] **A2**: Configure ESLint, Prettier, and absolute imports (0.5 pt)
+- [x] **A2**: Configure ESLint, Prettier, and absolute imports (0.5 pt) ✅
   - **Acceptance**: ESLint rules match web app, imports use `@/` prefix
-- [ ] **A3**: Setup directory structure (`app`, `components`, `services`, `store`, `types`, `hooks`, `utils`) (0.5 pt)
+- [x] **A3**: Setup directory structure (`app`, `components`, `services`, `store`, `types`, `hooks`, `utils`) (0.5 pt) ✅
   - **Acceptance**: Clear separation of concerns, README.md documents structure
-- [ ] **A4**: Configure Axios client with interceptors (Auth header, token refresh on 401) (1 pt)
+- [x] **A4**: Configure Axios client with interceptors (Auth header, token refresh on 401) (1 pt) ✅
   - **Acceptance**:
     - Authorization header automatically added from AsyncStorage
     - 401 triggers refresh token flow (copy logic from web `authService.ts`)
     - Network errors retry 3 times with exponential backoff
     - Timeout set to 30 seconds
-- [ ] **A5**: Define base types (User, Course, Lesson, TokenResponse) + API base config (0.5 pt)
+- [x] **A5**: Define base types (User, Course, Lesson, TokenResponse) + API base config (0.5 pt) ✅
   - **Acceptance**: Types match backend DTOs from `API-SPECIFICATION.md`, env config for API_URL
-- [ ] **A6**: Install missing dependencies (React Query, Zod, NetInfo, Charts, Markdown) (1 pt)
+- [x] **A6**: Install missing dependencies (React Query, Zod, NetInfo, Charts, Markdown) (1 pt) ✅
   - **Acceptance**: All packages installed and working:
     - `@tanstack/react-query` ^5.56.0
     - `zod` ^3.22.4
@@ -50,35 +64,35 @@
     - `react-native-svg` ^14.1.0
     - `react-native-markdown-display` ^7.0.0
     - `react-native-fast-image` ^8.6.3
-- [ ] **A7**: Configure test environment (Jest + React Native Testing Library) (1 pt)
+- [x] **A7**: Configure test environment (Jest + React Native Testing Library) (1 pt) ✅
   - **Acceptance**:
     - `jest.config.js` configured for React Native
     - `@testing-library/react-native` ^12.4.0 installed
     - `@testing-library/jest-native` ^5.4.3 installed
     - Sample test passes
     - Coverage thresholds: 60% global, 80% services
-- [ ] **A8**: Setup ESLint rules matching web app + Prettier (0.5 pt)
+- [x] **A8**: Setup ESLint rules matching web app + Prettier (0.5 pt) ✅
   - **Acceptance**: `eslint.config.js` mirrors web config, `prettier.config.js` created, no warnings on `npm run lint`
 
 ### Epic B: Authentication (8 pts)
 
-- [ ] **B1**: Implement `AuthProvider` and Auth Store (Zustand) (1 pt)
+- [x] **B1**: Implement `AuthProvider` and Auth Store (Zustand) (1 pt) ✅
   - **Acceptance**:
     - Store manages user state, token state, login/logout/register actions
     - Persisted to AsyncStorage (use `zustand/middleware` persist)
     - Initial loading state prevents UI flash
-- [ ] **B2**: Build **Login Screen** (Email/Password) (1 pt)
+- [x] **B2**: Build **Login Screen** (Email/Password) (1 pt) ✅
   - **Acceptance**:
     - Form validation (React Hook Form + Zod: email format, min 8 chars password)
     - Loading state, disabled button during submission
     - Success toast + navigate to Home
     - Error toast for invalid credentials
-- [ ] **B3**: Build **Register Screen** (Name, Email, Password) (1 pt)
+- [x] **B3**: Build **Register Screen** (Name, Email, Password) (1 pt) ✅
   - **Acceptance**:
     - Form validation (Zod: firstName/lastName required, email format, password min 8 chars + confirmation match)
     - Loading/error states
     - Success → auto-login → navigate to Home
-- [ ] **B4**: Implement Token Storage & Auto-login (1.5 pts)
+- [x] **B4**: Implement Token Storage & Auto-login (1.5 pts) ✅
   - **Focus**: AsyncStorage operations, app launch behavior
   - **Acceptance**:
     - Access token + refresh token stored in AsyncStorage with keys: `@lexia/access_token`, `@lexia/refresh_token`, `@lexia/token_type`
@@ -87,13 +101,13 @@
     - Logout clears AsyncStorage completely (`AsyncStorage.multiRemove(['@lexia/access_token', '@lexia/refresh_token', '@lexia/token_type'])`)
     - Handle app backgrounding: On app resume (AppState listener), check token expiry → refresh if needed
     - Show splash screen during token validation (prevents UI flash)
-- [ ] **B5**: Handle Auth Errors (Invalid credentials, Network error, Server error) (1 pt)
+- [x] **B5**: Handle Auth Errors (Invalid credentials, Network error, Server error) (1 pt) ✅
   - **Acceptance**:
     - User-friendly error messages for 400/401/500/network timeout
     - Retry logic for network errors (3 attempts with exponential backoff)
     - "No internet" banner when offline (use NetInfo)
     - Error handling in login/register flows
-- [ ] **B6**: Implement Axios Interceptor with Token Refresh (1.5 pts)
+- [x] **B6**: Implement Axios Interceptor with Token Refresh (1.5 pts) ✅
   - **Focus**: 401 detection, refresh flow, request retry
   - **Acceptance**:
     - **Request interceptor**: Attach Authorization header from AsyncStorage (`Bearer ${accessToken}`)
@@ -116,13 +130,13 @@
 
 ### Epic C: Navigation & Layout (4 pts)
 
-- [ ] **C1**: Setup **Tab Navigation** (Home, Courses, Progress, Profile)
+- [x] **C1**: Setup **Tab Navigation** (Home, Courses, Progress, Profile) ✅
   - **Acceptance**: 4 tabs functional, icons visible, active state styling
-- [ ] **C2**: Setup **Stack Navigation** + Auth Gate (Splash → Auth/Main based on token)
+- [x] **C2**: Setup **Stack Navigation** + Auth Gate (Splash → Auth/Main based on token) ✅
   - **Acceptance**: On app launch, check AsyncStorage token → if valid go to Main, else Auth. Splash screen shows loading indicator
-- [ ] **C3**: Implement Custom Tab Bar
+- [x] **C3**: Implement Custom Tab Bar ✅
   - **Acceptance**: Custom styling, smooth transitions, proper icons
-- [ ] **C4**: Specific Header components
+- [x] **C4**: Specific Header components ✅
   - **Acceptance**: Back button, title, optional actions (e.g., settings icon)
 
 ### Epic D: Core Features (10 pts)

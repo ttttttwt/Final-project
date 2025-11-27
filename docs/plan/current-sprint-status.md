@@ -3,8 +3,8 @@
 ## Sprint 4 — Mobile App Development
 
 **Sprint**: 4 / 8 | **Duration**: Nov 24 – Dec 11, 2025 (18 days)  
-**Status**: 🟢 In Progress (Day 3) | **Progress**: 9.5/43 points (22.1%)  
-**Last Updated**: November 25, 2025 (Epic A: 100% ✅ | Epic B: B1+B4 Complete ✅)
+**Status**: 🟢 In Progress (Day 11) | **Progress**: 21.5/43 points (50%) 🎉 **HALFWAY!**  
+**Last Updated**: November 27, 2025 (Epic A: 100% ✅ | Epic B: 62.5% ✅ | Epic C: 100% ✅ | Epic D: 50% 🟢)
 
 ---
 
@@ -15,23 +15,23 @@
 **Key Deliverables**:
 
 - ✅ Complete mobile app setup (Expo + TypeScript + React Query)
-- 🔄 Authentication flow (Login + Register + Token management) - **50% DONE**
-- ⬜ Tab navigation (Home, Courses, Progress, Profile)
-- ⬜ Core features (Course list, detail, lesson viewer)
+- 🔄 Authentication flow (Login + Register + Token management) - **62.5% DONE**
+- ✅ Tab navigation (Home, Courses, Progress, Profile) - **100% DONE**
+- 🔄 Core features (Course list, detail, lesson viewer) - **50% DONE**
 - ⬜ Offline support (React Query caching + download lessons)
 - ⬜ Testing (≥50% global → 60% Sprint 5, ≥80% services)
 
 **Velocity Target**: 2.4 pts/day (43 points / 18 days)
 
-**Recent Updates** (Nov 25 - Evening Session):
+**Recent Updates** (Nov 27 - D3 Session):
 
-- ✅ **B1 Complete**: Auth Store + AuthProvider with session management (150+ lines)
-- ✅ **B4 Complete**: Token storage verified (5 helpers working in api.ts)
-- ✅ **Auth Service**: Created authService.ts (login, register, logout, getProfile)
-- ✅ **Screens Updated**: LoginScreen + RegisterScreen use auth store
-- ✅ **Path Aliases**: Fixed TypeScript imports (@/ working)
-- 📊 **Velocity**: 3.2 pts/day (Day 3) - exceeding target! 🚀
-- 🎯 **Next**: Epic B (B2, B3, B5) - Form validation with React Hook Form + Zod
+- ✅ **D3 Complete**: Course Detail Screen with collapsible sections + lesson list
+- ✅ **2 Components Created**: SectionCard (collapsible), LessonListItem (type icons)
+- ✅ **CourseDetailScreen Rewritten**: 380 lines with full API integration
+- ✅ **28 New Tests**: SectionCard (14) + LessonListItem (14) = 80/80 total tests passing
+- ✅ **Epic D 50%**: D1-D3 complete, D4-D6 remaining
+- 📊 **Velocity**: ~4.3 pts/day (Day 11) - on track! 🚀
+- 🎯 **Next**: D4 (Lesson Viewer - 4 types: READING, LISTENING, QUIZ, SPEAKING)
 
 ---
 
@@ -95,7 +95,7 @@
 
 ### Epic B: Authentication (8 pts)
 
-**Status**: 🔄 In Progress (2/8 pts - 25%)  
+**Status**: ✅ Mostly Complete (5/8 pts - 62.5%)  
 **Timeline**: Day 3-6 (November 25-29)
 
 - [x] **B1**: Auth Store + AuthProvider (1 pt) ✅ **COMPLETE** (Nov 25 Evening)
@@ -112,16 +112,24 @@
   - ✅ register() - POST /auth/register
   - ✅ logout() - POST /auth/logout
   - ✅ getProfile() - GET /users/profile
-- [ ] **B2**: Login Screen with form validation (1 pt) - **50% DONE**
-  - ✅ UI exists, integrated with auth store
-  - ⬜ Add React Hook Form + Zod validation
-  - ⬜ Real-time error feedback
-  - ⬜ Loading/disabled states
-- [ ] **B3**: Register Screen with form validation (1 pt) - **50% DONE**
-  - ✅ UI exists with confirmPassword field
-  - ✅ Basic validation (password match, min length)
-  - ⬜ Add React Hook Form + Zod schema
-  - ⬜ Real-time validation feedback
+- [x] **B2**: Login Screen with form validation (1 pt) ✅ **COMPLETE** (Nov 25 Night)
+  - ✅ React Hook Form + Zod validation schema
+  - ✅ Email format validation + password min 8 chars
+  - ✅ Real-time error feedback on blur
+  - ✅ Loading states + disabled inputs during submission
+  - ✅ HelperText error messages
+  - ✅ ScrollView for keyboard handling
+  - ✅ Success/Error alerts
+- [x] **B3**: Register Screen with form validation (1 pt) ✅ **COMPLETE** (Nov 25 Late Night)
+  - ✅ React Hook Form + comprehensive Zod schema
+  - ✅ Full name validation (2-50 chars, letters only with regex)
+  - ✅ Strong password requirements (uppercase, lowercase, number)
+  - ✅ Password strength indicator with visual bar
+  - ✅ Confirm password matching with Zod `.refine()`
+  - ✅ Real-time validation on blur
+  - ✅ HelperText error messages for all fields
+  - ✅ Loading states + disabled inputs
+  - ✅ ScrollView for keyboard handling
 - [x] **B4**: Token Storage & Auto-login (1 pt) ✅ **VERIFIED** (Nov 25)
   - ✅ saveTokens() - AsyncStorage.multiSet (4 keys)
   - ✅ getAccessToken() - Retrieve access token
@@ -131,11 +139,14 @@
   - ✅ All helpers working in api.ts (lines 57-103)
   - ✅ Auto-login on app launch (AuthProvider)
   - ✅ AppState listener for token validation on resume
-- [ ] **B5**: Auth Error Handling (1 pt) - **PARTIAL**
-  - ✅ Basic error handling in auth store
-  - ⬜ User-friendly messages for 400/401/500/network
-  - ⬜ Retry logic (3 attempts with backoff)
-  - ⬜ "No internet" banner when offline (NetInfo)
+- [x] **B5**: Auth Error Handling (1 pt) ✅ **COMPLETE** (Nov 25 Late Night Part 2)
+  - ✅ NetworkStatusBanner component (auto-detects offline with NetInfo)
+  - ✅ Slide animation (300ms) for smooth UX
+  - ✅ User-friendly error message utility (maps all error types)
+  - ✅ Error title utility for Alert dialogs
+  - ✅ Retry logic already in api.ts (exponential backoff, max 3 attempts)
+  - ✅ Updated auth store + LoginScreen + RegisterScreen
+  - ✅ 24 unit tests passing
 - [x] **B6**: Axios Interceptor + Token Refresh (1.5 pts) ✅ **COMPLETE** (Already done in A4)
   - ✅ Request interceptor attaches Authorization header
   - ✅ Response interceptor detects 401
@@ -147,29 +158,264 @@
 
 **🎊 Epic B Achievements (Nov 25)**:
 
+**Evening Session**:
+
 - ✅ Complete auth store foundation (login, register, logout, loadUser)
 - ✅ Token storage verified (5 helpers working)
 - ✅ Session management (auto-login, AppState listener)
 - ✅ Auth service layer created
 - ✅ Screens integrated with store
 - ✅ Path aliases configured (@/ imports)
-- ✅ TypeScript: 0 errors, ESLint: 0 errors, Tests: 4/4 passing
 
-**Files Created/Modified (Nov 25)**:
+**Night Session** (B2):
 
-- Created: `services/authService.ts` (45 lines)
-- Modified: `store/authStore.ts` (150+ lines - complete rewrite)
-- Modified: `components/AuthProvider.tsx` (85 lines - complete rewrite)
-- Modified: `app/auth/LoginScreen.tsx` (updated to use store)
-- Modified: `app/auth/RegisterScreen.tsx` (updated to use store)
-- Modified: `tsconfig.json` (added path aliases)
-- **Total**: ~400+ lines of production code
+- ✅ Login Screen with React Hook Form + Zod validation
+- ✅ Email format validation + password min 8 chars
+- ✅ Real-time validation on blur (better UX)
+- ✅ HelperText error messages
+- ✅ Loading states + disabled inputs
+- ✅ ScrollView for keyboard handling
 
-**Next Steps** (Day 4 - Nov 26):
+**Quality Metrics**:
 
-- B2: Complete Login Screen with React Hook Form + Zod
-- B3: Complete Register Screen with React Hook Form + Zod
-- B5: Enhance error handling (network errors, retry banner)
+- ✅ TypeScript: 0 errors
+- ✅ ESLint: 0 errors (19 warnings acceptable)
+- ✅ Tests: 4/4 passing
+- ✅ Package: @hookform/resolvers installed
+
+**Files Modified (B2 - Nov 25 Night)**:
+
+- Modified: `app/auth/LoginScreen.tsx` (170 lines - complete rewrite with React Hook Form)
+- Installed: `@hookform/resolvers@3.9.1`
+- **Total**: ~170 lines of production code
+
+**Next Steps** (Day 11 - Nov 28):
+
+- D3: Course Detail Screen with sections/lessons
+- D4: Lesson Viewer (4 types: READING, LISTENING, QUIZ, SPEAKING)
+- D5: Lesson Navigation (prev/next)
+- D6: Complete Lesson API Integration
+
+---
+
+### Epic C: Navigation & Layout (4 pts)
+
+**Status**: ✅ Complete (4/4 pts - 100%)  
+**Timeline**: Day 7-9 (November 25-27)
+
+- [x] **C1**: Setup Tab Navigation (Home, Courses, Progress, Profile) (1 pt) ✅ **COMPLETE** (Nov 25)
+  - ✅ Bottom Tab Navigator configured in App.tsx
+  - ✅ Material Community Icons for all 4 tabs:
+    - Home: `home` icon
+    - Courses: `book-open-page-variant` icon
+    - Progress: `chart-line` icon
+    - Profile: `account-circle` icon
+  - ✅ Active state styling (purple #6200ee active, grey inactive)
+  - ✅ Tab bar styling (white background, 60px height, elevation shadow)
+  - ✅ Header styling (purple background, white text, bold title)
+  - ✅ Installed @types/react-native-vector-icons for TypeScript
+  - ✅ TypeScript: 0 errors, ESLint: 0 errors
+- [x] **C2**: Stack Navigation + Auth Gate (1 pt) ✅ **COMPLETE** (Nov 25)
+  - ✅ Created navigation types (`types/navigation.ts`)
+  - ✅ Typed RootStackParamList with all screens (Auth + Main + nested)
+  - ✅ Global type augmentation for autocomplete
+  - ✅ Created branded SplashScreen component (LEXIA branding)
+  - ✅ Auth gate switches between Auth/Main stacks
+  - ✅ Fade animation between stacks
+  - ✅ CourseDetail + LessonViewer with purple headers
+  - ✅ Screen titles configured ("Welcome Back", "Create Account", etc.)
+  - ✅ TypeScript: 0 errors, ESLint: 0 errors
+- [x] **C3**: Custom Tab Bar (1 pt) ✅ **COMPLETE** (Nov 27)
+  - ✅ Created `CustomTabBar` component (230+ lines)
+  - ✅ Animated scale + opacity transitions on tab press
+  - ✅ Badge support for notifications (with 99+ overflow)
+  - ✅ Haptic feedback on Android (Vibration API)
+  - ✅ Active indicator line under selected tab
+  - ✅ Outline/filled icon variants for active/inactive states
+  - ✅ Safe area insets handling for notches
+  - ✅ Accessibility labels with badge counts
+- [x] **C4**: Header Components (1 pt) ✅ **COMPLETE** (Nov 27)
+  - ✅ Created `CustomHeader` component (280+ lines)
+  - ✅ User greeting with time-based messages
+  - ✅ Avatar display with initials fallback
+  - ✅ Search bar for Courses screen
+  - ✅ Notification bell with badge count
+  - ✅ Back button support for nested screens
+  - ✅ Right action button support (settings icon)
+  - ✅ Safe area insets for status bar
+
+**🎊 Epic C Achievements (Nov 25-27)**:
+
+**C1 - Tab Navigation**:
+
+- ✅ Professional tab navigation with Material Design principles
+- ✅ 4 tabs functional with intuitive icons
+- ✅ Active state clearly indicates current tab (purple color)
+- ✅ Proper spacing and touch targets (60px height > 44px minimum)
+- ✅ Consistent styling across all tabs (header + tab bar)
+- ✅ TypeScript support for vector icons
+
+**C2 - Stack Navigation + Auth Gate**:
+
+- ✅ Type-safe navigation with full TypeScript support
+- ✅ Auth gate seamlessly switches between Auth/Main stacks
+- ✅ Branded SplashScreen prevents UI flash during initialization
+- ✅ Fade animation for smooth transitions
+- ✅ Purple headers consistent across nested screens
+- ✅ Navigation params typed for CourseDetail + LessonViewer
+
+**C3 - Custom Tab Bar**:
+
+- ✅ Spring animations for press feedback
+- ✅ Badge support with overflow (99+)
+- ✅ Haptic feedback for Android
+- ✅ Active indicator line
+- ✅ Icon state changes (outline/filled)
+
+**C4 - Custom Header**:
+
+- ✅ 4 header variants in one flexible component
+- ✅ Time-based personalized greetings
+- ✅ Integrated search with clear button
+- ✅ Notification badge support
+- ✅ All tab screens updated with new headers
+
+**Quality Metrics**:
+
+- ✅ TypeScript: 0 errors
+- ✅ ESLint: 0 errors (16 warnings acceptable)
+- ✅ Navigation: All flows work correctly
+- ✅ Tests: 28/28 passing
+- ✅ Accessibility: Labels on all interactive elements
+
+**Files Created/Modified (C3-C4 - Nov 27)**:
+
+- Created: `components/CustomTabBar.tsx` (230 lines)
+- Created: `components/CustomHeader.tsx` (280 lines)
+- Created: `hooks/useDebounce.ts` (60 lines)
+- Modified: `App.tsx` (use CustomTabBar)
+- Modified: `app/tabs/HomeScreen.tsx` (dashboard UI)
+- Modified: `app/tabs/CoursesScreen.tsx` (search + cards)
+- Modified: `app/tabs/ProgressScreen.tsx` (stats + progress)
+- Modified: `app/tabs/ProfileScreen.tsx` (profile card + menu)
+
+**Total**: 3 files created, 5 files modified, ~1,000 lines of production code
+
+---
+
+### Epic D: Core Features (10 pts)
+
+**Status**: 🟢 In Progress (5/10 pts - 50%)  
+**Timeline**: Day 9-14 (November 27 - December 2)
+
+- [x] **D1**: Home Screen Dashboard with API (1.5 pt) ✅ **COMPLETE** (Nov 27)
+  - ✅ Created `services/progressService.ts` (65 lines)
+    - getStreak(), completeLesson(), getCourseProgress()
+    - getDashboardOverview(), getProgressSummary()
+  - ✅ Created `services/enrollmentService.ts` (55 lines)
+    - enroll(), getMyEnrollments(), isEnrolled(), getEnrollmentByCourse()
+  - ✅ Rewrote `HomeScreen.tsx` (370 lines) with API integration
+    - StatsCard component with loading states
+    - ContinueLearningCard with progress bars
+    - Pull-to-refresh, error handling
+    - Recommendations section
+  - ✅ Added dashboard types to `types/index.ts`
+    - StreakData, DashboardStats, DashboardOverview
+    - Goal, Activity, Recommendation
+- [x] **D2**: Courses Screen with Search/Filter (2 pt) ✅ **COMPLETE** (Nov 27)
+  - ✅ Created `services/courseService.ts` (100 lines)
+    - getCourses(), getCourseById(), getCourseWithSections()
+    - searchCourses() with title, level filters
+  - ✅ Rewrote `CoursesScreen.tsx` (350 lines) with API integration
+    - CEFR level filter chips (All, A1-C2)
+    - Debounced search (300ms) using useDebounce hook
+    - Infinite scroll pagination
+    - Enrollment status badges on course cards
+  - ✅ Added progress types to `types/index.ts`
+    - DailyActivity, ProgressSummary, LessonProgressDTO
+    - CourseProgressDTO, LessonProgressSummary
+  - ✅ Created unit tests (24 tests for 3 services)
+    - `__tests__/services/courseService.test.ts` (7 tests)
+    - `__tests__/services/progressService.test.ts` (8 tests)
+    - `__tests__/services/enrollmentService.test.ts` (9 tests)
+- [x] **D3**: Course Detail Screen (1.5 pt) ✅ **COMPLETE** (Nov 27)
+  - ✅ Created `components/courses/SectionCard.tsx` (170 lines)
+    - Animated expand/collapse with LayoutAnimation
+    - Chevron rotation animation
+    - Progress bar for enrolled users
+    - Completed lessons count display
+  - ✅ Created `components/courses/LessonListItem.tsx` (200 lines)
+    - Type-specific icons (book, headphones, help-circle, microphone)
+    - Type-specific colors (blue, purple, orange, green)
+    - Completion checkmark indicator
+    - Lock icon for non-enrolled users
+    - Duration display with clock icon
+  - ✅ Rewrote `CourseDetailScreen.tsx` (380 lines) with full API integration
+    - Course thumbnail/banner image
+    - CEFR level badge
+    - Course stats (lessons, hours, sections)
+    - Description section
+    - Enroll button with loading state
+    - Curriculum section with collapsible sections
+    - Pull-to-refresh
+    - Error handling with retry
+    - Snackbar notifications
+    - Navigation to LessonViewer
+  - ✅ Unit tests for components (28 tests)
+    - `__tests__/components/LessonListItem.test.tsx` (14 tests)
+    - `__tests__/components/SectionCard.test.tsx` (14 tests)
+- [ ] **D4**: Lesson Viewer (3 pts) - **NEXT**
+  - ⬜ D4.1: Reading lesson type (Markdown rendering)
+  - ⬜ D4.2: Listening lesson type (Audio player)
+  - ⬜ D4.3: Quiz lesson type (Multiple choice)
+  - ⬜ D4.4: Speaking lesson type (Voice recording)
+- [ ] **D5**: Lesson Navigation (0.5 pt)
+  - ⬜ Previous/Next lesson buttons
+  - ⬜ Progress indicator (Lesson X of Y)
+- [ ] **D6**: Complete Lesson API Integration (1.5 pt)
+  - ⬜ Mark lesson as complete
+  - ⬜ Update progress on dashboard
+  - ⬜ Confetti animation on completion
+
+**🎊 Epic D Achievements (Nov 27 - Day 10)**:
+
+**D1 - Home Dashboard**:
+
+- ✅ 2 new services created (progressService, enrollmentService)
+- ✅ Dashboard fetches real data from backend
+- ✅ Stats cards show enrolled courses, completed lessons, streak
+- ✅ Continue learning section with progress bars
+- ✅ Pull-to-refresh for manual data refresh
+
+**D2 - Courses Screen**:
+
+- ✅ Full search functionality with debounce
+- ✅ CEFR level filtering (7 levels: All + A1-C2)
+- ✅ Infinite scroll pagination
+- ✅ Enrollment status badges
+- ✅ Loading states and error handling
+
+**Quality Metrics (Day 10)**:
+
+- ✅ TypeScript: 0 errors
+- ✅ ESLint: 0 errors, 2 warnings
+- ✅ Tests: 52/52 passing (28 existing + 24 new)
+- ✅ Services: 3 new files, ~220 lines
+- ✅ Screens: 2 rewrites, ~720 lines
+
+**Files Created/Modified (D1-D2 - Nov 27)**:
+
+- Created: `services/courseService.ts` (100 lines)
+- Created: `services/progressService.ts` (65 lines)
+- Created: `services/enrollmentService.ts` (55 lines)
+- Created: `__tests__/services/courseService.test.ts` (7 tests)
+- Created: `__tests__/services/progressService.test.ts` (8 tests)
+- Created: `__tests__/services/enrollmentService.test.ts` (9 tests)
+- Modified: `types/index.ts` (+90 lines - progress/dashboard types)
+- Modified: `app/tabs/HomeScreen.tsx` (370 lines - complete rewrite)
+- Modified: `app/tabs/CoursesScreen.tsx` (350 lines - complete rewrite)
+
+**Total**: 6 files created, 3 files modified, ~1,200 lines of production code + tests
 
 ---
 

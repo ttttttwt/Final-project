@@ -174,7 +174,7 @@ class AuthServiceTest {
                 .isActive(true)
                 .build();
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailWithRoles(email)).thenReturn(Optional.of(user));
 
         // Act
         Optional<User> result = authService.authenticateUser(email, password);
@@ -182,7 +182,7 @@ class AuthServiceTest {
         // Assert
         assertTrue(result.isPresent());
         assertEquals(user, result.get());
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmailWithRoles(email);
     }
 
     @Test
@@ -200,14 +200,14 @@ class AuthServiceTest {
                 .isActive(true)
                 .build();
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailWithRoles(email)).thenReturn(Optional.of(user));
 
         // Act
         Optional<User> result = authService.authenticateUser(email, wrongPassword);
 
         // Assert
         assertFalse(result.isPresent());
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmailWithRoles(email);
     }
 
     @Test
@@ -216,14 +216,14 @@ class AuthServiceTest {
         String email = "nonexistent@lexia.com";
         String password = "Password123";
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailWithRoles(email)).thenReturn(Optional.empty());
 
         // Act
         Optional<User> result = authService.authenticateUser(email, password);
 
         // Assert
         assertFalse(result.isPresent());
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmailWithRoles(email);
     }
 
     @Test
@@ -231,15 +231,23 @@ class AuthServiceTest {
         // Arrange
         String email = "inactive@lexia.com";
         String password = "Password123";
+        String hashedPassword = passwordEncoder.encode(password);
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        User inactiveUser = User.builder()
+                .id(UUID.randomUUID())
+                .email(email)
+                .passwordHash(hashedPassword)
+                .isActive(false) // User is inactive
+                .build();
+
+        when(userRepository.findByEmailWithRoles(email)).thenReturn(Optional.of(inactiveUser));
 
         // Act
         Optional<User> result = authService.authenticateUser(email, password);
 
         // Assert
         assertFalse(result.isPresent());
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmailWithRoles(email);
     }
 
     @Test
@@ -282,7 +290,7 @@ class AuthServiceTest {
                 .isActive(true)
                 .build();
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailWithRoles(email)).thenReturn(Optional.of(user));
         when(jwtTokenProvider.generateAccessToken(any(java.util.UUID.class), anyString()))
                 .thenReturn("mock.access.token");
         when(jwtTokenProvider.generateRefreshToken(any(java.util.UUID.class), anyString()))
@@ -316,7 +324,7 @@ class AuthServiceTest {
         String email = "nonexistent@lexia.com";
         String password = "Password123";
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailWithRoles(email)).thenReturn(Optional.empty());
 
         var loginDTO = com.lexia.backend.dto.LoginDTO.builder()
                 .email(email)
@@ -346,7 +354,7 @@ class AuthServiceTest {
                 .isActive(true)
                 .build();
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailWithRoles(email)).thenReturn(Optional.of(user));
 
         var loginDTO = com.lexia.backend.dto.LoginDTO.builder()
                 .email(email)

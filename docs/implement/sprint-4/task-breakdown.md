@@ -2,8 +2,9 @@
 
 **Sprint**: 4 / 8  
 **Duration**: November 24 – December 11, 2025 (18 days)  
-**Status**: 🔵 Ready to Start  
-**Created**: November 24, 2025
+**Status**: 🟢 In Progress (Day 9) | **Progress**: 16.5/43 pts (38.4%)  
+**Created**: November 24, 2025  
+**Last Updated**: November 27, 2025
 
 ---
 
@@ -11,7 +12,8 @@
 
 **Goal**: Build foundation of Lexia Mobile App (React Native + Expo) with authentication, navigation, core features, and offline support.
 
-**Total Points**: 43 points over 18 days = **2.4 pts/day**
+**Total Points**: 43 points over 18 days = **2.4 pts/day**  
+**Current Velocity**: 5.5 pts/day 🚀 (exceeding target!)
 
 ---
 
@@ -23,11 +25,11 @@
 
 **Tasks**:
 
-- [ ] **A1**: Initialize Expo project with TypeScript (0.5 pt)
+- [x] **A1**: Initialize Expo project with TypeScript (0.5 pt) ✅
   - `npx create-expo-app lexia-mobile --template expo-template-blank-typescript`
   - Test on iOS/Android simulator
   - Verify app runs with `npm start`
-- [ ] **A2**: Configure ESLint, Prettier, absolute imports (0.5 pt)
+- [x] **A2**: Configure ESLint, Prettier, absolute imports (0.5 pt) ✅
 
   - Install ESLint + Prettier + TypeScript plugins
   - Create `eslint.config.js` (mirror web config)
@@ -35,13 +37,13 @@
   - Configure `tsconfig.json` with path aliases (`@/` → `./`)
   - Test: `npm run lint` passes
 
-- [ ] **A3**: Setup directory structure (0.5 pt)
+- [x] **A3**: Setup directory structure (0.5 pt) ✅
 
   - Create folders: `app/`, `components/`, `services/`, `store/`, `types/`, `hooks/`, `utils/`, `assets/`
   - Create `README.md` documenting structure
   - Create `.env.example` with `API_URL`
 
-- [ ] **A4**: Configure Axios client with interceptors (1 pt)
+- [x] **A4**: Configure Axios client with interceptors (1 pt) ✅
 
   - Create `services/api.ts`
   - Setup base Axios instance (baseURL, timeout 30s)
@@ -49,14 +51,14 @@
   - Response interceptor: Handle 401, network errors, timeout
   - **Copy logic from `lexia-web/lib/api.ts`** (offline detection, retry logic)
 
-- [ ] **A5**: Define base types (0.5 pt)
+- [x] **A5**: Define base types (0.5 pt) ✅
 
   - Create `types/index.ts`
   - Define types: `User`, `Course`, `Lesson`, `TokenResponse`, `LoginRequest`, `RegisterRequest`
   - Match backend DTOs from `API-SPECIFICATION.md`
   - Create `types/api.ts` for API response types
 
-- [ ] **A6**: Install missing dependencies (0.5 pt) - **HIGH PRIORITY**
+- [x] **A6**: Install missing dependencies (0.5 pt) - **HIGH PRIORITY** ✅
   - Install packages (see below)
   - Verify no peer dependency conflicts
   - Test: `npm run build` passes
@@ -96,7 +98,7 @@ npm install --save-dev jest-expo @types/jest
 
 **Tasks**:
 
-- [ ] **A7**: Configure test environment (1 pt)
+- [x] **A7**: Configure test environment (1 pt) ✅
 
   - Create `jest.config.js` for React Native
   - Create `jest.setup.js` with `@testing-library/jest-native`
@@ -104,13 +106,13 @@ npm install --save-dev jest-expo @types/jest
   - Configure coverage thresholds: 60% global, 80% services
   - Test: `npm test` passes
 
-- [ ] **A8**: Setup ESLint rules + Prettier (0.5 pt)
+- [x] **A8**: Setup ESLint rules + Prettier (0.5 pt) ✅
 
   - Final ESLint config adjustments
   - Add pre-commit hook (optional: husky + lint-staged)
   - Document linting rules in README
 
-- [ ] **A9**: Setup React Query (1.5 pts) - **MOVED FROM E3**
+- [x] **A9**: Setup React Query (1.5 pts) - **MOVED FROM E3** ✅
   - Create `lib/queryClient.ts`
   - Configure QueryClient with AsyncStorage persister
   - Setup QueryClientProvider in `App.tsx`
@@ -125,7 +127,7 @@ npm install --save-dev jest-expo @types/jest
 
 **Tasks**:
 
-- [ ] **B1**: Implement Auth Store (Zustand) (1 pt)
+- [x] **B1**: Implement Auth Store (Zustand) (1 pt) ✅
 
   - Create `store/authStore.ts`
   - State: `user`, `accessToken`, `refreshToken`, `isAuthenticated`, `isLoading`
@@ -133,7 +135,7 @@ npm install --save-dev jest-expo @types/jest
   - Persist to AsyncStorage (use `zustand/middleware` persist)
   - Initial loading state prevents UI flash
 
-- [ ] **B4**: Implement Token Storage (1.5 pts)
+- [x] **B4**: Implement Token Storage (1.5 pts) ✅
   - Create `lib/tokenStorage.ts`
   - Functions: `saveTokens()`, `getAccessToken()`, `getRefreshToken()`, `getTokenType()`, `clearTokens()`
   - Keys: `@lexia/access_token`, `@lexia/refresh_token`, `@lexia/token_type`
@@ -149,7 +151,7 @@ npm install --save-dev jest-expo @types/jest
 
 **Tasks**:
 
-- [ ] **B6**: Implement Axios Interceptor with Token Refresh (1.5 pts)
+- [x] **B6**: Implement Axios Interceptor with Token Refresh (1.5 pts) ✅
   - Update `services/api.ts`
   - Request interceptor: Attach `Authorization: Bearer ${token}` from AsyncStorage
   - Response interceptor: Detect 401 → trigger refresh
@@ -170,7 +172,7 @@ npm install --save-dev jest-expo @types/jest
 
 **Tasks**:
 
-- [ ] **B2**: Build Login Screen (1 pt)
+- [x] **B2**: Build Login Screen (1 pt) ✅
 
   - Create `app/auth/LoginScreen.tsx`
   - Form: Email (text input), Password (secure text input)
@@ -179,7 +181,7 @@ npm install --save-dev jest-expo @types/jest
   - Loading state: Disable button, show spinner
   - Error handling: Toast for invalid credentials, network errors
 
-- [ ] **B3**: Build Register Screen (1 pt)
+- [x] **B3**: Build Register Screen (1 pt) ✅
   - Create `app/auth/RegisterScreen.tsx`
   - Form: First Name, Last Name, Email, Password, Confirm Password
   - Validation: Zod (all required, email format, password match)
@@ -194,21 +196,21 @@ npm install --save-dev jest-expo @types/jest
 
 **Tasks**:
 
-- [ ] **B5**: Handle Auth Errors (1 pt)
+- [x] **B5**: Handle Auth Errors (1 pt) ✅
 
   - User-friendly error messages: 400/401/500/network/timeout
   - Retry logic: 3 attempts with exponential backoff (network errors only)
   - "No internet" banner: Use NetInfo, show banner at top of screen
   - Test: Airplane mode → banner appears
 
-- [ ] **C1**: Setup Tab Navigation (1 pt)
+- [x] **C1**: Setup Tab Navigation (1 pt) ✅
 
   - Install `@react-navigation/bottom-tabs`
   - Create 4 tabs: Home, Courses, Progress, Profile
   - Icons: react-native-vector-icons (or Expo icons)
   - Active state styling: Blue accent
 
-- [ ] **C2**: Setup Stack Navigation + Auth Gate (0.5 pt)
+- [x] **C2**: Setup Stack Navigation + Auth Gate (0.5 pt) ✅
   - Install `@react-navigation/native-stack`
   - Create Auth Stack: Login, Register
   - Create Main Stack: Tabs, CourseDetail, LessonViewer
@@ -224,12 +226,12 @@ npm install --save-dev jest-expo @types/jest
 
 **Tasks**:
 
-- [ ] **C3**: Implement Custom Tab Bar (0.5 pt)
+- [x] **C3**: Implement Custom Tab Bar (0.5 pt) ✅
 
   - Custom styling, smooth transitions
   - Badge count on tabs (e.g., notifications)
 
-- [ ] **C4**: Header Components (0.5 pt)
+- [x] **C4**: Header Components (0.5 pt) ✅
 
   - Back button, title, optional actions (settings icon)
 
@@ -508,14 +510,16 @@ npm install --save-dev jest-expo @types/jest
 
 | Epic                      | Points | Status         | Completion Date |
 | ------------------------- | ------ | -------------- | --------------- |
-| A: Project Initialization | 7      | 🔵 Not Started | -               |
-| B: Authentication         | 8      | 🔵 Not Started | -               |
-| C: Navigation & Layout    | 4      | 🔵 Not Started | -               |
+| A: Project Initialization | 7      | ✅ Complete    | Nov 25, 2025    |
+| B: Authentication         | 5/8    | 🟢 Mostly Done | Nov 25-26, 2025 |
+| C: Navigation & Layout    | 4      | ✅ Complete    | Nov 27, 2025    |
 | D: Core Features          | 10     | 🔵 Not Started | -               |
 | E: Progress & Offline     | 8      | 🔵 Not Started | -               |
 | F: Testing & Performance  | 6      | 🔵 Not Started | -               |
 
-**Total**: 43 points
+**Total**: 43 points | **Completed**: 16.5 points (38.4%)
+
+**Note**: B7 (Biometric Auth) deferred to Sprint 5 (1 pt)
 
 ---
 
@@ -577,5 +581,5 @@ Each development session should create a summary in `docs/implement/sprint-4/ses
 
 ---
 
-**Last Updated**: November 24, 2025  
+**Last Updated**: November 27, 2025  
 **Next Review**: December 11, 2025 (End of Sprint 4)

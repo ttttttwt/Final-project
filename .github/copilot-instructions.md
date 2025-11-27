@@ -5,7 +5,8 @@
 **LEXIA** - AI English Learning Platform for Working Professionals  
 **Backend**: Spring Boot 3.x | Java 17 | PostgreSQL | JWT  
 **Frontend Web**: Next.js 14+ | TypeScript | Tailwind CSS | Zustand  
-**Frontend Mobile**: React Native (Expo) | TypeScript | React Navigation | Zustand
+**Frontend Mobile**: React Native (Expo) | TypeScript | React Navigation | Zustand  
+**Admin Panel**: React 18+ | TypeScript | Vite | shadcn/ui | TanStack Query
 
 ---
 
@@ -116,6 +117,36 @@ lexia-mobile/
 └── app.json              # Expo configuration
 ```
 
+### Admin Panel (React + Vite)
+
+```
+lexia-admin/
+├── src/
+│   ├── main.tsx                 # App entry point
+│   ├── App.tsx                  # Root component
+│   ├── router.tsx               # Route configuration
+│   ├── components/              # Reusable UI components
+│   │   ├── ui/                  # shadcn/ui components
+│   │   ├── layout/              # Layout components (Sidebar, Header)
+│   │   ├── auth/                # Auth components (ProtectedRoute, RoleGuard)
+│   │   └── shared/              # Shared components (DataTable, ConfirmDialog)
+│   ├── features/                # Feature-based modules
+│   │   ├── auth/                # Authentication (login, logout)
+│   │   ├── dashboard/           # Dashboard page
+│   │   ├── users/               # User management (ADMIN only)
+│   │   ├── courses/             # Course management
+│   │   ├── lessons/             # Lesson management
+│   │   └── monitoring/          # System monitoring (ADMIN only)
+│   ├── lib/                     # Utilities (api.ts, utils.ts)
+│   ├── hooks/                   # Global custom hooks
+│   ├── store/                   # Zustand stores
+│   ├── types/                   # TypeScript types
+│   ├── styles/                  # Global styles
+│   └── config/                  # Configuration files
+├── public/                      # Static assets
+└── package.json
+```
+
 ---
 
 ## 🚫 Never Do
@@ -144,6 +175,15 @@ lexia-mobile/
 - ❌ Forget error boundaries
 - ❌ Skip accessibility labels
 - ❌ Use inline styles without StyleSheet
+
+**Admin Panel**:
+
+- ❌ Allow non-ADMIN users to access user management
+- ❌ Skip role-based access control (RoleGuard)
+- ❌ Forget loading states on data tables
+- ❌ Skip form validation (use Zod)
+- ❌ Ignore TanStack Query cache invalidation
+- ❌ Skip confirmation dialogs for destructive actions
 
 **Both**:
 
@@ -182,6 +222,18 @@ lexia-mobile/
 - ✅ TypeScript strict mode
 - ✅ Use React Native Paper for consistent UI
 - ✅ Type-safe navigation (React Navigation types)
+
+**Admin Panel**:
+
+- ✅ localStorage for tokens with Authorization header
+- ✅ Validate forms (React Hook Form + Zod)
+- ✅ Use TanStack Query for server state management
+- ✅ Invalidate queries after mutations
+- ✅ Show toast notifications for actions
+- ✅ Use shadcn/ui components consistently
+- ✅ Implement RoleGuard for protected routes
+- ✅ TypeScript strict mode
+- ✅ Handle all API errors with proper messages
 
 **Both**:
 
@@ -237,6 +289,14 @@ lexia-mobile/
 - ✅ Works on iOS & Android
 - ✅ Accessibility labels present
 
+**Admin Panel**:
+
+- ✅ Tests pass (100%)
+- ✅ Coverage ≥ 60% (Services ≥ 80%)
+- ✅ Role-based access control working
+- ✅ TanStack Query caching properly configured
+- ✅ All CRUD operations with toast feedback
+
 **Both**:
 
 - ✅ No security issues
@@ -244,7 +304,7 @@ lexia-mobile/
 
 ---
 
-## 📝 Session Documentation
+## � Session Documentation
 
 ### Session Summary Requirements
 
@@ -279,7 +339,7 @@ Each development session must create a comprehensive summary in `docs/implement/
 
 ---
 
-## 💡 Key Principles
+## � Key Principles
 
 1. **Context First**: Read docs before coding
 2. **Security First**: httpOnly cookies, Bcrypt, hash, validate
@@ -332,7 +392,7 @@ Each development session must create a comprehensive summary in `docs/implement/
 
 ---
 
-## 📱 Responsive Checklist (Web)
+## � Responsive Checklist (Web)
 
 - [ ] 320px - Mobile S (iPhone SE)
 - [ ] 375px - Mobile M (iPhone 12/13)

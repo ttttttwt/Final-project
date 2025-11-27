@@ -1,7 +1,7 @@
 # LEXIA Admin Site - Specification Document
 
-**Version**: 1.0.0  
-**Last Updated**: November 24, 2025  
+**Version**: 1.1.0  
+**Last Updated**: November 26, 2025  
 **Technology Stack**: React 18+ | TypeScript | shadcn/ui | Vite  
 **Target Users**: ADMIN, CONTENT_MANAGER
 
@@ -373,7 +373,7 @@ export default router;
      - Create New Lesson
      - View All Courses
 
-### 4.3 User Management (ADMIN Only)
+### 4.3 User Management (ADMIN Only) - (Implemented)
 
 #### 4.3.1 User List Page
 
@@ -1566,7 +1566,7 @@ CMD ["nginx", "-g", "daemon off;"]
 ### Phase 2: Core Features (Week 3-5)
 
 - [x] Dashboard page (stats cards, recent activity)
-- [ ] User management (list, create, edit, delete) - ADMIN only
+- [x] User management (list, create, edit, delete) - ADMIN only
 - [ ] Course management (list, create, edit, delete)
 - [ ] Section management (CRUD within course edit page)
 - [ ] Publish/unpublish functionality
@@ -1637,7 +1637,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ---
 
-**Document Version**: 1.0.0  
-**Status**: Draft  
-**Next Review**: After Phase 1 completion  
+**Document Version**: 1.1.0  
+**Status**: In Progress  
+**Next Review**: After Phase 2 completion  
 **Approved By**: [To be filled]

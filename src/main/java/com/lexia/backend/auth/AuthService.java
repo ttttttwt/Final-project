@@ -126,6 +126,8 @@ public class AuthService {
 
     /**
      * Authenticates a user by email and password.
+     * Uses findByEmailWithRoles to eagerly fetch roles and profile
+     * to avoid LazyInitializationException when building UserDTO.
      *
      * @param email    the user's email
      * @param password the user's password
@@ -134,9 +136,15 @@ public class AuthService {
     public Optional<User> authenticateUser(String email, String password) {
         LOG.debug("Attempting to authenticate user: {}", email);
 
-        Optional<User> userOpt = userRepository.findByEmailAndIsActive(email, true);
+        // Use findByEmailWithRoles to eagerly fetch roles and profile
+        Optional<User> userOpt = userRepository.findByEmailWithRoles(email);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            // Check if user is active
+            if (!Boolean.TRUE.equals(user.getIsActive())) {
+                LOG.warn("Authentication failed: User account is inactive: {}", email);
+                return Optional.empty();
+            }
             if (validatePassword(password, user.getPasswordHash())) {
                 LOG.info("User authenticated successfully: {}", email);
                 return Optional.of(user);
@@ -144,7 +152,7 @@ public class AuthService {
                 LOG.warn("Authentication failed: Invalid password for user: {}", email);
             }
         } else {
-            LOG.warn("Authentication failed: User not found or inactive: {}", email);
+            LOG.warn("Authentication failed: User not found: {}", email);
         }
 
         return Optional.empty();
