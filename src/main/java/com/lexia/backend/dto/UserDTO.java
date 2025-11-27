@@ -82,6 +82,12 @@ public class UserDTO {
     private String learningGoal;
 
     /**
+     * User's primary role (highest privilege role)
+     */
+    @Schema(description = "User's primary role for authorization", example = "ADMIN", nullable = true, accessMode = Schema.AccessMode.READ_ONLY)
+    private String role;
+
+    /**
      * Converts a User entity to UserDTO.
      * Excludes sensitive information and includes profile data.
      *
@@ -105,6 +111,35 @@ public class UserDTO {
                     .learningGoal(user.getProfile().getLearningGoal());
         }
 
+        // Include primary role (highest privilege role)
+        if (user.getUserRoles() != null && !user.getUserRoles().isEmpty()) {
+            // Get the primary role - prioritize ADMIN > CONTENT_MANAGER > LEARNER
+            String primaryRole = user.getUserRoles().stream()
+                    .map(userRole -> userRole.getRole().getName())
+                    .min((r1, r2) -> {
+                        int priority1 = getRolePriority(r1);
+                        int priority2 = getRolePriority(r2);
+                        return Integer.compare(priority1, priority2);
+                    })
+                    .orElse(null);
+            builder.role(primaryRole);
+        }
+
         return builder.build();
+    }
+
+    /**
+     * Get role priority for sorting (lower = higher privilege).
+     *
+     * @param roleName the role name
+     * @return priority value
+     */
+    private static int getRolePriority(String roleName) {
+        return switch (roleName) {
+            case "ADMIN" -> 0;
+            case "CONTENT_MANAGER" -> 1;
+            case "LEARNER" -> 2;
+            default -> 99;
+        };
     }
 }

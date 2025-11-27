@@ -1,7 +1,7 @@
 # LEXIA Admin Site - Specification Document
 
-**Version**: 1.1.0  
-**Last Updated**: November 26, 2025  
+**Version**: 1.2.0  
+**Last Updated**: November 27, 2025  
 **Technology Stack**: React 18+ | TypeScript | shadcn/ui | Vite  
 **Target Users**: ADMIN, CONTENT_MANAGER
 
@@ -1567,15 +1567,15 @@ CMD ["nginx", "-g", "daemon off;"]
 
 - [x] Dashboard page (stats cards, recent activity)
 - [x] User management (list, create, edit, delete) - ADMIN only
-- [ ] Course management (list, create, edit, delete)
-- [ ] Section management (CRUD within course edit page)
-- [ ] Publish/unpublish functionality
-- [ ] Course preview page
+- [x] Course management (list, create, edit, delete)
+- [x] Section management (CRUD within course edit page)
+- [x] Publish/unpublish functionality
+- [x] Course preview page (with section list display)
 
 ### Phase 3: Lesson Management (Week 6-8)
 
-- [ ] Lesson type selection
-- [ ] Reading lesson editor
+- [x] Lesson type selection
+- [x] Reading lesson editor
 - [ ] Listening lesson editor
 - [ ] Quiz lesson editor
 - [ ] Speaking lesson editor
@@ -1637,7 +1637,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ---
 
-**Document Version**: 1.1.0  
-**Status**: In Progress  
-**Next Review**: After Phase 2 completion  
+**Document Version**: 1.2.0  
+**Status**: In Progress (Phase 3)  
+**Next Review**: After Phase 3 completion  
 **Approved By**: [To be filled]

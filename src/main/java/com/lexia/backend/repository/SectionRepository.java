@@ -1,6 +1,7 @@
 package com.lexia.backend.repository;
 
 import com.lexia.backend.entity.Section;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,6 +33,28 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
      * @return list of sections ordered by orderIndex ascending
      */
     List<Section> findByCourseIdOrderByOrderIndexAsc(Long courseId);
+
+    /**
+     * Find all sections for a course with lessons eagerly fetched.
+     * Used when lesson count is needed for the response.
+     * 
+     * @param courseId the course ID
+     * @return list of sections with lessons loaded, ordered by orderIndex ascending
+     */
+    @EntityGraph(attributePaths = { "lessons" })
+    @Query("SELECT s FROM Section s WHERE s.course.id = :courseId ORDER BY s.orderIndex ASC")
+    List<Section> findByCourseIdWithLessons(@Param("courseId") Long courseId);
+
+    /**
+     * Find a section by ID with lessons eagerly fetched.
+     * Used when lesson count is needed for the response.
+     * 
+     * @param sectionId the section ID
+     * @return Optional containing the section with lessons loaded
+     */
+    @EntityGraph(attributePaths = { "lessons" })
+    @Query("SELECT s FROM Section s WHERE s.id = :sectionId")
+    Optional<Section> findByIdWithLessons(@Param("sectionId") Long sectionId);
 
     /**
      * Count sections in a course.
