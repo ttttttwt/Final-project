@@ -1584,8 +1584,8 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ### Phase 4: Advanced Features (Week 9-10)
 
-- [ ] System health monitoring (ADMIN only)
-- [ ] AI usage logs (ADMIN only)
+- [x] System health monitoring (ADMIN only)
+- [x] AI usage logs (ADMIN only)
 - [ ] Settings page
 - [ ] User profile management
 - [ ] Dark mode toggle
@@ -1612,6 +1612,7 @@ CMD ["nginx", "-g", "daemon off;"]
 - ✅ Pagination, sorting, filtering on all list pages
 - ✅ Real-time feedback (loading states, error messages, success toasts)
 - ✅ ADMIN can monitor system health via Actuator
+- ✅ ADMIN can view AI usage logs and statistics
 
 ### Non-Functional Requirements
 
@@ -1637,7 +1638,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ---
 
-**Document Version**: 1.2.0  
-**Status**: In Progress (Phase 3)  
-**Next Review**: After Phase 3 completion  
+**Document Version**: 1.3.0  
+**Status**: In Progress (Phase 4)  
+**Next Review**: After Phase 4 completion  
 **Approved By**: [To be filled]
