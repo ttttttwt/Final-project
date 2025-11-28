@@ -1576,11 +1576,11 @@ CMD ["nginx", "-g", "daemon off;"]
 
 - [x] Lesson type selection
 - [x] Reading lesson editor
-- [ ] Listening lesson editor
-- [ ] Quiz lesson editor
-- [ ] Speaking lesson editor
-- [ ] Lesson preview
-- [ ] Lesson reordering (drag-and-drop)
+- [x] Listening lesson editor
+- [x] Quiz lesson editor
+- [x] Speaking lesson editor
+- [x] Lesson preview
+- [x] Lesson reordering (drag-and-drop)
 
 ### Phase 4: Advanced Features (Week 9-10)
 

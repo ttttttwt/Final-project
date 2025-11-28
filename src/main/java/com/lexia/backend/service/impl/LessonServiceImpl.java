@@ -210,12 +210,60 @@ public class LessonServiceImpl implements LessonService {
                     return new LessonNotFoundException("Lesson not found with ID: " + id);
                 });
 
-        // Update order index
-        lesson.setOrderIndex(newOrderIndex);
+        Long sectionId = lesson.getSection().getId();
+        Integer oldOrderIndex = lesson.getOrderIndex();
 
-        // Save updated lesson
+        // If same position, no need to reorder
+        if (oldOrderIndex.equals(newOrderIndex)) {
+            log.debug("Lesson already at order index: {}, skipping reorder", newOrderIndex);
+            return LessonMapper.toDTO(lesson);
+        }
+
+        // Get all lessons in the section ordered by orderIndex
+        List<Lesson> sectionLessons = lessonRepository.findBySectionIdOrderByOrderIndexAsc(sectionId);
+
+        // Validate newOrderIndex bounds
+        if (newOrderIndex < 0) {
+            newOrderIndex = 0;
+        }
+        if (newOrderIndex >= sectionLessons.size()) {
+            newOrderIndex = sectionLessons.size() - 1;
+        }
+
+        // Temporarily set moving lesson's orderIndex to a value outside normal range
+        // to avoid unique constraint violation during shifting
+        lesson.setOrderIndex(-1);
+        lessonRepository.saveAndFlush(lesson);
+
+        // Shift other lessons - order matters to avoid constraint violations!
+        if (oldOrderIndex < newOrderIndex) {
+            // Moving down: shift lessons between old+1 and new up by 1
+            // Shift from lowest to highest index to avoid conflicts
+            for (Lesson l : sectionLessons) {
+                if (!l.getId().equals(id) && l.getOrderIndex() > oldOrderIndex && l.getOrderIndex() <= newOrderIndex) {
+                    l.setOrderIndex(l.getOrderIndex() - 1);
+                    lessonRepository.saveAndFlush(l);
+                }
+            }
+        } else {
+            // Moving up: shift lessons between new and old-1 down by 1
+            // Shift from highest to lowest index to avoid conflicts
+            // (process in reverse order so we don't create duplicates)
+            for (int i = sectionLessons.size() - 1; i >= 0; i--) {
+                Lesson l = sectionLessons.get(i);
+                if (!l.getId().equals(id) && l.getOrderIndex() >= newOrderIndex && l.getOrderIndex() < oldOrderIndex) {
+                    l.setOrderIndex(l.getOrderIndex() + 1);
+                    lessonRepository.saveAndFlush(l);
+                }
+            }
+        }
+
+        // Set final order index
+        lesson.setOrderIndex(newOrderIndex);
         Lesson reorderedLesson = lessonRepository.save(lesson);
-        log.info("Successfully reordered lesson with ID: {} to order index: {}", id, newOrderIndex);
+
+        log.info("Successfully reordered lesson with ID: {} from index {} to index: {}", id, oldOrderIndex,
+                newOrderIndex);
 
         return LessonMapper.toDTO(reorderedLesson);
     }
