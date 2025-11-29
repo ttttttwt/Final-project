@@ -32,6 +32,7 @@
 - ✅ **Epic D 50%**: D1-D3 complete, D4-D6 remaining
 - 📊 **Velocity**: ~4.3 pts/day (Day 11) - on track! 🚀
 - 🎯 **Next**: D4 (Lesson Viewer - 4 types: READING, LISTENING, QUIZ, SPEAKING)
+- 📝 **Backend Docs Synced**: Database schema, API spec, and architecture updated to describe new learning path, enrollment, progress, and admin endpoints (Nov 29)
 
 ---
 

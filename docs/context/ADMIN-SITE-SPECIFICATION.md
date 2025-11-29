@@ -81,6 +81,8 @@ LEXIA Admin Site is a dedicated web application for administrators and content m
 | System Monitoring  | ✅    | ❌              |
 | Settings & Config  | ✅    | ❌              |
 | AI Usage Logs      | ✅    | ❌              |
+| Activity Logs      | ✅    | ❌              |
+| Audit Logs         | ✅    | ❌              |
 | Actuator Endpoints | ✅    | ❌              |
 
 ---
@@ -301,6 +303,22 @@ const router = createBrowserRouter([
         element: (
           <RoleGuard roles={["ADMIN"]}>
             <AIUsageLogsPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "monitoring/activity-logs",
+        element: (
+          <RoleGuard roles={["ADMIN"]}>
+            <ActivityLogsPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "monitoring/audit-logs",
+        element: (
+          <RoleGuard roles={["ADMIN"]}>
+            <AuditLogsPage />
           </RoleGuard>
         ),
       },
@@ -666,7 +684,7 @@ export default router;
   - **Refresh Button**: Manual refresh
   - **Auto-refresh**: Toggle, every 30s
 
-#### 4.6.2 AI Usage Logs Page (Future Sprint)
+#### 4.6.2 AI Usage Logs Page
 
 - **URL**: `/monitoring/ai-usage`
 - **Features**:
@@ -679,6 +697,52 @@ export default router;
     - Total Cost (today/week/month)
     - Average Cost per Call
   - **Export**: CSV export button
+
+#### 4.6.3 Activity Logs Page (NEW)
+
+- **URL**: `/monitoring/activity-logs`
+- **Purpose**: Track admin actions on courses, sections, and lessons
+- **Features**:
+  - **Stats Cards**:
+    - Total Logs count
+    - Top 3 Actions (CREATE, UPDATE, DELETE) with counts
+    - Top 3 Most Active Users
+  - **Filters**:
+    - User (dropdown from all admin users)
+    - Action (CREATE, UPDATE, DELETE, PUBLISH, UNPUBLISH)
+    - Entity Type (COURSE, SECTION, LESSON)
+    - Date Range (From/To date pickers)
+  - **Data Table**:
+    - Columns: User, Action, Entity Type, Entity ID, Changes, Timestamp
+    - Server-side pagination (10/25/50 per page)
+    - Sortable by timestamp
+  - **Export**: CSV export button
+  - **API Endpoint**: `GET /api/v1/admin/activity-logs`
+
+#### 4.6.4 Audit Logs Page (NEW)
+
+- **URL**: `/monitoring/audit-logs`
+- **Purpose**: Track user profile changes and account modifications
+- **Features**:
+  - **Filters**:
+    - User (dropdown from all users)
+    - Action (UPDATE_PROFILE, CHANGE_PASSWORD, UPDATE_SETTINGS, etc.)
+    - Entity Type (USER_PROFILE, USER_SETTINGS, PASSWORD)
+    - Date Range (From/To date pickers)
+    - Search (query old/new values)
+  - **Data Table**:
+    - Columns: User, Action, Entity Type, Changes (Old/New Values), Timestamp
+    - Server-side pagination (10/25/50 per page)
+    - Sortable by timestamp
+  - **JSON Viewer**:
+    - Click to expand row to see full JSON old/new values
+    - Dialog with formatted JSON display
+  - **Export**: CSV export button
+  - **API Endpoints**:
+    - `GET /api/v1/admin/audit-logs` - Paginated list
+    - `GET /api/v1/admin/audit-logs/export` - CSV export
+    - `GET /api/v1/admin/audit-logs/actions` - Available actions
+    - `GET /api/v1/admin/audit-logs/entity-types` - Available entity types
 
 ---
 
@@ -1689,6 +1753,8 @@ CMD ["nginx", "-g", "daemon off;"]
 | **Lesson Preview**    | ✅ Complete    | Dialog for all 4 types                      |
 | **System Health**     | ✅ Complete    | Actuator integration, auto-refresh          |
 | **AI Usage Logs**     | ✅ Complete    | Stats, filters, CSV export                  |
+| **Activity Logs**     | ✅ Complete    | Admin action tracking, stats, filters       |
+| **Audit Logs**        | ✅ Complete    | User profile changes, JSON viewer           |
 | **Settings Page**     | ✅ Complete    | Theme, notifications, general               |
 | **Profile Page**      | ✅ Complete    | Edit profile, change password, avatar       |
 | **Dark Mode**         | ✅ Complete    | ThemeProvider, system preference            |
@@ -1710,7 +1776,7 @@ lexia-admin/src/
 │   ├── users/             # UserListPage, UserCreatePage, UserEditPage
 │   ├── courses/           # CourseListPage, CourseCreatePage, CourseEditPage, CoursePreviewPage
 │   ├── lessons/           # LessonCreatePage, LessonEditPage, 15+ editor components
-│   ├── monitoring/        # SystemHealthPage, AIUsageLogsPage
+│   ├── monitoring/        # SystemHealthPage, AIUsageLogsPage, ActivityLogsPage, AuditLogsPage
 │   ├── settings/          # SettingsPage
 │   └── profile/           # ProfilePage with forms
 ├── store/

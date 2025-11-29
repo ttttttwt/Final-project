@@ -2,6 +2,7 @@ package com.lexia.backend.repository;
 
 import com.lexia.backend.entity.AuditLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,10 +13,14 @@ import java.util.UUID;
 
 /**
  * Repository interface for AuditLog entity.
- * Provides methods to query audit logs for compliance and security purposes.
+ * Provides methods to query audit logs for compliance, security, and Log
+ * Management feature.
+ * 
+ * @author LEXIA Team
+ * @since Sprint 4
  */
 @Repository
-public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
+public interface AuditLogRepository extends JpaRepository<AuditLog, UUID>, JpaSpecificationExecutor<AuditLog> {
 
     /**
      * Find all audit logs for a specific user.
@@ -62,4 +67,36 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
      */
     @Query("SELECT a FROM AuditLog a WHERE a.user.id = :userId ORDER BY a.createdAt DESC LIMIT :limit")
     List<AuditLog> findRecentByUserId(@Param("userId") UUID userId, @Param("limit") int limit);
+
+    /**
+     * Get action type counts.
+     *
+     * @return list of action and count tuples
+     */
+    @Query("SELECT a.action, COUNT(a) FROM AuditLog a GROUP BY a.action")
+    List<Object[]> countGroupByAction();
+
+    /**
+     * Get entity type counts.
+     *
+     * @return list of entity type and count tuples
+     */
+    @Query("SELECT a.entityType, COUNT(a) FROM AuditLog a GROUP BY a.entityType")
+    List<Object[]> countGroupByEntityType();
+
+    /**
+     * Get distinct action types.
+     *
+     * @return list of distinct action types
+     */
+    @Query("SELECT DISTINCT a.action FROM AuditLog a ORDER BY a.action")
+    List<String> findDistinctActions();
+
+    /**
+     * Get distinct entity types.
+     *
+     * @return list of distinct entity types
+     */
+    @Query("SELECT DISTINCT a.entityType FROM AuditLog a ORDER BY a.entityType")
+    List<String> findDistinctEntityTypes();
 }

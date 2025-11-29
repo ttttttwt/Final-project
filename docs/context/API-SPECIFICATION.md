@@ -1,8 +1,8 @@
 # LEXIA - API Specification
 
-**Version**: 2.1.0  
-**Last Updated**: November 6, 2025  
-**Sprint**: 2 / 6
+**Version**: 2.4.0  
+**Last Updated**: November 29, 2025  
+**Sprint**: 4 / 8
 
 ---
 
@@ -60,7 +60,7 @@ Authorization: Bearer <JWT_ACCESS_TOKEN>
 | ------------------- | ------------------------------------------------------------- |
 | **USER** (Default)  | View published courses, manage own profile, enroll in courses |
 | **CONTENT_MANAGER** | Create, update, delete, publish/unpublish courses and lessons |
-| **ADMIN**           | Full system access (Coming in Sprint 4)                       |
+| **ADMIN**           | Full system access (admin panel, monitoring, notifications)   |
 
 ---
 
@@ -136,10 +136,12 @@ Response (201):
 
 ### 2. User Profile Endpoints
 
-| Method | Endpoint         | Auth Required | Role | Description              |
-| ------ | ---------------- | ------------- | ---- | ------------------------ |
-| GET    | `/users/profile` | Yes           | Any  | Get current user profile |
-| PUT    | `/users/profile` | Yes           | Any  | Update user profile      |
+| Method | Endpoint                | Auth Required | Role | Description              |
+| ------ | ----------------------- | ------------- | ---- | ------------------------ |
+| GET    | `/users/profile`        | Yes           | Any  | Get current user profile |
+| PUT    | `/users/profile`        | Yes           | Any  | Update user profile      |
+| POST   | `/users/profile/avatar` | Yes           | Any  | Upload or update avatar  |
+| DELETE | `/users/profile/avatar` | Yes           | Any  | Delete user avatar       |
 
 **Example: Get Profile**
 
@@ -153,11 +155,37 @@ Response (200):
   "email": "user@example.com",
   "firstName": "John",
   "lastName": "Doe",
-  "cefrLevel": "B1",
-  "preferredLanguage": "en",
+  "bio": "English learner passionate about business communication",
+  "phoneNumber": "+84901234567",
+  "avatarUrl": "https://cdn.lexia.com/avatars/john-doe.jpg",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "language": "en",
+  "currentLevel": "B1",
   "learningGoal": "Business communication",
-  "createdAt": "2025-10-30T10:15:30"
+  "createdAt": "2025-10-30T10:15:30",
+  "updatedAt": "2025-10-31T14:22:45"
 }
+```
+
+**Example: Update Avatar**
+
+```json
+POST /api/v1/users/profile/avatar
+Authorization: Bearer <token>
+{
+  "avatarUrl": "https://cdn.lexia.com/avatars/new-avatar.jpg"
+}
+
+Response (200): Empty body
+```
+
+**Example: Delete Avatar**
+
+```json
+DELETE /api/v1/users/profile/avatar
+Authorization: Bearer <token>
+
+Response (200): Empty body
 ```
 
 ---
@@ -244,7 +272,91 @@ Response (200): Same format as list endpoint
 
 ---
 
-### 4. Lesson Management Endpoints
+### 4. Section Management Endpoints
+
+| Method | Endpoint                               | Auth Required | Role            | Description                      |
+| ------ | -------------------------------------- | ------------- | --------------- | -------------------------------- |
+| GET    | `/courses/{courseId}/sections`         | Yes           | Any             | Get all sections for a course    |
+| GET    | `/courses/{courseId}/sections/{id}`    | Yes           | Any             | Get section by ID                |
+| POST   | `/courses/{courseId}/sections`         | Yes           | CONTENT_MANAGER | Create new section               |
+| PUT    | `/courses/{courseId}/sections/{id}`    | Yes           | CONTENT_MANAGER | Update existing section          |
+| DELETE | `/courses/{courseId}/sections/{id}`    | Yes           | CONTENT_MANAGER | Delete section                   |
+| POST   | `/courses/{courseId}/sections/reorder` | Yes           | CONTENT_MANAGER | Reorder sections within a course |
+
+**Example: Get Sections**
+
+```json
+GET /api/v1/courses/1/sections
+Authorization: Bearer <token>
+
+Response (200):
+[
+  {
+    "id": 1,
+    "courseId": 1,
+    "title": "Getting Started",
+    "orderIndex": 0,
+    "lessonCount": 3,
+    "createdAt": "2025-10-30T10:15:30"
+  },
+  {
+    "id": 2,
+    "courseId": 1,
+    "title": "Basic Grammar",
+    "orderIndex": 1,
+    "lessonCount": 5,
+    "createdAt": "2025-10-30T10:20:00"
+  }
+]
+```
+
+**Example: Create Section**
+
+```json
+POST /api/v1/courses/1/sections
+Authorization: Bearer <token>
+{
+  "title": "Advanced Grammar",
+  "orderIndex": 2
+}
+
+Response (201):
+{
+  "id": 3,
+  "courseId": 1,
+  "title": "Advanced Grammar",
+  "orderIndex": 2,
+  "lessonCount": 0,
+  "createdAt": "2025-10-31T15:00:00"
+}
+```
+
+**Example: Reorder Sections**
+
+```json
+POST /api/v1/courses/1/sections/reorder
+Authorization: Bearer <token>
+{
+  "sectionIds": [3, 1, 2]
+}
+
+Response (200):
+[
+  {
+    "id": 3,
+    "courseId": 1,
+    "title": "Advanced Grammar",
+    "orderIndex": 0,
+    "lessonCount": 0,
+    "createdAt": "2025-10-31T15:00:00"
+  },
+  ...
+]
+```
+
+---
+
+### 5. Lesson Management Endpoints
 
 | Method | Endpoint                                | Auth Required | Role            | Description                         |
 | ------ | --------------------------------------- | ------------- | --------------- | ----------------------------------- |
@@ -333,7 +445,156 @@ POST /api/v1/lessons/sections/1/lessons
 
 ---
 
-### 5. AI Features Endpoints (Coming in Sprint 3)
+### 6. Learning Path Endpoints
+
+| Method | Endpoint                      | Auth Required | Role | Description                                                |
+| ------ | ----------------------------- | ------------- | ---- | ---------------------------------------------------------- |
+| GET    | `/learning-paths`             | Yes           | Any  | List all curated learning paths with ordered course data   |
+| GET    | `/learning-paths/{id}`        | Yes           | Any  | Retrieve details for a specific path                       |
+| GET    | `/learning-paths/recommend`   | Yes           | Any  | Recommend the best path for the authenticated user's CEFR  |
+| POST   | `/learning-paths/{id}/start`  | Yes           | Any  | Enroll user in a path and create `user_learning_paths` row |
+| GET    | `/learning-paths/my-progress` | Yes           | Any  | List every path the user has started with progress stats   |
+
+Examples and payloads are described in the Sprint 4 mobile spec; see `/learning-paths/recommend` and `/learning-paths/{id}/start` samples earlier in this document.
+
+---
+
+### 7. Enrollment Endpoints
+
+| Method | Endpoint                           | Auth Required | Role | Description                               |
+| ------ | ---------------------------------- | ------------- | ---- | ----------------------------------------- |
+| POST   | `/enrollments?courseId={id}`       | Yes           | Any  | Enroll user in a published course         |
+| GET    | `/enrollments`                     | Yes           | Any  | List current and completed enrollments    |
+| GET    | `/enrollments/{courseId}/progress` | Yes           | Any  | Detailed lesson-by-lesson course progress |
+
+See the examples above for enrollment creation and course progress details.
+
+---
+
+### 8. Progress & Dashboard Endpoints
+
+| Method | Endpoint                                | Auth Required | Role | Description                                                         |
+| ------ | --------------------------------------- | ------------- | ---- | ------------------------------------------------------------------- |
+| POST   | `/progress/lessons/{lessonId}/complete` | Yes           | Any  | Mark lesson completion with rich analytics payload                  |
+| GET    | `/progress/courses/{courseId}/lessons`  | Yes           | Any  | Fetch lesson statuses for a course                                  |
+| GET    | `/progress/streak`                      | Yes           | Any  | Retrieve current + longest streak                                   |
+| GET    | `/progress/dashboard`                   | Yes           | Any  | Aggregated dashboard data (stats, goals, activity, recommendations) |
+| GET    | `/progress/summary?days={n}`            | Yes           | Any  | Rolling window of daily activity stats (defaults to 30 days)        |
+
+Payload samples for `/progress/lessons/{lessonId}/complete`, `/progress/dashboard`, and `/progress/summary` are documented above.
+
+---
+
+### 9. Admin Operations (Role-Restricted)
+
+| Method | Endpoint                         | Roles Allowed          | Description                          |
+| ------ | -------------------------------- | ---------------------- | ------------------------------------ |
+| GET    | `/admin/dashboard`               | ADMIN, CONTENT_MANAGER | Aggregated KPIs for the admin panel  |
+| GET    | `/admin/users`                   | ADMIN                  | Paginated list with filters          |
+| GET    | `/admin/users/{id}`              | ADMIN                  | Single user detail                   |
+| POST   | `/admin/users`                   | ADMIN                  | Create new user                      |
+| PUT    | `/admin/users/{id}`              | ADMIN                  | Update user                          |
+| DELETE | `/admin/users/{id}`              | ADMIN                  | Delete/deactivate user               |
+| GET    | `/admin/ai-usage`                | ADMIN                  | Paginated AI usage logs              |
+| GET    | `/admin/ai-usage/stats`          | ADMIN                  | Aggregated AI usage metrics          |
+| GET    | `/admin/activity-logs`           | ADMIN                  | Filterable admin activity log stream |
+| GET    | `/admin/activity-logs/stats`     | ADMIN                  | Counts per action/entity             |
+| GET    | `/admin/activity-logs/export`    | ADMIN                  | Export filtered logs as CSV          |
+| GET    | `/admin/activity-logs/actions`   | ADMIN                  | Distinct action codes                |
+| GET    | `/admin/activity-logs/users`     | ADMIN                  | Distinct actor names                 |
+| GET    | `/admin/audit-logs`              | ADMIN                  | Paginated user audit logs            |
+| GET    | `/admin/audit-logs/export`       | ADMIN                  | Export audit logs as CSV             |
+| GET    | `/admin/audit-logs/actions`      | ADMIN                  | Distinct audit action types          |
+| GET    | `/admin/audit-logs/entity-types` | ADMIN                  | Distinct entity types                |
+
+Each admin endpoint requires the caller to hold the listed role(s) in addition to a valid JWT.
+
+**Example: Get Admin Dashboard**
+
+```json
+GET /api/v1/admin/dashboard
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "totalUsers": 1250,
+  "activeUsers": 892,
+  "totalCourses": 45,
+  "publishedCourses": 32,
+  "totalEnrollments": 3456,
+  "completionRate": 68.5,
+  "recentActivities": [
+    {
+      "id": "...",
+      "userName": "John Doe",
+      "action": "COURSE_PUBLISHED",
+      "entityType": "COURSE",
+      "entityName": "Business English",
+      "description": "Published course Business English",
+      "createdAt": "2025-11-29T10:30:00"
+    }
+  ]
+}
+```
+
+**Example: Get Activity Logs with Filters**
+
+```json
+GET /api/v1/admin/activity-logs?action=COURSE_CREATED&page=0&size=10&sortBy=createdAt&sortDir=desc
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "content": [
+    {
+      "id": "uuid-here",
+      "userId": "user-uuid",
+      "userName": "Content Manager",
+      "action": "COURSE_CREATED",
+      "entityType": "COURSE",
+      "entityId": "1",
+      "entityName": "New Course",
+      "description": "Created course New Course",
+      "createdAt": "2025-11-29T10:00:00"
+    }
+  ],
+  "pageable": {...},
+  "totalElements": 50,
+  "totalPages": 5
+}
+```
+
+**Example: Get Audit Logs**
+
+```json
+GET /api/v1/admin/audit-logs?action=PROFILE_UPDATE&page=0&size=10
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "content": [
+    {
+      "id": "uuid-here",
+      "userId": "user-uuid",
+      "userEmail": "user@example.com",
+      "action": "PROFILE_UPDATE",
+      "entityType": "UserProfile",
+      "entityId": "user-uuid",
+      "changes": "{\"field\":\"firstName\",\"oldValue\":\"John\",\"newValue\":\"Johnny\"}",
+      "ipAddress": "192.168.1.1",
+      "userAgent": "Mozilla/5.0...",
+      "createdAt": "2025-11-29T09:30:00"
+    }
+  ],
+  "pageable": {...},
+  "totalElements": 120,
+  "totalPages": 12
+}
+```
+
+---
+
+### 10. AI Features Endpoints (Coming in Sprint 5)
 
 | Method | Endpoint                 | Auth Required | Role | Description                    |
 | ------ | ------------------------ | ------------- | ---- | ------------------------------ |
@@ -341,11 +602,11 @@ POST /api/v1/lessons/sections/1/lessons
 | POST   | `/ai/grammar/check`      | Yes           | Any  | Check grammar with AI          |
 | POST   | `/ai/flashcard/generate` | Yes           | Any  | Generate AI flashcards         |
 
-**Status**: Not yet implemented (Planned for Sprint 3)
+**Status**: Not yet implemented (Planned for Sprint 5)
 
 ---
 
-### 6. Notification Endpoints (Planned - Sprint 5+)
+### 11. Notification Endpoints (Planned - Sprint 5+)
 
 | Method | Endpoint                         | Auth Required | Role  | Description                         |
 | ------ | -------------------------------- | ------------- | ----- | ----------------------------------- |
@@ -374,7 +635,7 @@ POST /api/v1/lessons/sections/1/lessons
 
 ---
 
-### 7. File Upload Endpoints (Planned - Sprint 5+)
+### 12. File Upload Endpoints (Planned - Sprint 5+)
 
 | Method | Endpoint                  | Auth Required | Role            | Max Size | Description             |
 | ------ | ------------------------- | ------------- | --------------- | -------- | ----------------------- |
@@ -403,7 +664,7 @@ POST /api/v1/lessons/sections/1/lessons
 
 ---
 
-### 8. Monitoring & Actuator Endpoints (Sprint 2 Technical Improvements)
+### 13. Monitoring & Actuator Endpoints (Sprint 2 Technical Improvements)
 
 Actuator endpoints are exposed outside the `/api/v1` scope at `http://localhost:8088/actuator`. They provide operational insight while adhering to least-privilege access rules.
 
@@ -609,12 +870,14 @@ Each endpoint includes:
 
 ## Version History
 
-| Version | Date         | Changes                                                          |
-| ------- | ------------ | ---------------------------------------------------------------- |
-| 1.0.0   | Oct 28, 2025 | Initial release - Auth & User Profile                            |
-| 2.0.0   | Oct 31, 2025 | Added Course & Lesson Management with comprehensive Swagger docs |
-| 2.1.0   | Nov 6, 2025  | Added Actuator endpoints documentation                           |
-| 2.2.0   | Nov 28, 2025 | Added Notification & File Upload specifications (planned)        |
+| Version | Date         | Changes                                                                   |
+| ------- | ------------ | ------------------------------------------------------------------------- |
+| 1.0.0   | Oct 28, 2025 | Initial release - Auth & User Profile                                     |
+| 2.0.0   | Oct 31, 2025 | Added Course & Lesson Management with comprehensive Swagger docs          |
+| 2.1.0   | Nov 6, 2025  | Added Actuator endpoints documentation                                    |
+| 2.2.0   | Nov 28, 2025 | Added Notification & File Upload specifications (planned)                 |
+| 2.3.0   | Nov 29, 2025 | Documented learning path, enrollment, progress, admin endpoints           |
+| 2.4.0   | Nov 29, 2025 | Added Section Management, Avatar endpoints, Audit logs, Activity logs API |
 
 ---
 

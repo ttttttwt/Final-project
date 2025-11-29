@@ -1,4 +1,4 @@
-# LEXIA - Database Schema (v1.0)
+# LEXIA - Database Schema (v1.3)
 
 ## 🔐 Module 1: Users & Authentication
 
@@ -31,10 +31,18 @@
 | Column        | Data Type    | Constraints & Notes                                  |
 | ------------- | ------------ | ---------------------------------------------------- |
 | user_id       | UUID         | PK, FK → users(id)                                   |
-| full_name     | VARCHAR(255) | NOT NULL                                             |
-| avatar_url    | VARCHAR(255) |                                                      |
+| full_name     | VARCHAR(255) | NOT NULL (deprecated - use first_name + last_name)   |
+| first_name    | VARCHAR(100) | User's first name                                    |
+| last_name     | VARCHAR(100) | User's last name                                     |
+| bio           | VARCHAR(500) | Short biography                                      |
+| phone_number  | VARCHAR(20)  | Phone number (10-20 digits, optionally starting +)   |
+| avatar_url    | VARCHAR(255) | URL to user's avatar image                           |
+| timezone      | VARCHAR(50)  | DEFAULT 'UTC', user's timezone                       |
+| language      | VARCHAR(10)  | DEFAULT 'en', ISO 639-1 code (e.g., en, vi)          |
 | current_level | VARCHAR(10)  | (A1, A2, B1, B2, ...) — updated after placement test |
 | learning_goal | TEXT         | Personal learning goal                               |
+| created_at    | TIMESTAMPTZ  | DEFAULT NOW()                                        |
+| updated_at    | TIMESTAMPTZ  | DEFAULT NOW()                                        |
 
 #### `roles`
 
@@ -483,40 +491,91 @@ public class LessonContentValidator {
 
 ---
 
-## 📈 Module 3: User Progress
+## 📈 Module 3: Learning Journeys & Progress
 
 ### 3.1. Key Tables
 
-| Table             | Purpose                          |
-| ----------------- | -------------------------------- |
-| `enrollments`     | User enrollments in courses      |
-| `lesson_progress` | Track individual lesson progress |
+| Table                   | Purpose                                                   |
+| ----------------------- | --------------------------------------------------------- |
+| `learning_paths`        | Define curated CEFR-aligned learning journeys             |
+| `learning_path_courses` | Map ordered courses inside a learning path                |
+| `user_learning_paths`   | Track which users have started/completed a path           |
+| `enrollments`           | User-course enrollment with overall completion percentage |
+| `lesson_progress`       | Per-lesson status, score, attempts, and analytics data    |
 
-### 3.2. Table Details
+### 3.2. Learning Path Tables
 
-#### `enrollments`
+#### `learning_paths`
 
-| Column              | Data Type   | Constraints & Notes        |
-| ------------------- | ----------- | -------------------------- |
-| id                  | UUID        | PK                         |
-| user_id             | UUID        | FK → users(id), NOT NULL   |
-| course_id           | UUID        | FK → courses(id), NOT NULL |
-| enrolled_at         | TIMESTAMPTZ | DEFAULT NOW()              |
-| progress_percentage | INTEGER     | DEFAULT 0                  |
-| completed_at        | TIMESTAMPTZ | NULL until completed       |
+| Column      | Data Type    | Constraints & Notes                          |
+| ----------- | ------------ | -------------------------------------------- |
+| id          | BIGSERIAL    | PK                                           |
+| name        | VARCHAR(100) | NOT NULL                                     |
+| description | TEXT         | Optional                                     |
+| cefr_level  | VARCHAR(2)   | NOT NULL, CHECK IN (`A1`-`C2`)               |
+| is_default  | BOOLEAN      | DEFAULT false (true for curated Lexia paths) |
+| created_at  | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP                    |
+| updated_at  | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP                    |
 
-#### `lesson_progress`
+`idx_learning_paths_cefr_default` accelerates recommendation queries, while `idx_learning_paths_created_at` supports ordered listings.
 
-| Column         | Data Type    | Constraints & Notes                           |
-| -------------- | ------------ | --------------------------------------------- |
-| id             | UUID         | PK                                            |
-| user_id        | UUID         | FK → users(id), NOT NULL                      |
-| lesson_id      | UUID         | FK → lessons(id), NOT NULL                    |
-| status         | VARCHAR(50)  | `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`     |
-| score          | DECIMAL(5,2) | Quiz score (if applicable)                    |
-| result_details | JSONB        | Detailed results (answers, AI analysis, etc.) |
-| completed_at   | TIMESTAMPTZ  |                                               |
-| updated_at     | TIMESTAMPTZ  | DEFAULT NOW()                                 |
+#### `learning_path_courses`
+
+| Column      | Data Type | Constraints & Notes                                    |
+| ----------- | --------- | ------------------------------------------------------ |
+| path_id     | BIGINT    | PK(∗), FK → learning_paths(id), ON DELETE CASCADE      |
+| course_id   | BIGINT    | PK(∗), FK → courses(id), ON DELETE CASCADE             |
+| order_index | INTEGER   | NOT NULL, CHECK ≥ 0 (0-based ordering inside the path) |
+
+Compound index `idx_learning_path_courses_path_order` keeps curriculum retrieval sorted without in-application sorting.
+
+#### `user_learning_paths`
+
+| Column            | Data Type | Constraints & Notes                                  |
+| ----------------- | --------- | ---------------------------------------------------- |
+| id                | BIGSERIAL | PK                                                   |
+| user_id           | UUID      | FK → users(id), NOT NULL, ON DELETE CASCADE          |
+| path_id           | BIGINT    | FK → learning_paths(id), NOT NULL, ON DELETE CASCADE |
+| current_course_id | BIGINT    | FK → courses(id), nullable, ON DELETE SET NULL       |
+| started_at        | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP                            |
+| completed_at      | TIMESTAMP | NULL until every course in the path is completed     |
+
+Unique constraint `(user_id, path_id)` prevents duplicate enrollments per path. Indices on `user_id`, `path_id`, and the `(user_id, path_id)` composite power `/learning-paths/my-progress` and recommendation lookups.
+
+### 3.3. Enrollment Tracking
+
+| Column              | Data Type   | Constraints & Notes                           |
+| ------------------- | ----------- | --------------------------------------------- |
+| id                  | BIGSERIAL   | PK                                            |
+| user_id             | UUID        | FK → users(id), NOT NULL, ON DELETE CASCADE   |
+| course_id           | BIGINT      | FK → courses(id), NOT NULL, ON DELETE CASCADE |
+| enrolled_at         | TIMESTAMPTZ | DEFAULT NOW()                                 |
+| progress_percentage | INTEGER     | DEFAULT 0, CHECK BETWEEN 0 AND 100            |
+| completed_at        | TIMESTAMPTZ | NULL until completed                          |
+
+`unique_user_course_enrollment` blocks duplicate enrollments, while targeted indexes (`idx_enrollments_user`, `idx_enrollments_course`, `idx_enrollments_completed`) back `/enrollments`, `/progress/dashboard`, and admin analytics.
+
+### 3.4. Lesson Progress Analytics
+
+| Column         | Data Type   | Constraints & Notes                                                             |
+| -------------- | ----------- | ------------------------------------------------------------------------------- |
+| id             | BIGSERIAL   | PK                                                                              |
+| user_id        | UUID        | FK → users(id), NOT NULL, ON DELETE CASCADE                                     |
+| lesson_id      | BIGINT      | FK → lessons(id), NOT NULL, ON DELETE CASCADE                                   |
+| status         | VARCHAR(20) | `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED` (default `NOT_STARTED`)               |
+| score          | INTEGER     | 0-100, nullable                                                                 |
+| attempts       | INTEGER     | DEFAULT 0, increments per completion attempt                                    |
+| result_details | JSONB       | Stores per-lesson analytics (question breakdown, AI feedback, timestamps, etc.) |
+| completed_at   | TIMESTAMPTZ | NULL until first completion                                                     |
+| created_at     | TIMESTAMPTZ | DEFAULT NOW()                                                                   |
+| updated_at     | TIMESTAMPTZ | DEFAULT NOW()                                                                   |
+
+Rich indexing (`idx_lesson_progress_user_lesson`, `idx_lesson_progress_completed_at`, `idx_lesson_progress_date_range`, etc.) keeps streak calculations and `/progress/summary` rolling windows under 50 ms per request.
+
+### 3.5. Dashboard Aggregations
+
+- **ProgressController** derives `/progress/dashboard` and `/progress/summary` from `lesson_progress`, `enrollments`, and `user_learning_paths`. No extra tables are required—the service layer aggregates streaks, study minutes, recent activity, and recommendations on-the-fly using the indexes above.
+- **LearningPathService** and **EnrollmentService** coordinate updates so that `progress_percentage` and `current_course_id` remain in sync after every `lesson_progress` mutation.
 
 ---
 
@@ -529,6 +588,8 @@ public class LessonContentValidator {
 | `user_flashcards`         | AI-powered flashcards (SRS algorithm)        |
 | `user_role_play_sessions` | Store user AI conversation practice sessions |
 | `ai_usage_logs`           | Track API usage cost and frequency           |
+| `audit_logs`              | Track user profile changes for compliance    |
+| `admin_activity_logs`     | Track admin/content manager actions          |
 
 ### 4.2. Table Details
 
@@ -566,6 +627,41 @@ public class LessonContentValidator {
 | output_tokens | INTEGER       |                                                                   |
 | cost          | DECIMAL(10,6) | API usage cost                                                    |
 | created_at    | TIMESTAMPTZ   | DEFAULT NOW()                                                     |
+
+#### `audit_logs`
+
+| Column      | Data Type    | Constraints & Notes                                                           |
+| ----------- | ------------ | ----------------------------------------------------------------------------- |
+| id          | UUID         | PK, DEFAULT gen_random_uuid()                                                 |
+| user_id     | UUID         | FK → users(id), NOT NULL                                                      |
+| action      | VARCHAR(50)  | NOT NULL (e.g., `PROFILE_UPDATE`, `AVATAR_UPDATE`, `AVATAR_DELETE`)           |
+| entity_type | VARCHAR(100) | NOT NULL (e.g., `UserProfile`, `User`)                                        |
+| entity_id   | UUID         | NOT NULL, ID of the entity that was modified                                  |
+| changes     | TEXT         | JSON format: `{"field": "firstName", "oldValue": "John", "newValue": "Jane"}` |
+| ip_address  | VARCHAR(45)  | IP address of the user who made the change                                    |
+| user_agent  | VARCHAR(500) | User agent string from the request                                            |
+| created_at  | TIMESTAMPTZ  | DEFAULT NOW()                                                                 |
+
+#### `admin_activity_logs`
+
+| Column      | Data Type    | Constraints & Notes                                                          |
+| ----------- | ------------ | ---------------------------------------------------------------------------- |
+| id          | UUID         | PK, DEFAULT gen_random_uuid()                                                |
+| user_id     | UUID         | NOT NULL, the admin/content manager who performed the action                 |
+| user_name   | VARCHAR(255) | NOT NULL, display name of the user                                           |
+| action      | VARCHAR(50)  | NOT NULL, enum: `COURSE_CREATED`, `COURSE_UPDATED`, `COURSE_PUBLISHED`, etc. |
+| entity_type | VARCHAR(50)  | NOT NULL, enum: `COURSE`, `SECTION`, `LESSON`                                |
+| entity_id   | VARCHAR(100) | NOT NULL, ID of the entity that was modified                                 |
+| entity_name | VARCHAR(255) | NOT NULL, name/title of the entity for display                               |
+| description | VARCHAR(500) | NOT NULL, human-readable description of the action                           |
+| details     | TEXT         | Additional details about the change (JSON format, optional)                  |
+| created_at  | TIMESTAMPTZ  | DEFAULT NOW()                                                                |
+
+**Admin Activity Action Types**:
+
+- `COURSE_CREATED`, `COURSE_UPDATED`, `COURSE_PUBLISHED`, `COURSE_UNPUBLISHED`, `COURSE_DELETED`
+- `SECTION_CREATED`, `SECTION_UPDATED`, `SECTION_DELETED`
+- `LESSON_CREATED`, `LESSON_UPDATED`, `LESSON_DELETED`
 
 ---
 
@@ -683,6 +779,16 @@ public class LessonContentValidator {
 | `courses USING GIN(to_tsvector('english', title))` | Full-text search     | Add when needed |
 | `lessons USING GIN(content)`                       | JSONB content search | Add when needed |
 | `user_role_play_sessions (user_id, created_at)`    | Conversation history | AI features     |
+
+### Admin & Audit Indexes (Sprint 4+)
+
+| Index                           | Purpose                     | Note        |
+| ------------------------------- | --------------------------- | ----------- |
+| `idx_admin_activity_created_at` | Recent activity logs (DESC) | Implemented |
+| `idx_admin_activity_user`       | Filter by user_id           | Implemented |
+| `idx_admin_activity_action`     | Filter by action type       | Implemented |
+| `idx_audit_logs_user_created`   | User audit history          | Implemented |
+| `idx_audit_logs_entity`         | Entity-based audit lookup   | Implemented |
 
 ---
 
@@ -972,6 +1078,6 @@ FROM lesson_counts;
 
 ---
 
-**Last Updated**: November 28, 2025 (Sprint 4 - Added Notification & File Storage modules)  
-**Version**: 1.2  
+**Last Updated**: November 29, 2025 (Sprint 4 - Added Audit Logs, Admin Activity Logs, User Profile enhancements)  
+**Version**: 1.4  
 **Next Update**: Sprint 5 (Notification & File Upload implementation)
