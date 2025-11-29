@@ -103,4 +103,44 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      */
     @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.course.id = :courseId AND e.completedAt IS NOT NULL")
     long countCompletedByCourseId(@Param("courseId") Long courseId);
+
+    /**
+     * Find recent enrollments across all courses.
+     * Used for admin dashboard recent activity.
+     * 
+     * @param pageable pagination info (use PageRequest.of(0, N) to get top N)
+     * @return list of recent enrollments
+     */
+    @Query("SELECT e FROM Enrollment e ORDER BY e.enrolledAt DESC")
+    List<Enrollment> findRecentEnrollments(org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Count enrollments within a date range.
+     * Used for counting active enrollments in last N days.
+     * 
+     * @param startDate the start of the date range (inclusive)
+     * @param endDate   the end of the date range (inclusive)
+     * @return count of enrollments in the date range
+     */
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.enrolledAt >= :startDate AND e.enrolledAt <= :endDate")
+    long countByEnrolledAtBetween(@Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate);
+
+    /**
+     * Count completed enrollments.
+     * 
+     * @return number of completed enrollments
+     */
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.completedAt IS NOT NULL")
+    long countCompleted();
+
+    /**
+     * Count enrollments by course CEFR level.
+     * Used for dashboard overview chart.
+     * 
+     * @param cefrLevel the CEFR level
+     * @return count of enrollments for courses at that level
+     */
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.course.cefrLevel = :cefrLevel")
+    long countByCefrLevel(@Param("cefrLevel") String cefrLevel);
 }

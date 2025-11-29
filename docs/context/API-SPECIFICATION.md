@@ -345,7 +345,65 @@ POST /api/v1/lessons/sections/1/lessons
 
 ---
 
-### 6. Monitoring & Actuator Endpoints (Sprint 2 Technical Improvements)
+### 6. Notification Endpoints (Planned - Sprint 5+)
+
+| Method | Endpoint                         | Auth Required | Role  | Description                         |
+| ------ | -------------------------------- | ------------- | ----- | ----------------------------------- |
+| GET    | `/notifications`                 | Yes           | Any   | List user notifications (paginated) |
+| GET    | `/notifications/unread-count`    | Yes           | Any   | Get unread notification count       |
+| GET    | `/notifications/{id}`            | Yes           | Any   | Get notification details            |
+| PUT    | `/notifications/{id}/read`       | Yes           | Any   | Mark single notification as read    |
+| PUT    | `/notifications/read-all`        | Yes           | Any   | Mark all notifications as read      |
+| DELETE | `/notifications/{id}`            | Yes           | Any   | Delete single notification          |
+| DELETE | `/notifications`                 | Yes           | Any   | Delete all read notifications       |
+| GET    | `/notifications/preferences`     | Yes           | Any   | Get user notification preferences   |
+| PUT    | `/notifications/preferences`     | Yes           | Any   | Update notification preferences     |
+| POST   | `/admin/notifications/broadcast` | Yes           | ADMIN | Broadcast to all users              |
+| POST   | `/admin/notifications/send`      | Yes           | ADMIN | Send to specific users              |
+
+**WebSocket Endpoint**: `/ws` (STOMP over WebSocket)
+
+**STOMP Destinations**:
+
+- `/user/queue/notifications` - Personal notifications
+- `/topic/announcements` - Broadcast announcements
+
+**Status**: Not yet implemented (Planned for Sprint 5+)
+
+> **Full Specification**: See `docs/context/NOTIFICATION-SPECIFICATION.md`
+
+---
+
+### 7. File Upload Endpoints (Planned - Sprint 5+)
+
+| Method | Endpoint                  | Auth Required | Role            | Max Size | Description             |
+| ------ | ------------------------- | ------------- | --------------- | -------- | ----------------------- |
+| POST   | `/files/upload`           | Yes           | Any             | 10 MB    | Upload single file      |
+| POST   | `/files/upload/multiple`  | Yes           | CONTENT_MANAGER | 50 MB    | Upload multiple files   |
+| GET    | `/files/{id}`             | Yes           | Any             | -        | Get file metadata       |
+| GET    | `/files/{id}/download`    | Conditional   | -               | -        | Download file           |
+| DELETE | `/files/{id}`             | Yes           | Owner/Admin     | -        | Delete file             |
+| POST   | `/users/avatar`           | Yes           | Any             | 5 MB     | Upload user avatar      |
+| DELETE | `/users/avatar`           | Yes           | Any             | -        | Delete user avatar      |
+| POST   | `/courses/{id}/thumbnail` | Yes           | CONTENT_MANAGER | 5 MB     | Upload course thumbnail |
+| DELETE | `/courses/{id}/thumbnail` | Yes           | CONTENT_MANAGER | -        | Delete course thumbnail |
+| POST   | `/lessons/{id}/audio`     | Yes           | CONTENT_MANAGER | 50 MB    | Upload lesson audio     |
+| POST   | `/lessons/{id}/images`    | Yes           | CONTENT_MANAGER | 10 MB    | Upload lesson images    |
+| DELETE | `/lessons/{id}/audio`     | Yes           | CONTENT_MANAGER | -        | Delete lesson audio     |
+
+**Supported File Types**:
+
+- Images: JPG, PNG, GIF, WebP (max 5-10 MB)
+- Audio: MP3, WAV, OGG, M4A (max 50 MB)
+- Documents: PDF (max 10 MB)
+
+**Status**: Not yet implemented (Planned for Sprint 5+)
+
+> **Full Specification**: See `docs/context/FILE-UPLOAD-SPECIFICATION.md`
+
+---
+
+### 8. Monitoring & Actuator Endpoints (Sprint 2 Technical Improvements)
 
 Actuator endpoints are exposed outside the `/api/v1` scope at `http://localhost:8088/actuator`. They provide operational insight while adhering to least-privilege access rules.
 
@@ -555,7 +613,11 @@ Each endpoint includes:
 | ------- | ------------ | ---------------------------------------------------------------- |
 | 1.0.0   | Oct 28, 2025 | Initial release - Auth & User Profile                            |
 | 2.0.0   | Oct 31, 2025 | Added Course & Lesson Management with comprehensive Swagger docs |
+| 2.1.0   | Nov 6, 2025  | Added Actuator endpoints documentation                           |
+| 2.2.0   | Nov 28, 2025 | Added Notification & File Upload specifications (planned)        |
 
 ---
 
-**For detailed JSONB schemas and validation rules**, see `DATABASE-SCHEMA.md` section 2.3
+**For detailed JSONB schemas and validation rules**, see `DATABASE-SCHEMA.md` section 2.3  
+**For notification system details**, see `NOTIFICATION-SPECIFICATION.md`  
+**For file upload system details**, see `FILE-UPLOAD-SPECIFICATION.md`

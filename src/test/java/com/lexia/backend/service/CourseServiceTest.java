@@ -47,6 +47,9 @@ class CourseServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
+    @Mock
+    private AdminActivityLogService adminActivityLogService;
+
     @InjectMocks
     private CourseServiceImpl courseService;
 

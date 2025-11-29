@@ -110,4 +110,24 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
      *         descending
      */
     List<Course> findByCefrLevelOrderByCreatedAtDesc(String cefrLevel);
+
+    /**
+     * Find the most recently created courses.
+     * Used for admin dashboard recent activity.
+     * 
+     * @param pageable pagination info (use PageRequest.of(0, N) to get top N)
+     * @return list of most recently created courses
+     */
+    @Query("SELECT c FROM Course c ORDER BY c.createdAt DESC")
+    List<Course> findRecentlyCreated(org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Find the most recently published courses.
+     * Used for admin dashboard recent activity.
+     * 
+     * @param pageable pagination info (use PageRequest.of(0, N) to get top N)
+     * @return list of most recently published courses
+     */
+    @Query("SELECT c FROM Course c WHERE c.isPublished = true ORDER BY c.updatedAt DESC")
+    List<Course> findRecentlyPublished(org.springframework.data.domain.Pageable pageable);
 }

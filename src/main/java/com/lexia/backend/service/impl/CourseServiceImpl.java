@@ -9,6 +9,7 @@ import com.lexia.backend.exception.CourseNotFoundException;
 import com.lexia.backend.exception.DuplicateCourseException;
 import com.lexia.backend.mapper.CourseMapper;
 import com.lexia.backend.repository.CourseRepository;
+import com.lexia.backend.service.AdminActivityLogService;
 import com.lexia.backend.service.CourseService;
 import com.lexia.backend.specification.CourseSpecifications;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 /**
  * Implementation of CourseService for managing courses.
@@ -31,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
+    private final AdminActivityLogService adminActivityLogService;
 
     /**
      * {@inheritDoc}
@@ -52,6 +58,13 @@ public class CourseServiceImpl implements CourseService {
         // Save course
         Course savedCourse = courseRepository.save(course);
         log.info("Successfully created course with ID: {} and title: {}", savedCourse.getId(), savedCourse.getTitle());
+
+        // Log activity
+        adminActivityLogService.logCourseCreated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                savedCourse.getId(),
+                savedCourse.getTitle());
 
         return CourseMapper.toDTO(savedCourse);
     }
@@ -85,6 +98,14 @@ public class CourseServiceImpl implements CourseService {
         // Save updated course
         Course updatedCourse = courseRepository.save(course);
         log.info("Successfully updated course with ID: {}", id);
+
+        // Log activity
+        adminActivityLogService.logCourseUpdated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                updatedCourse.getId(),
+                updatedCourse.getTitle(),
+                null);
 
         return CourseMapper.toDTO(updatedCourse);
     }
@@ -146,9 +167,18 @@ public class CourseServiceImpl implements CourseService {
             throw new IllegalStateException("Cannot delete published course. Unpublish first.");
         }
 
+        String courseTitle = course.getTitle();
+
         // Delete course
         courseRepository.delete(course);
         log.info("Successfully deleted course with ID: {}", id);
+
+        // Log activity
+        adminActivityLogService.logCourseDeleted(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                id,
+                courseTitle);
     }
 
     /**
@@ -186,6 +216,13 @@ public class CourseServiceImpl implements CourseService {
         Course publishedCourse = courseRepository.save(course);
         log.info("Successfully published course with ID: {}", id);
 
+        // Log activity
+        adminActivityLogService.logCoursePublished(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                publishedCourse.getId(),
+                publishedCourse.getTitle());
+
         return CourseMapper.toDTO(publishedCourse);
     }
 
@@ -208,6 +245,13 @@ public class CourseServiceImpl implements CourseService {
         course.setIsPublished(false);
         Course unpublishedCourse = courseRepository.save(course);
         log.info("Successfully unpublished course with ID: {}", id);
+
+        // Log activity
+        adminActivityLogService.logCourseUnpublished(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                unpublishedCourse.getId(),
+                unpublishedCourse.getTitle());
 
         return CourseMapper.toDTO(unpublishedCourse);
     }
@@ -294,5 +338,34 @@ public class CourseServiceImpl implements CourseService {
         }
 
         return org.springframework.data.domain.PageRequest.of(page, size);
+    }
+
+    /**
+     * Get current authenticated user's ID.
+     *
+     * @return UUID of current user or null if not authenticated
+     */
+    private UUID getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof com.lexia.backend.entity.User user) {
+            return user.getId();
+        }
+        return null;
+    }
+
+    /**
+     * Get current authenticated user's display name.
+     *
+     * @return display name or "System" if not authenticated
+     */
+    private String getCurrentUserName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof com.lexia.backend.entity.User user) {
+            if (user.getProfile() != null && user.getProfile().getFirstName() != null) {
+                return user.getProfile().getFirstName() + " " + user.getProfile().getLastName();
+            }
+            return user.getEmail().split("@")[0];
+        }
+        return "System";
     }
 }

@@ -1,7 +1,7 @@
 # LEXIA Admin Site - Specification Document
 
-**Version**: 1.2.0  
-**Last Updated**: November 27, 2025  
+**Version**: 1.4.0  
+**Last Updated**: November 29, 2025  
 **Technology Stack**: React 18+ | TypeScript | shadcn/ui | Vite  
 **Target Users**: ADMIN, CONTENT_MANAGER
 
@@ -1553,7 +1553,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ## 10. Project Milestones
 
-### Phase 1: Foundation (Week 1-2)
+### Phase 1: Foundation (Week 1-2) ✅ COMPLETED
 
 - [x] Project setup (Vite + React + TypeScript)
 - [x] shadcn/ui installation and theme configuration
@@ -1563,34 +1563,53 @@ CMD ["nginx", "-g", "daemon off;"]
 - [x] Zustand auth store
 - [x] TanStack Query setup
 
-### Phase 2: Core Features (Week 3-5)
+### Phase 2: Core Features (Week 3-5) ✅ COMPLETED
 
-- [x] Dashboard page (stats cards, recent activity)
+- [x] Dashboard page (stats cards, recent activity, overview chart)
 - [x] User management (list, create, edit, delete) - ADMIN only
 - [x] Course management (list, create, edit, delete)
 - [x] Section management (CRUD within course edit page)
 - [x] Publish/unpublish functionality
 - [x] Course preview page (with section list display)
 
-### Phase 3: Lesson Management (Week 6-8)
+### Phase 3: Lesson Management (Week 6-8) ✅ COMPLETED
 
-- [x] Lesson type selection
-- [x] Reading lesson editor
-- [x] Listening lesson editor
-- [x] Quiz lesson editor
-- [x] Speaking lesson editor
-- [x] Lesson preview
-- [x] Lesson reordering (drag-and-drop)
+- [x] Lesson type selection (LessonTypeSelector, LessonTypeCard)
+- [x] Reading lesson editor (PassageEditor, QuestionEditor, VocabularyEditor)
+- [x] Listening lesson editor (ListeningQuestionEditor, ListeningVocabularyEditor)
+- [x] Quiz lesson editor (QuizQuestionEditor)
+- [x] Speaking lesson editor (SpeakingPromptEditor)
+- [x] Lesson preview dialog (all 4 types supported)
+- [x] Lesson create/edit pages with multi-step flow
 
-### Phase 4: Advanced Features (Week 9-10)
+### Phase 4: Advanced Features (Week 9-10) ✅ COMPLETED
 
 - [x] System health monitoring (ADMIN only)
+  - Health status cards (API, Database, Disk Space)
+  - System metrics (JVM memory, CPU, threads, uptime)
+  - Auto-refresh toggle (30s interval)
+  - Manual refresh button
 - [x] AI usage logs (ADMIN only)
-- [ ] Settings page
-- [ ] User profile management
-- [ ] Dark mode toggle
+  - Summary statistics (today/week/month/all time)
+  - Data table with filters (feature, date range)
+  - CSV export functionality
+  - Per-feature usage breakdown
+- [x] Settings page
+  - Theme selection (light/dark/system)
+  - Notification preferences
+  - Language selection
+  - Auto-save toggle
+  - Security settings (coming soon placeholders)
+- [x] User profile management
+  - Profile information form (first name, last name, bio, phone)
+  - Avatar management (URL upload, delete)
+  - Account details (read-only: email, role, member since)
+  - Change password form with validation
+  - Learning preferences (current level, learning goal)
+- [x] Dark mode toggle (ThemeProvider + themeStore)
+- [x] Forbidden page (403) for unauthorized access
 
-### Phase 5: Polish & Testing (Week 11-12)
+### Phase 5: Polish & Testing (Week 11-12) 🔄 IN PROGRESS
 
 - [ ] Comprehensive testing (unit + integration)
 - [ ] Accessibility audit
@@ -1613,15 +1632,17 @@ CMD ["nginx", "-g", "daemon off;"]
 - ✅ Real-time feedback (loading states, error messages, success toasts)
 - ✅ ADMIN can monitor system health via Actuator
 - ✅ ADMIN can view AI usage logs and statistics
+- ✅ User profile management with avatar and password change
+- ✅ Dark/Light/System theme support
 
 ### Non-Functional Requirements
 
 - ✅ **Performance**: Page load < 2s, API response < 500ms
 - ✅ **Security**: JWT auth, role-based access control, input validation
 - ✅ **Usability**: Intuitive UI, clear error messages, responsive design
-- ✅ **Accessibility**: WCAG 2.1 AA compliant
+- ✅ **Accessibility**: WCAG 2.1 AA compliant (ARIA labels, keyboard navigation)
 - ✅ **Maintainability**: TypeScript, ESLint, Prettier, clean architecture
-- ✅ **Test Coverage**: 70% unit, 60% integration
+- 🔄 **Test Coverage**: 70% unit, 60% integration (In Progress)
 
 ---
 
@@ -1635,10 +1656,65 @@ CMD ["nginx", "-g", "daemon off;"]
 - **Media Library**: Centralized media management for images/audio
 - **Translation**: Multi-language support for admin UI
 - **Mobile Admin App**: React Native admin app for on-the-go management
+- **Two-Factor Authentication**: Enhanced security (placeholder added)
+- **Active Sessions Management**: View/manage login sessions (placeholder added)
+- **Lesson Reordering**: Drag-and-drop functionality for lessons within sections
+- **Audit Logging**: Track all admin actions for compliance
 
 ---
 
-**Document Version**: 1.3.0  
-**Status**: In Progress (Phase 4)  
-**Next Review**: After Phase 4 completion  
+**Document Version**: 1.4.0  
+**Status**: Phase 4 Completed, Phase 5 In Progress  
+**Next Review**: After Phase 5 completion  
 **Approved By**: [To be filled]
+
+---
+
+## Appendix A: Implementation Summary
+
+### Current Feature Status (November 29, 2025)
+
+| Feature               | Status         | Notes                                       |
+| --------------------- | -------------- | ------------------------------------------- |
+| **Authentication**    | ✅ Complete    | Login, JWT, refresh token, protected routes |
+| **Role-based Access** | ✅ Complete    | RoleGuard component, 403 page               |
+| **Dashboard**         | ✅ Complete    | Stats, charts, recent activity              |
+| **User Management**   | ✅ Complete    | CRUD operations, ADMIN only                 |
+| **Course Management** | ✅ Complete    | CRUD, sections, publish/unpublish           |
+| **Lesson Management** | ✅ Complete    | All 4 types with editors                    |
+| **Reading Lessons**   | ✅ Complete    | Passages, questions, vocabulary             |
+| **Listening Lessons** | ✅ Complete    | Audio, transcript, questions                |
+| **Quiz Lessons**      | ✅ Complete    | Settings, multiple question types           |
+| **Speaking Lessons**  | ✅ Complete    | Scenarios, prompts, role-play               |
+| **Lesson Preview**    | ✅ Complete    | Dialog for all 4 types                      |
+| **System Health**     | ✅ Complete    | Actuator integration, auto-refresh          |
+| **AI Usage Logs**     | ✅ Complete    | Stats, filters, CSV export                  |
+| **Settings Page**     | ✅ Complete    | Theme, notifications, general               |
+| **Profile Page**      | ✅ Complete    | Edit profile, change password, avatar       |
+| **Dark Mode**         | ✅ Complete    | ThemeProvider, system preference            |
+| **Testing**           | 🔄 In Progress | Unit/integration tests needed               |
+
+### Files Structure Summary
+
+```
+lexia-admin/src/
+├── components/
+│   ├── auth/              # ProtectedRoute, RoleGuard
+│   ├── layout/            # MainLayout, Sidebar, Header
+│   ├── shared/            # DataTable, ConfirmDialog
+│   ├── ui/                # 25 shadcn/ui components
+│   └── ThemeProvider.tsx  # Theme management
+├── features/
+│   ├── auth/              # LoginPage, ForbiddenPage
+│   ├── dashboard/         # DashboardPage, StatsCard, OverviewChart
+│   ├── users/             # UserListPage, UserCreatePage, UserEditPage
+│   ├── courses/           # CourseListPage, CourseCreatePage, CourseEditPage, CoursePreviewPage
+│   ├── lessons/           # LessonCreatePage, LessonEditPage, 15+ editor components
+│   ├── monitoring/        # SystemHealthPage, AIUsageLogsPage
+│   ├── settings/          # SettingsPage
+│   └── profile/           # ProfilePage with forms
+├── store/
+│   ├── authStore.ts       # Authentication state
+│   └── themeStore.ts      # Theme preferences
+└── router.tsx             # All routes configured
+```

@@ -5,19 +5,24 @@ import com.lexia.backend.dto.LessonDTO;
 import com.lexia.backend.dto.UpdateLessonDTO;
 import com.lexia.backend.entity.Lesson;
 import com.lexia.backend.entity.Section;
+import com.lexia.backend.entity.User;
 import com.lexia.backend.exception.LessonNotFoundException;
 import com.lexia.backend.exception.SectionNotFoundException;
 import com.lexia.backend.mapper.LessonMapper;
 import com.lexia.backend.repository.LessonRepository;
 import com.lexia.backend.repository.SectionRepository;
+import com.lexia.backend.service.AdminActivityLogService;
 import com.lexia.backend.service.LessonContentValidator;
 import com.lexia.backend.service.LessonService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +39,7 @@ public class LessonServiceImpl implements LessonService {
     private final LessonRepository lessonRepository;
     private final SectionRepository sectionRepository;
     private final LessonContentValidator contentValidator;
+    private final AdminActivityLogService adminActivityLogService;
 
     /**
      * {@inheritDoc}
@@ -68,6 +74,15 @@ public class LessonServiceImpl implements LessonService {
         // Save lesson
         Lesson savedLesson = lessonRepository.save(lesson);
         log.info("Successfully created lesson with ID: {} in section ID: {}", savedLesson.getId(), sectionId);
+
+        // Log activity
+        String courseTitle = section.getCourse().getTitle();
+        adminActivityLogService.logLessonCreated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                savedLesson.getId(),
+                savedLesson.getTitle(),
+                courseTitle);
 
         return LessonMapper.toDTO(savedLesson);
     }
@@ -116,6 +131,15 @@ public class LessonServiceImpl implements LessonService {
         // Save updated lesson
         Lesson updatedLesson = lessonRepository.save(lesson);
         log.info("Successfully updated lesson with ID: {}", id);
+
+        // Log activity
+        String courseTitle = lesson.getSection().getCourse().getTitle();
+        adminActivityLogService.logLessonUpdated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                updatedLesson.getId(),
+                updatedLesson.getTitle(),
+                courseTitle);
 
         return LessonMapper.toDTO(updatedLesson);
     }
@@ -184,15 +208,27 @@ public class LessonServiceImpl implements LessonService {
     public void delete(Long id) {
         log.debug("Deleting lesson with ID: {}", id);
 
-        // Verify lesson exists
-        if (!lessonRepository.existsById(id)) {
-            log.warn("Lesson not found with ID: {}", id);
-            throw new LessonNotFoundException("Lesson not found with ID: " + id);
-        }
+        // Fetch lesson for logging info
+        Lesson lesson = lessonRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Lesson not found with ID: {}", id);
+                    return new LessonNotFoundException("Lesson not found with ID: " + id);
+                });
+
+        String lessonTitle = lesson.getTitle();
+        String courseTitle = lesson.getSection().getCourse().getTitle();
 
         // Delete lesson
         lessonRepository.deleteById(id);
         log.info("Successfully deleted lesson with ID: {}", id);
+
+        // Log activity
+        adminActivityLogService.logLessonDeleted(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                id,
+                lessonTitle,
+                courseTitle);
     }
 
     /**
@@ -266,5 +302,34 @@ public class LessonServiceImpl implements LessonService {
                 newOrderIndex);
 
         return LessonMapper.toDTO(reorderedLesson);
+    }
+
+    /**
+     * Get current authenticated user's ID.
+     *
+     * @return UUID of current user or null if not authenticated
+     */
+    private UUID getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User user) {
+            return user.getId();
+        }
+        return null;
+    }
+
+    /**
+     * Get current authenticated user's display name.
+     *
+     * @return display name or "System" if not authenticated
+     */
+    private String getCurrentUserName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User user) {
+            if (user.getProfile() != null && user.getProfile().getFirstName() != null) {
+                return user.getProfile().getFirstName() + " " + user.getProfile().getLastName();
+            }
+            return user.getEmail().split("@")[0];
+        }
+        return "System";
     }
 }

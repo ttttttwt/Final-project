@@ -79,12 +79,11 @@ public class Lesson {
     /**
      * Type of lesson: READING, LISTENING, QUIZ, or SPEAKING.
      * Determines the expected structure of the content field.
-     * Uses PostgreSQL native enum type 'lesson_type_enum'.
+     * Stored as VARCHAR (String) for H2/PostgreSQL compatibility.
      */
     @NotNull(message = "Lesson type is required")
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "lesson_type", nullable = false, columnDefinition = "lesson_type_enum")
+    @Column(name = "lesson_type", nullable = false, length = 20)
     private LessonType lessonType;
 
     /**

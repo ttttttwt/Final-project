@@ -61,4 +61,14 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
             WHERE u.email = :email
             """)
     Optional<User> findByEmailWithRoles(@Param("email") String email);
+
+    /**
+     * Find recently registered users.
+     * Used for admin dashboard recent activity.
+     * 
+     * @param pageable pagination info (use PageRequest.of(0, N) to get top N)
+     * @return list of recently registered users
+     */
+    @Query("SELECT u FROM User u ORDER BY u.createdAt DESC")
+    java.util.List<User> findRecentlyRegistered(org.springframework.data.domain.Pageable pageable);
 }

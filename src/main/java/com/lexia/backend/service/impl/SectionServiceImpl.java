@@ -6,20 +6,25 @@ import com.lexia.backend.dto.SectionDTO;
 import com.lexia.backend.dto.UpdateSectionDTO;
 import com.lexia.backend.entity.Course;
 import com.lexia.backend.entity.Section;
+import com.lexia.backend.entity.User;
 import com.lexia.backend.exception.CourseNotFoundException;
 import com.lexia.backend.exception.SectionNotFoundException;
 import com.lexia.backend.mapper.SectionMapper;
 import com.lexia.backend.repository.CourseRepository;
 import com.lexia.backend.repository.SectionRepository;
+import com.lexia.backend.service.AdminActivityLogService;
 import com.lexia.backend.service.SectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -35,6 +40,7 @@ public class SectionServiceImpl implements SectionService {
 
     private final SectionRepository sectionRepository;
     private final CourseRepository courseRepository;
+    private final AdminActivityLogService adminActivityLogService;
 
     /**
      * {@inheritDoc}
@@ -69,6 +75,14 @@ public class SectionServiceImpl implements SectionService {
 
         log.info("Successfully created section with ID: {} for course ID: {}", savedSection.getId(), courseId);
 
+        // Log activity
+        adminActivityLogService.logSectionCreated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                savedSection.getId(),
+                savedSection.getTitle(),
+                course.getTitle());
+
         // Re-fetch with lessons to get accurate lessonCount (will be 0 for new section)
         return sectionRepository.findByIdWithLessons(savedSection.getId())
                 .map(SectionMapper::toDTO)
@@ -100,6 +114,14 @@ public class SectionServiceImpl implements SectionService {
 
         Section updatedSection = sectionRepository.save(section);
         log.info("Successfully updated section with ID: {}", sectionId);
+
+        // Log activity
+        adminActivityLogService.logSectionUpdated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                updatedSection.getId(),
+                updatedSection.getTitle(),
+                section.getCourse().getTitle());
 
         // Re-fetch with lessons to get accurate lessonCount
         return sectionRepository.findByIdWithLessons(updatedSection.getId())
@@ -164,6 +186,8 @@ public class SectionServiceImpl implements SectionService {
                 });
 
         Long courseId = section.getCourse().getId();
+        String courseTitle = section.getCourse().getTitle();
+        String sectionTitle = section.getTitle();
         Integer deletedOrderIndex = section.getOrderIndex();
 
         // Delete section (cascades to lessons)
@@ -171,6 +195,14 @@ public class SectionServiceImpl implements SectionService {
 
         // Re-index remaining sections
         reindexSectionsAfterDeletion(courseId, deletedOrderIndex);
+
+        // Log activity
+        adminActivityLogService.logSectionDeleted(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                sectionId,
+                sectionTitle,
+                courseTitle);
 
         log.info("Successfully deleted section with ID: {} and re-indexed remaining sections", sectionId);
     }
@@ -295,5 +327,34 @@ public class SectionServiceImpl implements SectionService {
         }
 
         log.debug("Re-indexed {} sections after deletion", sectionsToReindex.size());
+    }
+
+    /**
+     * Get current authenticated user's ID.
+     *
+     * @return UUID of current user or null if not authenticated
+     */
+    private UUID getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User user) {
+            return user.getId();
+        }
+        return null;
+    }
+
+    /**
+     * Get current authenticated user's display name.
+     *
+     * @return display name or "System" if not authenticated
+     */
+    private String getCurrentUserName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User user) {
+            if (user.getProfile() != null && user.getProfile().getFirstName() != null) {
+                return user.getProfile().getFirstName() + " " + user.getProfile().getLastName();
+            }
+            return user.getEmail().split("@")[0];
+        }
+        return "System";
     }
 }

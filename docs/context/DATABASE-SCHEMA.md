@@ -868,6 +868,110 @@ FROM lesson_counts;
 
 ---
 
-**Last Updated**: October 29, 2025 (Sprint 2 - JSONB schemas added)  
-**Version**: 1.1  
-**Next Update**: Sprint 3 (AI features schemas)
+## 🔔 Module 5: Notifications (Planned - Sprint 5+)
+
+### 5.1. Key Tables
+
+| Table                      | Purpose                    |
+| -------------------------- | -------------------------- |
+| `notifications`            | Store user notifications   |
+| `notification_preferences` | User notification settings |
+
+### 5.2. Table Details
+
+#### `notifications`
+
+| Column     | Data Type    | Constraints & Notes                                  |
+| ---------- | ------------ | ---------------------------------------------------- |
+| id         | UUID         | PK, DEFAULT gen_random_uuid()                        |
+| user_id    | UUID         | FK → users(id), NOT NULL, ON DELETE CASCADE          |
+| type       | VARCHAR(50)  | NOT NULL (see types below)                           |
+| title      | VARCHAR(255) | NOT NULL                                             |
+| message    | TEXT         | NOT NULL                                             |
+| data       | JSONB        | DEFAULT '{}' - Additional payload                    |
+| priority   | VARCHAR(20)  | NOT NULL, DEFAULT 'NORMAL' (`HIGH`, `NORMAL`, `LOW`) |
+| is_read    | BOOLEAN      | DEFAULT false                                        |
+| read_at    | TIMESTAMPTZ  | NULL until read                                      |
+| created_at | TIMESTAMPTZ  | DEFAULT NOW()                                        |
+| expires_at | TIMESTAMPTZ  | NULL - Auto-cleanup date                             |
+
+**Notification Types**:
+
+- `COURSE_PUBLISHED`, `LESSON_ADDED`, `ENROLLMENT_CONFIRMED`
+- `LESSON_COMPLETED`, `COURSE_COMPLETED`, `ACHIEVEMENT_UNLOCKED`
+- `STREAK_REMINDER`, `STREAK_LOST`, `STREAK_MILESTONE`
+- `LEVEL_UP`, `SYSTEM_ANNOUNCEMENT`, `MAINTENANCE_NOTICE`
+
+#### `notification_preferences`
+
+| Column               | Data Type   | Constraints & Notes                   |
+| -------------------- | ----------- | ------------------------------------- |
+| user_id              | UUID        | PK, FK → users(id), ON DELETE CASCADE |
+| in_app_enabled       | BOOLEAN     | DEFAULT true                          |
+| email_enabled        | BOOLEAN     | DEFAULT true                          |
+| push_enabled         | BOOLEAN     | DEFAULT true                          |
+| learning_enabled     | BOOLEAN     | DEFAULT true                          |
+| achievements_enabled | BOOLEAN     | DEFAULT true                          |
+| reminders_enabled    | BOOLEAN     | DEFAULT true                          |
+| system_enabled       | BOOLEAN     | DEFAULT true                          |
+| quiet_hours_start    | TIME        | NULL                                  |
+| quiet_hours_end      | TIME        | NULL                                  |
+| quiet_hours_timezone | VARCHAR(50) | DEFAULT 'UTC'                         |
+| created_at           | TIMESTAMPTZ | DEFAULT NOW()                         |
+| updated_at           | TIMESTAMPTZ | DEFAULT NOW()                         |
+
+> **Full Specification**: See `docs/context/NOTIFICATION-SPECIFICATION.md`
+
+---
+
+## 📁 Module 6: File Storage (Planned - Sprint 5+)
+
+### 6.1. Key Tables
+
+| Table   | Purpose             |
+| ------- | ------------------- |
+| `files` | Store file metadata |
+
+### 6.2. Table Details
+
+#### `files`
+
+| Column            | Data Type    | Constraints & Notes                                           |
+| ----------------- | ------------ | ------------------------------------------------------------- |
+| id                | UUID         | PK, DEFAULT gen_random_uuid()                                 |
+| original_filename | VARCHAR(255) | NOT NULL                                                      |
+| storage_path      | VARCHAR(500) | NOT NULL, UNIQUE - Relative path from upload root             |
+| mime_type         | VARCHAR(100) | NOT NULL                                                      |
+| file_size         | BIGINT       | NOT NULL, CHECK > 0 AND <= 52428800 (50MB)                    |
+| category          | VARCHAR(50)  | NOT NULL (`AVATAR`, `COURSE_THUMBNAIL`, `LESSON_AUDIO`, etc.) |
+| uploaded_by       | UUID         | FK → users(id), ON DELETE SET NULL                            |
+| uploaded_at       | TIMESTAMPTZ  | DEFAULT NOW()                                                 |
+| width             | INTEGER      | NULL - For images                                             |
+| height            | INTEGER      | NULL - For images                                             |
+| duration_seconds  | INTEGER      | NULL - For audio                                              |
+| is_public         | BOOLEAN      | DEFAULT false                                                 |
+| access_count      | INTEGER      | DEFAULT 0                                                     |
+| last_accessed_at  | TIMESTAMPTZ  | NULL                                                          |
+
+**File Categories**:
+
+- `AVATAR` - User profile pictures (max 5MB)
+- `COURSE_THUMBNAIL` - Course cover images (max 5MB)
+- `LESSON_AUDIO` - Listening lesson audio (max 50MB)
+- `LESSON_IMAGE` - Lesson content images (max 10MB)
+- `DOCUMENT` - PDFs, certificates (max 10MB)
+- `CERTIFICATE` - Course completion certificates (max 10MB)
+
+**Allowed MIME Types**:
+
+- Images: `image/jpeg`, `image/png`, `image/gif`, `image/webp`
+- Audio: `audio/mpeg`, `audio/wav`, `audio/ogg`, `audio/mp4`
+- Documents: `application/pdf`
+
+> **Full Specification**: See `docs/context/FILE-UPLOAD-SPECIFICATION.md`
+
+---
+
+**Last Updated**: November 28, 2025 (Sprint 4 - Added Notification & File Storage modules)  
+**Version**: 1.2  
+**Next Update**: Sprint 5 (Notification & File Upload implementation)
