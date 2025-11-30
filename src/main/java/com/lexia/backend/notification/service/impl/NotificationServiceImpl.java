@@ -172,56 +172,68 @@ public class NotificationServiceImpl implements NotificationService {
             log.error("Failed to broadcast to topic", e);
         }
 
-        // 2. Persist notifications for all active users using batch processing
-        List<UUID> activeUserIds = notificationRepository.findAllActiveUserIds();
+        // 2. Persist notifications for all active users using paginated batch
+        // processing
+        // This approach avoids loading all user IDs into memory at once (OOM
+        // prevention)
         int count = 0;
+        int pageSize = 500; // Fetch user IDs in pages of 500
+        int batchSize = 100; // Save notifications in batches of 100
+        int pageNumber = 0;
 
         // Calculate expiration date once for all notifications
         OffsetDateTime expiresAt = calculateExpirationDate(request.getPriority());
 
-        // Batch processing: create notifications in batches to improve performance
-        int batchSize = 100;
-        List<Notification> batch = new ArrayList<>(batchSize);
+        Page<UUID> userPage;
+        do {
+            // Fetch a page of active user IDs from database
+            userPage = notificationRepository.findActiveUserIds(
+                    org.springframework.data.domain.PageRequest.of(pageNumber, pageSize));
 
-        for (UUID userId : activeUserIds) {
-            try {
-                // Create notification entity directly without fetching User entity
-                // We only need the user_id reference, not the full User object
-                User userRef = new User();
-                userRef.setId(userId);
+            List<Notification> batch = new ArrayList<>(batchSize);
 
-                Notification notification = Notification.builder()
-                        .user(userRef)
-                        .type(request.getType())
-                        .title(request.getTitle())
-                        .message(request.getMessage())
-                        .data(request.getData() != null ? request.getData() : new java.util.HashMap<>())
-                        .priority(request.getPriority() != null ? request.getPriority()
-                                : Notification.NotificationPriority.NORMAL)
-                        .isRead(false)
-                        .expiresAt(expiresAt)
-                        .build();
+            for (UUID userId : userPage.getContent()) {
+                try {
+                    // Use getReferenceById to get a JPA proxy reference without fetching the full User entity
+                    // This is more efficient and JPA-compliant than creating a new User object
+                    User userRef = userRepository.getReferenceById(userId);
 
-                batch.add(notification);
+                    Notification notification = Notification.builder()
+                            .user(userRef)
+                            .type(request.getType())
+                            .title(request.getTitle())
+                            .message(request.getMessage())
+                            .data(request.getData() != null ? request.getData() : new java.util.HashMap<>())
+                            .priority(request.getPriority() != null ? request.getPriority()
+                                    : Notification.NotificationPriority.NORMAL)
+                            .isRead(false)
+                            .expiresAt(expiresAt)
+                            .build();
 
-                // Save batch when it reaches the batch size
-                if (batch.size() >= batchSize) {
-                    notificationRepository.saveAll(batch);
-                    count += batch.size();
-                    batch.clear();
-                    log.debug("Saved batch of {} notifications, total: {}", batchSize, count);
+                    batch.add(notification);
+
+                    // Save batch when it reaches the batch size
+                    if (batch.size() >= batchSize) {
+                        notificationRepository.saveAll(batch);
+                        count += batch.size();
+                        batch.clear();
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to create notification for user: {}", userId, e);
                 }
-            } catch (Exception e) {
-                log.warn("Failed to create notification for user: {}", userId, e);
             }
-        }
 
-        // Save remaining notifications in the last batch
-        if (!batch.isEmpty()) {
-            notificationRepository.saveAll(batch);
-            count += batch.size();
-            log.debug("Saved final batch of {} notifications", batch.size());
-        }
+            // Save remaining notifications in this page's batch
+            if (!batch.isEmpty()) {
+                notificationRepository.saveAll(batch);
+                count += batch.size();
+            }
+
+            pageNumber++;
+            log.debug("Processed page {} with {} users, total notifications: {}",
+                    pageNumber, userPage.getNumberOfElements(), count);
+
+        } while (userPage.hasNext());
 
         log.info("Broadcast notification persisted for {} users", count);
         return count;

@@ -550,7 +550,9 @@ class NotificationServiceTest {
             UUID user2 = UUID.randomUUID();
             List<UUID> activeUserIds = List.of(user1, user2);
 
-            when(notificationRepository.findAllActiveUserIds()).thenReturn(activeUserIds);
+            // Mock paginated user ID retrieval
+            Page<UUID> userPage = new PageImpl<>(activeUserIds, PageRequest.of(0, 500), 2);
+            when(notificationRepository.findActiveUserIds(any(Pageable.class))).thenReturn(userPage);
             // New implementation uses saveAll for batch processing
             when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -582,7 +584,9 @@ class NotificationServiceTest {
             UUID user2 = UUID.randomUUID();
             List<UUID> activeUserIds = List.of(user1, user2);
 
-            when(notificationRepository.findAllActiveUserIds()).thenReturn(activeUserIds);
+            // Mock paginated user ID retrieval
+            Page<UUID> userPage = new PageImpl<>(activeUserIds, PageRequest.of(0, 500), 2);
+            when(notificationRepository.findActiveUserIds(any(Pageable.class))).thenReturn(userPage);
             // New implementation uses saveAll for batch processing - doesn't need
             // userRepository.findById
             when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
