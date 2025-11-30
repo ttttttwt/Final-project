@@ -351,10 +351,9 @@ class NotificationServiceTest {
     class CreateNotificationTests {
 
         @Test
-        @DisplayName("Should create notification when user accepts")
+        @DisplayName("Should always create notification regardless of preferences")
         void testCreateNotification_Success() {
-            // Arrange
-            when(preferencesRepository.findByUserId(userId)).thenReturn(Optional.of(testPreferences));
+            // Arrange - preferences don't matter for persistence anymore
             when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
             when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
 
@@ -368,25 +367,25 @@ class NotificationServiceTest {
         }
 
         @Test
-        @DisplayName("Should not create notification when in-app disabled")
-        void testCreateNotification_InAppDisabled() {
-            // Arrange
+        @DisplayName("Should create notification even when in-app disabled (preferences only affect real-time)")
+        void testCreateNotification_InAppDisabledStillSaves() {
+            // Arrange - in-app disabled but notification should still be saved
             testPreferences.setInAppEnabled(false);
-            when(preferencesRepository.findByUserId(userId)).thenReturn(Optional.of(testPreferences));
+            when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+            when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
 
             // Act
             NotificationDTO result = notificationService.createNotification(userId, createRequest);
 
-            // Assert
-            assertNull(result);
-            verify(notificationRepository, never()).save(any());
+            // Assert - notification should still be created
+            assertNotNull(result);
+            verify(notificationRepository).save(any(Notification.class));
         }
 
         @Test
         @DisplayName("Should throw exception when user not found")
         void testCreateNotification_UserNotFound() {
             // Arrange
-            when(preferencesRepository.findByUserId(userId)).thenReturn(Optional.empty());
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
             // Act & Assert
@@ -462,14 +461,14 @@ class NotificationServiceTest {
         }
     }
 
-    // ========== SHOULD NOTIFY TESTS ==========
+    // ========== SHOULD NOTIFY TESTS (For Real-time Delivery) ==========
 
     @Nested
-    @DisplayName("shouldNotify Tests")
+    @DisplayName("shouldNotify Tests (Real-time delivery only)")
     class ShouldNotifyTests {
 
         @Test
-        @DisplayName("Should return true when no preferences exist")
+        @DisplayName("Should return true when no preferences exist (default to send real-time)")
         void testShouldNotify_NoPreferences() {
             // Arrange
             when(preferencesRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -482,7 +481,7 @@ class NotificationServiceTest {
         }
 
         @Test
-        @DisplayName("Should return false when in-app disabled")
+        @DisplayName("Should return false when in-app disabled (no real-time, but still persisted)")
         void testShouldNotify_InAppDisabled() {
             // Arrange
             testPreferences.setInAppEnabled(false);
@@ -491,7 +490,7 @@ class NotificationServiceTest {
             // Act
             boolean result = notificationService.shouldNotify(userId, createRequest);
 
-            // Assert
+            // Assert - false means no real-time delivery, but notification is still saved
             assertFalse(result);
         }
 
@@ -537,7 +536,7 @@ class NotificationServiceTest {
     class BroadcastNotificationTests {
 
         @Test
-        @DisplayName("Should broadcast to all active users")
+        @DisplayName("Should broadcast to topic and persist for all active users")
         void testBroadcastNotification_Success() {
             // Arrange
             BroadcastNotificationRequest broadcastRequest = BroadcastNotificationRequest.builder()
@@ -552,16 +551,52 @@ class NotificationServiceTest {
             List<UUID> activeUserIds = List.of(user1, user2);
 
             when(notificationRepository.findAllActiveUserIds()).thenReturn(activeUserIds);
-            when(preferencesRepository.findByUserId(any())).thenReturn(Optional.empty());
-            when(userRepository.findById(any())).thenReturn(Optional.of(testUser));
-            when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
+            // New implementation uses saveAll for batch processing
+            when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
             int count = notificationService.broadcastNotification(broadcastRequest);
 
             // Assert
             assertEquals(2, count);
-            verify(notificationRepository, times(2)).save(any(Notification.class));
+            // Should persist notifications in batch (saveAll instead of individual save)
+            verify(notificationRepository, atLeastOnce()).saveAll(anyList());
+            // Should broadcast to topic once (not individual WebSocket per user)
+            verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/announcements"), any(NotificationDTO.class));
+            // Should NOT send individual real-time notifications (no double delivery)
+            verify(messagingTemplate, never()).convertAndSendToUser(anyString(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("Should persist notifications for all active users using batch processing")
+        void testBroadcastNotification_BatchProcessing() {
+            // Arrange
+            BroadcastNotificationRequest broadcastRequest = BroadcastNotificationRequest.builder()
+                    .type(NotificationType.SYSTEM_ANNOUNCEMENT)
+                    .title("System Update")
+                    .message("New features available!")
+                    .priority(NotificationPriority.HIGH)
+                    .build();
+
+            UUID user1 = UUID.randomUUID();
+            UUID user2 = UUID.randomUUID();
+            List<UUID> activeUserIds = List.of(user1, user2);
+
+            when(notificationRepository.findAllActiveUserIds()).thenReturn(activeUserIds);
+            // New implementation uses saveAll for batch processing - doesn't need
+            // userRepository.findById
+            when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            int count = notificationService.broadcastNotification(broadcastRequest);
+
+            // Assert - all users should be persisted since we use reference-only User
+            // objects
+            assertEquals(2, count);
+            // Verify batch save was used (not individual saves)
+            verify(notificationRepository, atLeastOnce()).saveAll(anyList());
+            // Verify no individual User lookups were made (optimization)
+            verify(userRepository, never()).findById(any());
         }
     }
 
@@ -572,7 +607,7 @@ class NotificationServiceTest {
     class SendToUsersTests {
 
         @Test
-        @DisplayName("Should send to specific users")
+        @DisplayName("Should send to specific users and deliver real-time based on preferences")
         void testSendToUsers_Success() {
             // Arrange
             UUID user1 = UUID.randomUUID();
@@ -586,15 +621,15 @@ class NotificationServiceTest {
                     .priority(NotificationPriority.NORMAL)
                     .build();
 
-            when(preferencesRepository.findByUserId(any())).thenReturn(Optional.empty());
             when(userRepository.findById(any())).thenReturn(Optional.of(testUser));
             when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
 
             // Act
             int count = notificationService.sendToUsers(sendRequest);
 
-            // Assert
+            // Assert - notifications should be persisted for both users
             assertEquals(2, count);
+            verify(notificationRepository, times(2)).save(any(Notification.class));
         }
 
         @Test
@@ -612,7 +647,6 @@ class NotificationServiceTest {
                     .priority(NotificationPriority.NORMAL)
                     .build();
 
-            when(preferencesRepository.findByUserId(any())).thenReturn(Optional.empty());
             when(userRepository.findById(user1)).thenReturn(Optional.of(testUser));
             when(userRepository.findById(user2)).thenReturn(Optional.empty());
             when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);

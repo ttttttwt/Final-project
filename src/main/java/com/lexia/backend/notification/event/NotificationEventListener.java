@@ -28,6 +28,12 @@ import org.springframework.stereotype.Component;
  * <li>LevelUpEvent - When user advances CEFR level</li>
  * </ul>
  *
+ * <p>
+ * Note: Notifications are always persisted to DB regardless of user
+ * preferences.
+ * Real-time delivery respects user preferences (quiet hours, category toggles).
+ * </p>
+ *
  * @author LEXIA Team
  * @since Sprint 5
  */
@@ -116,7 +122,19 @@ public class NotificationEventListener {
     }
 
     /**
-     * Create notification and optionally send in real-time.
+     * Create notification and optionally send in real-time based on user
+     * preferences.
+     * <p>
+     * Notifications are always persisted to DB for later retrieval.
+     * Real-time WebSocket delivery respects user preferences:
+     * - Quiet hours
+     * - Category toggles (learning, achievements, reminders, system)
+     * - In-app notification toggle
+     * </p>
+     *
+     * @param event    the notification event
+     * @param type     the notification type
+     * @param priority the notification priority
      */
     private void createAndSendNotification(NotificationEvent event, NotificationType type,
             NotificationPriority priority) {
@@ -129,10 +147,22 @@ public class NotificationEventListener {
                     .priority(priority)
                     .build();
 
+            // Always persist notification to DB
             NotificationDTO notification = notificationService.createNotification(event.getUserId(), request);
 
+            // Only send real-time if:
+            // 1. Notification was created successfully
+            // 2. Event is marked for real-time delivery
+            // 3. User preferences allow it (quiet hours, category enabled, in-app enabled)
             if (notification != null && event.isRealTime()) {
-                notificationService.sendRealTimeNotification(event.getUserId(), notification);
+                boolean shouldSendRealTime = notificationService.shouldNotify(event.getUserId(), request);
+                if (shouldSendRealTime) {
+                    notificationService.sendRealTimeNotification(event.getUserId(), notification);
+                    log.debug("Real-time notification sent for event: {}", event.getNotificationType());
+                } else {
+                    log.debug("Real-time notification skipped (user preferences) for event: {}",
+                            event.getNotificationType());
+                }
             }
 
             log.debug("Notification created for event: {}", event.getNotificationType());

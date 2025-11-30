@@ -1,6 +1,8 @@
 package com.lexia.backend.notification.websocket;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -20,6 +22,11 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * <li>/topic/announcements - Broadcast announcements</li>
  * </ul>
  *
+ * <p>
+ * Allowed origins are configured via application.properties:
+ * {@code lexia.websocket.allowed-origins}
+ * </p>
+ *
  * @author LEXIA Team
  * @since Sprint 5
  */
@@ -29,12 +36,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor authInterceptor;
 
+    /**
+     * Allowed origins for WebSocket connections.
+     * Configured via application.properties: lexia.websocket.allowed-origins
+     * Default: localhost origins for development
+     */
+    @Value("${lexia.websocket.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:19006}")
+    private String allowedOriginsString;
+
     public WebSocketConfig(WebSocketAuthInterceptor authInterceptor) {
         this.authInterceptor = authInterceptor;
     }
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
+    public void configureMessageBroker(@NonNull MessageBrokerRegistry config) {
         // Enable simple broker for subscriptions to /topic and /queue
         config.enableSimpleBroker("/topic", "/queue");
 
@@ -46,24 +61,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // WebSocket endpoint with SockJS fallback
+    public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
+        // Parse allowed origins from configuration
+        String[] allowedOrigins = allowedOriginsString.split(",");
+
+        // WebSocket endpoint with SockJS fallback (for web browsers)
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(
-                        "http://localhost:3000", // Next.js web
-                        "http://localhost:5173", // Vite admin
-                        "http://localhost:19006", // Expo web
-                        "https://lexia.app" // Production
-                )
+                .setAllowedOrigins(allowedOrigins)
                 .withSockJS();
 
-        // Raw WebSocket endpoint (for mobile clients)
+        // Raw WebSocket endpoint for mobile clients
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("*");
+                .setAllowedOrigins(allowedOrigins);
     }
 
     @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
+    public void configureClientInboundChannel(@NonNull ChannelRegistration registration) {
         // Add authentication interceptor to validate JWT on CONNECT
         registration.interceptors(authInterceptor);
     }

@@ -105,7 +105,23 @@ public class Notification {
 
         // System notifications
         SYSTEM_ANNOUNCEMENT,
-        MAINTENANCE_NOTICE
+        MAINTENANCE_NOTICE;
+
+        /**
+         * Get the category of this notification type.
+         * This is the single source of truth for type-to-category mapping.
+         *
+         * @return the notification category
+         */
+        public NotificationCategory getCategory() {
+            return switch (this) {
+                case COURSE_PUBLISHED, LESSON_ADDED, ENROLLMENT_CONFIRMED -> NotificationCategory.LEARNING;
+                case LESSON_COMPLETED, COURSE_COMPLETED, ACHIEVEMENT_UNLOCKED, STREAK_MILESTONE, LEVEL_UP ->
+                    NotificationCategory.ACHIEVEMENT;
+                case STREAK_REMINDER, STREAK_LOST -> NotificationCategory.ENGAGEMENT;
+                case SYSTEM_ANNOUNCEMENT, MAINTENANCE_NOTICE -> NotificationCategory.SYSTEM;
+            };
+        }
     }
 
     /**
@@ -127,15 +143,12 @@ public class Notification {
 
     /**
      * Get the category of this notification based on its type.
+     * Delegates to NotificationType.getCategory() for single source of truth.
+     *
+     * @return the notification category
      */
     public NotificationCategory getCategory() {
-        return switch (type) {
-            case COURSE_PUBLISHED, LESSON_ADDED, ENROLLMENT_CONFIRMED -> NotificationCategory.LEARNING;
-            case LESSON_COMPLETED, COURSE_COMPLETED, ACHIEVEMENT_UNLOCKED, STREAK_MILESTONE, LEVEL_UP ->
-                NotificationCategory.ACHIEVEMENT;
-            case STREAK_REMINDER, STREAK_LOST -> NotificationCategory.ENGAGEMENT;
-            case SYSTEM_ANNOUNCEMENT, MAINTENANCE_NOTICE -> NotificationCategory.SYSTEM;
-        };
+        return type.getCategory();
     }
 
     /**

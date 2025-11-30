@@ -1,9 +1,9 @@
 # LEXIA - Notification System Specification
 
-**Version**: 1.1.0  
+**Version**: 1.2.0  
 **Created**: November 28, 2025  
 **Updated**: November 30, 2025  
-**Status**: ✅ Implemented (Backend)  
+**Status**: ✅ Implemented (Backend) - Code Review & Optimization Completed  
 **Implemented Sprint**: Sprint 5
 
 ---
@@ -304,6 +304,10 @@ Different notification types have different data payloads:
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    // Allowed origins configurable via application.properties
+    @Value("${lexia.websocket.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    private String allowedOriginsString;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Enable simple broker for subscriptions
@@ -316,11 +320,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] allowedOrigins = allowedOriginsString.split(",");
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:3000", "https://lexia.app")
+                .setAllowedOrigins(allowedOrigins)
                 .withSockJS(); // Fallback for browsers without WebSocket
     }
 }
+```
+
+**Configuration (application.properties)**:
+
+```properties
+# WebSocket allowed origins (comma-separated)
+lexia.websocket.allowed-origins=http://localhost:3000,http://localhost:5173,http://localhost:19006,https://lexia.app,https://admin.lexia.app
 ```
 
 ### 5.3. STOMP Destinations
@@ -790,10 +802,103 @@ com.lexia.backend.notification/
 3. **@Scheduled cleanup** - Daily at 3 AM for expired notifications
 4. **@Async event listeners** - Non-blocking notification creation
 5. **SecurityContextHolder pattern** - For @AuthenticationPrincipal in controller tests
+6. **Single Source of Truth for Category Mapping** - `NotificationType.getCategory()` is the only place for type-to-category mapping (DRY principle)
+7. **Batch Processing for Broadcast** - Uses `saveAll()` with batch size of 100 for scalability
+8. **Externalized CORS Configuration** - WebSocket allowed origins configurable via `application.properties`
+
+---
+
+## 15. Code Review & Optimizations (v1.2.0)
+
+### 15.1. Issues Fixed
+
+| Issue                                                 | Severity | Fix Applied                                                             |
+| ----------------------------------------------------- | -------- | ----------------------------------------------------------------------- |
+| `shouldNotify()` not called before real-time delivery | Critical | Integrated into `NotificationEventListener.createAndSendNotification()` |
+| Duplicate `getCategory()` logic (DRY violation)       | Medium   | Consolidated into `NotificationType.getCategory()` enum method          |
+| O(N) database queries in `broadcastNotification()`    | High     | Replaced with batch processing using `saveAll()`                        |
+| Hardcoded CORS origins in `WebSocketConfig`           | Low      | Externalized to `application.properties`                                |
+
+### 15.2. Performance Optimizations
+
+**Before (Broadcast):**
+
+```java
+// O(2N+1) queries - User lookup + Save for each user
+for (UUID userId : activeUserIds) {
+    User user = userRepository.findById(userId); // N queries
+    notificationRepository.save(notification);   // N queries
+}
+```
+
+**After (Broadcast):**
+
+```java
+// O(N/100 + 1) queries - Batch processing
+int batchSize = 100;
+List<Notification> batch = new ArrayList<>(batchSize);
+
+for (UUID userId : activeUserIds) {
+    User userRef = new User();
+    userRef.setId(userId); // Reference only, no DB lookup
+    batch.add(notification);
+
+    if (batch.size() >= batchSize) {
+        notificationRepository.saveAll(batch); // Single batch insert
+        batch.clear();
+    }
+}
+```
+
+### 15.3. Logic Flow (Updated)
+
+```
+Event Triggered
+     │
+     ▼
+NotificationEventListener.handleXxxEvent()
+     │
+     ▼
+createAndSendNotification()
+     │
+     ├─► notificationService.createNotification()  ──► Always persist to DB
+     │
+     ├─► Check: event.isRealTime()?
+     │        │
+     │        No ──► END (notification saved, no WebSocket)
+     │        │
+     │        Yes
+     │         │
+     │         ▼
+     └─► notificationService.shouldNotify(userId, request)
+              │
+              ├─► Check: inAppEnabled?
+              │        No ──► END (skip real-time)
+              │
+              ├─► Check: isInQuietHours()?
+              │        Yes ──► END (skip real-time)
+              │
+              ├─► Check: isCategoryEnabled()?
+              │        No ──► END (skip real-time)
+              │
+              └─► All checks passed
+                       │
+                       ▼
+              sendRealTimeNotification() ──► WebSocket Push
+```
+
+### 15.4. Scalability Considerations
+
+| Scenario             | Current Capacity           | Future Enhancement                                  |
+| -------------------- | -------------------------- | --------------------------------------------------- |
+| Concurrent WebSocket | ~10,000 (SimpleBroker)     | External Broker (RabbitMQ/Redis) for multi-instance |
+| Broadcast to users   | ~50,000 (batch processing) | Pagination/Stream for millions                      |
+| Memory footprint     | Moderate                   | Stream-based user ID fetching                       |
 
 ---
 
 **Document Owner**: LEXIA Development Team  
 **Review Date**: ~~Before Sprint 5 Planning~~ Completed  
 **Last Implementation**: November 30, 2025  
+**Code Review**: November 30, 2025 (v1.2.0)  
 **Next Update**: After frontend integration

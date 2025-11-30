@@ -4,7 +4,6 @@ import com.lexia.backend.entity.User;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.notification.dto.*;
 import com.lexia.backend.notification.entity.Notification;
-import com.lexia.backend.notification.entity.Notification.NotificationCategory;
 import com.lexia.backend.notification.entity.NotificationPreferences;
 import com.lexia.backend.notification.mapper.NotificationMapper;
 import com.lexia.backend.notification.repository.NotificationPreferencesRepository;
@@ -22,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -119,12 +119,8 @@ public class NotificationServiceImpl implements NotificationService {
     public NotificationDTO createNotification(UUID userId, CreateNotificationRequest request) {
         log.debug("Creating notification for user: {}, type: {}", userId, request.getType());
 
-        // Check if user should receive this notification
-        if (!shouldNotify(userId, request)) {
-            log.debug("User {} opted out of notification type: {}", userId, request.getType());
-            return null;
-        }
-
+        // Always save notification to DB regardless of preferences
+        // Preferences only affect real-time delivery, not persistence
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
@@ -155,44 +151,95 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Async
     public int broadcastNotification(BroadcastNotificationRequest request) {
         log.info("Broadcasting notification: {}", request.getTitle());
 
-        List<UUID> activeUserIds = notificationRepository.findAllActiveUserIds();
-        int count = 0;
-
-        CreateNotificationRequest createRequest = CreateNotificationRequest.builder()
+        // 1. Send to topic for real-time delivery to all connected users
+        NotificationDTO broadcastDTO = NotificationDTO.builder()
                 .type(request.getType())
                 .title(request.getTitle())
                 .message(request.getMessage())
                 .data(request.getData())
                 .priority(request.getPriority())
+                .createdAt(OffsetDateTime.now())
                 .build();
 
-        for (UUID userId : activeUserIds) {
-            NotificationDTO notification = createNotification(userId, createRequest);
-            if (notification != null) {
-                sendRealTimeNotification(userId, notification);
-                count++;
-            }
-        }
-
-        // Also broadcast to topic for all connected users
         try {
-            messagingTemplate.convertAndSend("/topic/announcements", NotificationDTO.builder()
-                    .type(request.getType())
-                    .title(request.getTitle())
-                    .message(request.getMessage())
-                    .data(request.getData())
-                    .priority(request.getPriority())
-                    .createdAt(OffsetDateTime.now())
-                    .build());
+            messagingTemplate.convertAndSend("/topic/announcements", broadcastDTO);
+            log.debug("Broadcast sent to /topic/announcements");
         } catch (Exception e) {
             log.error("Failed to broadcast to topic", e);
         }
 
-        log.info("Broadcast notification sent to {} users", count);
+        // 2. Persist notifications for all active users using batch processing
+        List<UUID> activeUserIds = notificationRepository.findAllActiveUserIds();
+        int count = 0;
+
+        // Calculate expiration date once for all notifications
+        OffsetDateTime expiresAt = calculateExpirationDate(request.getPriority());
+
+        // Batch processing: create notifications in batches to improve performance
+        int batchSize = 100;
+        List<Notification> batch = new ArrayList<>(batchSize);
+
+        for (UUID userId : activeUserIds) {
+            try {
+                // Create notification entity directly without fetching User entity
+                // We only need the user_id reference, not the full User object
+                User userRef = new User();
+                userRef.setId(userId);
+
+                Notification notification = Notification.builder()
+                        .user(userRef)
+                        .type(request.getType())
+                        .title(request.getTitle())
+                        .message(request.getMessage())
+                        .data(request.getData() != null ? request.getData() : new java.util.HashMap<>())
+                        .priority(request.getPriority() != null ? request.getPriority()
+                                : Notification.NotificationPriority.NORMAL)
+                        .isRead(false)
+                        .expiresAt(expiresAt)
+                        .build();
+
+                batch.add(notification);
+
+                // Save batch when it reaches the batch size
+                if (batch.size() >= batchSize) {
+                    notificationRepository.saveAll(batch);
+                    count += batch.size();
+                    batch.clear();
+                    log.debug("Saved batch of {} notifications, total: {}", batchSize, count);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to create notification for user: {}", userId, e);
+            }
+        }
+
+        // Save remaining notifications in the last batch
+        if (!batch.isEmpty()) {
+            notificationRepository.saveAll(batch);
+            count += batch.size();
+            log.debug("Saved final batch of {} notifications", batch.size());
+        }
+
+        log.info("Broadcast notification persisted for {} users", count);
         return count;
+    }
+
+    /**
+     * Calculate expiration date based on priority.
+     *
+     * @param priority the notification priority
+     * @return the expiration date
+     */
+    private OffsetDateTime calculateExpirationDate(Notification.NotificationPriority priority) {
+        Notification.NotificationPriority p = priority != null ? priority : Notification.NotificationPriority.NORMAL;
+        return switch (p) {
+            case HIGH -> OffsetDateTime.now().plusDays(30);
+            case NORMAL -> OffsetDateTime.now().plusDays(14);
+            case LOW -> OffsetDateTime.now().plusDays(7);
+        };
     }
 
     @Override
@@ -286,28 +333,33 @@ public class NotificationServiceImpl implements NotificationService {
     public boolean shouldNotify(UUID userId, CreateNotificationRequest request) {
         NotificationPreferences preferences = preferencesRepository.findByUserId(userId).orElse(null);
 
-        // If no preferences, default to sending notifications
+        // If no preferences, default to sending real-time notifications
         if (preferences == null) {
+            log.debug("No preferences found for user {}, defaulting to send", userId);
             return true;
         }
 
-        // Check if in-app notifications are enabled
+        // Check if in-app notifications are enabled (for real-time delivery)
         if (!preferences.getInAppEnabled()) {
+            log.debug("User {} has in-app notifications disabled", userId);
             return false;
         }
 
-        // Check if in quiet hours
+        // Check if in quiet hours (only affects real-time, not persistence)
         if (preferences.isInQuietHours()) {
-            log.debug("User {} is in quiet hours", userId);
+            log.debug("User {} is in quiet hours - skipping real-time delivery", userId);
             return false;
         }
 
-        // Check category preferences
-        Notification tempNotification = Notification.builder()
-                .type(request.getType())
-                .build();
-        NotificationCategory category = tempNotification.getCategory();
+        // Check category preferences using NotificationType's getCategory method
+        // This eliminates code duplication - single source of truth in Entity
+        Notification.NotificationCategory category = request.getType().getCategory();
+        boolean enabled = preferences.isCategoryEnabled(category);
 
-        return preferences.isCategoryEnabled(category);
+        if (!enabled) {
+            log.debug("User {} has category {} disabled", userId, category);
+        }
+
+        return enabled;
     }
 }

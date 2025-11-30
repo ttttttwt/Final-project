@@ -55,38 +55,55 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                LOG.warn("WebSocket connection rejected: No valid Authorization header");
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Missing or invalid Authorization header. Please provide a valid Bearer token.");
+            }
 
-                try {
-                    if (jwtTokenProvider.validateToken(token)) {
-                        UUID userId = jwtTokenProvider.getUserIdFromToken(token);
-                        String email = jwtTokenProvider.getEmailFromToken(token);
+            String token = authHeader.substring(7);
 
-                        // Load user to verify existence and get roles
-                        User user = userRepository.findById(userId).orElse(null);
-                        if (user != null && user.getIsActive()) {
-                            // Create authentication token
-                            List<SimpleGrantedAuthority> authorities = user.getUserRoles().stream()
-                                    .map(ur -> new SimpleGrantedAuthority("ROLE_" + ur.getRole().getName()))
-                                    .toList();
-
-                            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(user,
-                                    null, authorities);
-
-                            accessor.setUser(auth);
-                            LOG.info("WebSocket authenticated for user: {}", email);
-                        } else {
-                            LOG.warn("User not found or inactive: {}", userId);
-                        }
-                    } else {
-                        LOG.warn("Invalid JWT token for WebSocket connection");
-                    }
-                } catch (Exception e) {
-                    LOG.error("WebSocket authentication error", e);
+            try {
+                if (!jwtTokenProvider.validateToken(token)) {
+                    LOG.warn("WebSocket connection rejected: Invalid JWT token");
+                    throw new org.springframework.security.access.AccessDeniedException(
+                            "Invalid or expired JWT token.");
                 }
-            } else {
-                LOG.debug("No Authorization header in WebSocket CONNECT");
+
+                UUID userId = jwtTokenProvider.getUserIdFromToken(token);
+                String email = jwtTokenProvider.getEmailFromToken(token);
+
+                // Load user to verify existence and get roles
+                User user = userRepository.findById(userId).orElse(null);
+                if (user == null) {
+                    LOG.warn("WebSocket connection rejected: User not found: {}", userId);
+                    throw new org.springframework.security.access.AccessDeniedException(
+                            "User not found.");
+                }
+
+                if (!user.getIsActive()) {
+                    LOG.warn("WebSocket connection rejected: User inactive: {}", userId);
+                    throw new org.springframework.security.access.AccessDeniedException(
+                            "User account is inactive.");
+                }
+
+                // Create authentication token
+                List<SimpleGrantedAuthority> authorities = user.getUserRoles().stream()
+                        .map(ur -> new SimpleGrantedAuthority("ROLE_" + ur.getRole().getName()))
+                        .toList();
+
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                        user, null, authorities);
+
+                accessor.setUser(auth);
+                LOG.info("WebSocket authenticated for user: {}", email);
+
+            } catch (org.springframework.security.access.AccessDeniedException e) {
+                throw e; // Re-throw access denied exceptions
+            } catch (Exception e) {
+                LOG.error("WebSocket authentication error", e);
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Authentication failed: " + e.getMessage());
             }
         }
 
