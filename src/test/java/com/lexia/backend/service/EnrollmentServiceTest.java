@@ -5,19 +5,26 @@ import com.lexia.backend.dto.EnrollmentDTO;
 import com.lexia.backend.entity.*;
 import com.lexia.backend.exception.CourseNotFoundException;
 import com.lexia.backend.exception.EnrollmentNotFoundException;
+import com.lexia.backend.notification.event.CourseCompletedEvent;
+import com.lexia.backend.notification.event.EnrollmentConfirmedEvent;
 import com.lexia.backend.repository.CourseRepository;
 import com.lexia.backend.repository.EnrollmentRepository;
 import com.lexia.backend.repository.LessonProgressRepository;
 import com.lexia.backend.repository.LessonRepository;
 import com.lexia.backend.service.impl.EnrollmentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +46,8 @@ class EnrollmentServiceTest {
     private LessonRepository lessonRepository;
     @Mock
     private LessonProgressRepository lessonProgressRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private EnrollmentServiceImpl enrollmentService;
@@ -55,12 +64,15 @@ class EnrollmentServiceTest {
         testCourse = new Course();
         testCourse.setId(1L);
         testCourse.setTitle("Test Course");
+        testCourse.setCefrLevel("B1");
+        testCourse.setThumbnailUrl("https://example.com/thumbnail.jpg");
 
         testEnrollment = Enrollment.builder()
                 .id(1L)
                 .userId(testUser.getId())
                 .course(testCourse)
                 .progressPercentage(0)
+                .enrolledAt(LocalDateTime.now())
                 .build();
     }
 
@@ -75,6 +87,7 @@ class EnrollmentServiceTest {
         assertNotNull(result);
         assertEquals(testCourse.getId(), result.getCourseId());
         verify(enrollmentRepository, times(1)).save(any(Enrollment.class));
+        verify(eventPublisher, times(1)).publishEvent(any(EnrollmentConfirmedEvent.class));
     }
 
     @Test
@@ -194,6 +207,9 @@ class EnrollmentServiceTest {
 
     @Test
     void updateEnrollmentProgress_OnCourseCompletion_ShouldSetCompletedAt() {
+        // Ensure enrollment has enrolledAt set for duration calculation
+        testEnrollment.setEnrolledAt(LocalDateTime.now().minusHours(1));
+
         when(enrollmentRepository.findByUserIdAndCourseId(testUser.getId(), testCourse.getId()))
                 .thenReturn(Optional.of(testEnrollment));
         when(lessonRepository.countByCourseId(testCourse.getId())).thenReturn(10L);
@@ -207,5 +223,6 @@ class EnrollmentServiceTest {
         verify(enrollmentRepository, times(1)).save(testEnrollment);
         assertEquals(100, testEnrollment.getProgressPercentage());
         assertNotNull(testEnrollment.getCompletedAt());
+        verify(eventPublisher, times(1)).publishEvent(any(CourseCompletedEvent.class));
     }
 }

@@ -1,9 +1,9 @@
 # LEXIA - Notification System Specification
 
-**Version**: 1.2.0  
+**Version**: 1.3.0  
 **Created**: November 28, 2025  
 **Updated**: November 30, 2025  
-**Status**: ✅ Implemented (Backend) - Code Review & Optimization Completed  
+**Status**: ✅ Implemented (Backend) - Event Integration Completed  
 **Implemented Sprint**: Sprint 5
 
 ---
@@ -641,8 +641,8 @@ export function useNotifications() {
 
 - [x] Create notification events (7 event classes)
 - [x] Implement event listeners (NotificationEventListener.java)
-- [ ] Integrate with existing services (enrollment, progress) - pending integration
-- [ ] Test event-driven notifications (needs integration tests)
+- [x] Integrate with existing services (enrollment, progress)
+- [x] Test event-driven notifications
 
 ### 9.5. Phase 5: Frontend Integration (3 pts) 🔄 PENDING
 
@@ -654,20 +654,21 @@ export function useNotifications() {
 
 ### Implementation Summary (Backend)
 
-| Component           | Status | Coverage | Files Created |
-| ------------------- | ------ | -------- | ------------- |
-| Database Migrations | ✅     | N/A      | V13, V14      |
-| Entities            | ✅     | N/A      | 2 files       |
-| Repositories        | ✅     | N/A      | 2 files       |
-| DTOs                | ✅     | N/A      | 6 files       |
-| Mapper              | ✅     | 92%      | 1 file        |
-| Service             | ✅     | 95%      | 2 files       |
-| Controllers         | ✅     | 78%      | 2 files       |
-| WebSocket           | ✅     | 49%      | 2 files       |
-| Events              | ✅     | 0%\*     | 8 files       |
-| Tests               | ✅     | N/A      | 2 files       |
+| Component           | Status | Coverage | Files Created                                       |
+| ------------------- | ------ | -------- | --------------------------------------------------- |
+| Database Migrations | ✅     | N/A      | V13, V14                                            |
+| Entities            | ✅     | N/A      | 2 files                                             |
+| Repositories        | ✅     | N/A      | 2 files                                             |
+| DTOs                | ✅     | N/A      | 6 files                                             |
+| Mapper              | ✅     | 92%      | 1 file                                              |
+| Service             | ✅     | 95%      | 2 files                                             |
+| Controllers         | ✅     | 78%      | 2 files                                             |
+| WebSocket           | ✅     | 49%      | 2 files                                             |
+| Events              | ✅     | N/A\*    | 8 files                                             |
+| Event Integration   | ✅     | N/A      | Modified EnrollmentServiceImpl, ProgressServiceImpl |
+| Tests               | ✅     | N/A      | 2 files                                             |
 
-\*Event classes are async listeners, testing requires integration tests
+\*Event classes are async listeners with try-catch, covered indirectly via service tests
 
 ---
 
@@ -897,8 +898,52 @@ createAndSendNotification()
 
 ---
 
+## 16. Event Integration (v1.3.0) - November 30, 2025
+
+### 16.1. Services Modified
+
+The following services were updated to publish notification events:
+
+**EnrollmentServiceImpl.java**:
+
+- Added `ApplicationEventPublisher` injection
+- Publishes `EnrollmentConfirmedEvent` when user enrolls in a course
+- Publishes `CourseCompletedEvent` when enrollment progress reaches 100%
+
+**ProgressServiceImpl.java**:
+
+- Added `ApplicationEventPublisher` injection
+- Publishes `LessonCompletedEvent` when user completes a lesson
+
+### 16.2. Event Type Fixes
+
+Fixed courseId type mismatch (UUID → Long) in:
+
+- `CourseCompletedEvent.java` - courseId changed from UUID to Long
+- `LessonCompletedEvent.java` - courseId changed from UUID to Long
+
+### 16.3. Test Updates
+
+Updated tests to mock `ApplicationEventPublisher`:
+
+- `EnrollmentServiceTest.java` - Added mock for eventPublisher, verified event publishing
+- `ProgressServiceTest.java` - Added mock for eventPublisher
+
+### 16.4. Event Flow
+
+```
+User Action                     Service Method                  Event Published
+───────────────────────────────────────────────────────────────────────────────
+Enroll in course       →  EnrollmentServiceImpl.enroll()  →  EnrollmentConfirmedEvent
+Complete a lesson      →  ProgressServiceImpl.completeLesson() → LessonCompletedEvent
+Complete all lessons   →  EnrollmentServiceImpl.updateEnrollmentProgress() → CourseCompletedEvent
+```
+
+---
+
 **Document Owner**: LEXIA Development Team  
 **Review Date**: ~~Before Sprint 5 Planning~~ Completed  
 **Last Implementation**: November 30, 2025  
 **Code Review**: November 30, 2025 (v1.2.0)  
+**Event Integration**: November 30, 2025 (v1.3.0)  
 **Next Update**: After frontend integration

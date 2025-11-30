@@ -7,15 +7,28 @@ import java.util.UUID;
 
 /**
  * Event fired when a user completes a course.
+ * 
+ * @author LEXIA Team
+ * @since Sprint 5
  */
 @Getter
 public class CourseCompletedEvent extends NotificationEvent {
 
-    private final UUID courseId;
+    private final Long courseId;
     private final String courseTitle;
     private final int completionTimeMinutes;
 
-    public CourseCompletedEvent(Object source, UUID userId, UUID courseId, String courseTitle,
+    /**
+     * Creates a new CourseCompletedEvent.
+     *
+     * @param source                the object on which the event initially occurred
+     * @param userId                the user who completed the course
+     * @param courseId              the ID of the completed course
+     * @param courseTitle           the title of the completed course
+     * @param completionTimeMinutes total time spent completing the course in
+     *                              minutes
+     */
+    public CourseCompletedEvent(Object source, UUID userId, Long courseId, String courseTitle,
             int completionTimeMinutes) {
         super(
                 source,

@@ -7,6 +7,8 @@ import com.lexia.backend.exception.CourseNotFoundException;
 import com.lexia.backend.exception.EnrollmentNotFoundException;
 import com.lexia.backend.mapper.EnrollmentMapper;
 import com.lexia.backend.mapper.ProgressMapper;
+import com.lexia.backend.notification.event.CourseCompletedEvent;
+import com.lexia.backend.notification.event.EnrollmentConfirmedEvent;
 import com.lexia.backend.repository.CourseRepository;
 import com.lexia.backend.repository.EnrollmentRepository;
 import com.lexia.backend.repository.LessonProgressRepository;
@@ -14,9 +16,11 @@ import com.lexia.backend.repository.LessonRepository;
 import com.lexia.backend.service.EnrollmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,6 +40,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * {@inheritDoc}
@@ -71,11 +76,39 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         try {
             enrollment = enrollmentRepository.save(enrollment);
             log.info("User {} successfully enrolled in course {}", user.getId(), courseId);
+
+            // Publish enrollment confirmed event for notification
+            publishEnrollmentConfirmedEvent(user.getId(), course);
+
             return EnrollmentMapper.toDTO(enrollment);
         } catch (Exception e) {
             // Handle race condition where another thread enrolled user simultaneously
             log.error("Failed to enroll user {} in course {}: {}", user.getId(), courseId, e.getMessage());
             throw new IllegalStateException("You are already enrolled in this course");
+        }
+    }
+
+    /**
+     * Publishes an EnrollmentConfirmedEvent for notification system.
+     *
+     * @param userId the user who enrolled
+     * @param course the course enrolled in
+     */
+    private void publishEnrollmentConfirmedEvent(UUID userId, Course course) {
+        try {
+            EnrollmentConfirmedEvent event = new EnrollmentConfirmedEvent(
+                    this,
+                    userId,
+                    course.getId(),
+                    course.getTitle(),
+                    course.getCefrLevel(),
+                    course.getThumbnailUrl());
+            eventPublisher.publishEvent(event);
+            log.debug("Published EnrollmentConfirmedEvent for user {} in course {}", userId, course.getId());
+        } catch (Exception e) {
+            // Don't fail enrollment if notification fails
+            log.warn("Failed to publish EnrollmentConfirmedEvent for user {} in course {}: {}",
+                    userId, course.getId(), e.getMessage());
         }
     }
 
@@ -167,11 +200,49 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         // Calculate progress percentage
         int progressPercentage = (int) Math.round((completedLessons * 100.0) / totalLessons);
 
+        // Check if course was just completed (not previously completed)
+        boolean wasNotCompleted = !enrollment.isCompleted();
+
         // Update enrollment
         enrollment.updateProgress(progressPercentage);
         enrollmentRepository.save(enrollment);
 
         log.info("Updated progress for user {} in course {}: {}% ({}/{} lessons)",
                 userId, courseId, progressPercentage, completedLessons, totalLessons);
+
+        // Publish course completed event if just completed
+        if (wasNotCompleted && enrollment.isCompleted()) {
+            publishCourseCompletedEvent(userId, enrollment);
+        }
+    }
+
+    /**
+     * Publishes a CourseCompletedEvent for notification system.
+     *
+     * @param userId     the user who completed the course
+     * @param enrollment the completed enrollment
+     */
+    private void publishCourseCompletedEvent(UUID userId, Enrollment enrollment) {
+        try {
+            Course course = enrollment.getCourse();
+            // Calculate total time from enrollment to completion
+            int completionTimeMinutes = (int) Duration.between(
+                    enrollment.getEnrolledAt(),
+                    enrollment.getCompletedAt()).toMinutes();
+
+            CourseCompletedEvent event = new CourseCompletedEvent(
+                    this,
+                    userId,
+                    course.getId(),
+                    course.getTitle(),
+                    completionTimeMinutes);
+            eventPublisher.publishEvent(event);
+            log.info("Published CourseCompletedEvent for user {} completing course {}",
+                    userId, course.getId());
+        } catch (Exception e) {
+            // Don't fail progress update if notification fails
+            log.warn("Failed to publish CourseCompletedEvent for user {} in course {}: {}",
+                    userId, enrollment.getCourse().getId(), e.getMessage());
+        }
     }
 }

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -26,6 +27,9 @@ class ProgressServiceTest {
 
     @Mock
     private LessonProgressRepository lessonProgressRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ProgressServiceImpl progressService;
@@ -67,13 +71,13 @@ class ProgressServiceTest {
         // Arrange
         int days = 7;
         LocalDateTime now = LocalDateTime.now();
-        
+
         LessonProgress progress1 = new LessonProgress();
         progress1.setCompletedAt(now); // Today
-        
+
         LessonProgress progress2 = new LessonProgress();
         progress2.setCompletedAt(now.minusDays(1)); // Yesterday
-        
+
         when(lessonProgressRepository.findCompletedByUserIdBetween(eq(user.getId()), any(), any()))
                 .thenReturn(java.util.Arrays.asList(progress1, progress2));
 
