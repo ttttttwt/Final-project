@@ -12,6 +12,9 @@ import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.SectionNotFoundException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
 import com.lexia.backend.exception.UserNotFoundException;
+import com.lexia.backend.file.exception.FileNotFoundException;
+import com.lexia.backend.file.exception.FileStorageException;
+import com.lexia.backend.file.exception.FileValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -445,6 +448,66 @@ public class GlobalExceptionHandler {
                                 .build();
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        /**
+         * Handle file validation exceptions.
+         * Returns 400 Bad Request when file validation fails.
+         */
+        @ExceptionHandler(FileValidationException.class)
+        public ResponseEntity<ErrorResponse> handleFileValidationException(
+                        FileValidationException ex, HttpServletRequest request) {
+
+                LOG.warn("File validation error: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .error("File Validation Failed")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        /**
+         * Handle file not found exceptions.
+         * Returns 404 Not Found when a file doesn't exist.
+         */
+        @ExceptionHandler(FileNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleFileNotFoundException(
+                        FileNotFoundException ex, HttpServletRequest request) {
+
+                LOG.warn("File not found: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.NOT_FOUND.value())
+                                .error("File Not Found")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        /**
+         * Handle file storage exceptions.
+         * Returns 500 Internal Server Error when file storage operations fail.
+         */
+        @ExceptionHandler(FileStorageException.class)
+        public ResponseEntity<ErrorResponse> handleFileStorageException(
+                        FileStorageException ex, HttpServletRequest request) {
+
+                LOG.error("File storage error: {}", ex.getMessage(), ex);
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .error("File Storage Error")
+                                .message("Failed to process file. Please try again later.")
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
 
         /**

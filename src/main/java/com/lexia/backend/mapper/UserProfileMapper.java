@@ -26,6 +26,9 @@ public class UserProfileMapper {
             return null;
         }
 
+        // Use effective avatar URL (file upload takes precedence over external URL)
+        String avatarUrl = profile.getEffectiveAvatarUrl();
+
         return UserProfileDTO.builder()
                 .userId(profile.getUserId())
                 .email(profile.getUser() != null ? profile.getUser().getEmail() : null)
@@ -33,7 +36,7 @@ public class UserProfileMapper {
                 .lastName(profile.getLastName())
                 .bio(profile.getBio())
                 .phoneNumber(profile.getPhoneNumber())
-                .avatarUrl(profile.getAvatarUrl())
+                .avatarUrl(avatarUrl)
                 .timezone(profile.getTimezone())
                 .language(profile.getLanguage())
                 .currentLevel(profile.getCurrentLevel())

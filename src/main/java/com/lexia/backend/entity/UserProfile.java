@@ -1,5 +1,6 @@
 package com.lexia.backend.entity;
 
+import com.lexia.backend.file.entity.FileEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -50,9 +51,22 @@ public class UserProfile {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    /**
+     * External avatar URL (for backward compatibility with OAuth providers).
+     */
     @Size(max = 255)
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
+
+    /**
+     * Reference to uploaded avatar file.
+     * Takes precedence over avatarUrl when present.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "avatar_file_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private FileEntity avatarFile;
 
     @Size(max = 50)
     @Column(name = "timezone", length = 50)
@@ -79,4 +93,17 @@ public class UserProfile {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    /**
+     * Get the effective avatar URL.
+     * Returns uploaded file URL if available, otherwise returns external URL.
+     *
+     * @return the avatar URL or null if no avatar is set
+     */
+    public String getEffectiveAvatarUrl() {
+        if (avatarFile != null) {
+            return "/api/v1/files/" + avatarFile.getId() + "/download";
+        }
+        return avatarUrl;
+    }
 }

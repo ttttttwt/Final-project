@@ -4,6 +4,7 @@ import com.lexia.backend.dto.UpdateProfileDTO;
 import com.lexia.backend.dto.UserProfileDTO;
 import com.lexia.backend.exception.InvalidInputException;
 import com.lexia.backend.exception.UserNotFoundException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -51,6 +52,17 @@ public interface UserProfileService {
      * @throws InvalidInputException if avatar URL is invalid
      */
     void updateAvatar(UUID userId, String avatarUrl);
+
+    /**
+     * Uploads and updates user avatar from file.
+     *
+     * @param userId the user ID
+     * @param file   the avatar image file
+     * @return UserProfileDTO containing updated profile with new avatar URL
+     * @throws UserNotFoundException if user not found
+     * @throws InvalidInputException if file validation fails
+     */
+    UserProfileDTO uploadAvatar(UUID userId, MultipartFile file);
 
     /**
      * Removes user avatar by setting it to null.

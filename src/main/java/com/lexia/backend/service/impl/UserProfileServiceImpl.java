@@ -6,6 +6,9 @@ import com.lexia.backend.entity.User;
 import com.lexia.backend.entity.UserProfile;
 import com.lexia.backend.exception.InvalidInputException;
 import com.lexia.backend.exception.UserNotFoundException;
+import com.lexia.backend.file.entity.FileEntity;
+import com.lexia.backend.file.enums.FileCategory;
+import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.mapper.UserProfileMapper;
 import com.lexia.backend.repository.UserProfileRepository;
 import com.lexia.backend.repository.UserRepository;
@@ -19,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -34,6 +38,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final AuditLogService auditLogService;
+    private final FileStorageService fileStorageService;
 
     /**
      * {@inheritDoc}
@@ -170,7 +175,18 @@ public class UserProfileServiceImpl implements UserProfileService {
                     return new UserNotFoundException("User profile not found for user ID: " + userId);
                 });
 
+        // Delete old avatar file if exists
+        FileEntity oldAvatarFile = profile.getAvatarFile();
+        if (oldAvatarFile != null) {
+            try {
+                fileStorageService.delete(oldAvatarFile.getId());
+            } catch (Exception e) {
+                LOG.warn("Failed to delete old avatar file for user ID: {}", userId, e);
+            }
+        }
+
         profile.setAvatarUrl(null);
+        profile.setAvatarFile(null);
         userProfileRepository.save(profile);
 
         // Log the avatar deletion
@@ -181,6 +197,58 @@ public class UserProfileServiceImpl implements UserProfileService {
         }
 
         LOG.info("Successfully deleted avatar for user ID: {}", userId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public UserProfileDTO uploadAvatar(UUID userId, MultipartFile file) {
+        LOG.debug("Uploading avatar for user ID: {}", userId);
+
+        if (userId == null) {
+            throw new InvalidInputException("User ID cannot be null");
+        }
+
+        if (file == null || file.isEmpty()) {
+            throw new InvalidInputException("Avatar file cannot be null or empty");
+        }
+
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> {
+                    LOG.warn("User profile not found for user ID: {}", userId);
+                    return new UserNotFoundException("User profile not found for user ID: " + userId);
+                });
+
+        // Delete old avatar file if exists
+        FileEntity oldAvatarFile = profile.getAvatarFile();
+        if (oldAvatarFile != null) {
+            try {
+                fileStorageService.delete(oldAvatarFile.getId());
+            } catch (Exception e) {
+                LOG.warn("Failed to delete old avatar file for user ID: {}", userId, e);
+            }
+        }
+
+        // Upload new avatar file
+        FileEntity newAvatarFile = fileStorageService.store(file, FileCategory.AVATAR, userId);
+
+        // Update profile with new avatar file
+        profile.setAvatarFile(newAvatarFile);
+        profile.setAvatarUrl(null); // Clear external URL when using file upload
+        UserProfile updatedProfile = userProfileRepository.save(profile);
+
+        // Log the avatar upload
+        try {
+            String avatarUrl = "/api/v1/files/" + newAvatarFile.getId() + "/download";
+            auditLogService.logAvatarUpdate(userId, profile.getUserId(), avatarUrl, null, null);
+        } catch (Exception e) {
+            LOG.warn("Failed to log avatar upload audit for user ID: {}", userId, e);
+        }
+
+        LOG.info("Successfully uploaded avatar for user ID: {}", userId);
+        return UserProfileMapper.toDTO(updatedProfile);
     }
 
     /**
