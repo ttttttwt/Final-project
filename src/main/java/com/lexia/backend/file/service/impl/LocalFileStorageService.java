@@ -7,6 +7,7 @@ import com.lexia.backend.file.exception.FileNotFoundException;
 import com.lexia.backend.file.exception.FileStorageException;
 import com.lexia.backend.file.mapper.FileMapper;
 import com.lexia.backend.file.repository.FileRepository;
+import com.lexia.backend.file.service.FileMetadataExtractor;
 import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.file.validator.FileValidator;
 import com.lexia.backend.repository.UserRepository;
@@ -16,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,6 +46,7 @@ public class LocalFileStorageService implements FileStorageService {
     private final FileRepository fileRepository;
     private final UserRepository userRepository;
     private final FileValidator fileValidator;
+    private final FileMetadataExtractor metadataExtractor;
 
     @Value("${file.upload-dir:./uploads}")
     private String uploadDir;
@@ -51,10 +55,12 @@ public class LocalFileStorageService implements FileStorageService {
 
     public LocalFileStorageService(FileRepository fileRepository,
             UserRepository userRepository,
-            FileValidator fileValidator) {
+            FileValidator fileValidator,
+            FileMetadataExtractor metadataExtractor) {
         this.fileRepository = fileRepository;
         this.userRepository = userRepository;
         this.fileValidator = fileValidator;
+        this.metadataExtractor = metadataExtractor;
     }
 
     /**
@@ -105,7 +111,10 @@ public class LocalFileStorageService implements FileStorageService {
             throw new FileStorageException("Failed to store file: " + file.getOriginalFilename(), e);
         }
 
-        // 5. Create and save file entity
+        // 5. Extract metadata (width/height for images, duration for audio)
+        FileMetadataExtractor.ExtractedMetadata extractedMetadata = metadataExtractor.extract(file, category);
+
+        // 6. Create and save file entity
         FileEntity fileEntity = FileEntity.builder()
                 .originalFilename(fileValidator.sanitizeFilename(file.getOriginalFilename()))
                 .storagePath(storagePath)
@@ -113,7 +122,10 @@ public class LocalFileStorageService implements FileStorageService {
                 .fileSize(file.getSize())
                 .category(category)
                 .uploadedBy(uploadedBy)
-                .isPublic(isPublicCategory(category))
+                .isPublic(category.isPublicByDefault())
+                .width(extractedMetadata.getWidth())
+                .height(extractedMetadata.getHeight())
+                .durationSeconds(extractedMetadata.getDurationSeconds())
                 .build();
 
         FileEntity savedEntity = fileRepository.save(fileEntity);
@@ -189,12 +201,24 @@ public class LocalFileStorageService implements FileStorageService {
         return FileMapper.buildDownloadUrl(fileId.toString());
     }
 
+    /**
+     * Record file access asynchronously to avoid blocking the download request.
+     * Uses a new transaction to prevent issues with the read transaction.
+     */
     @Override
-    @Transactional
+    @Async("fileAccessExecutor")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordAccess(UUID fileId) {
-        FileEntity fileEntity = getFileById(fileId);
-        fileEntity.recordAccess();
-        fileRepository.save(fileEntity);
+        try {
+            fileRepository.findById(fileId).ifPresent(fileEntity -> {
+                fileEntity.recordAccess();
+                fileRepository.save(fileEntity);
+                LOG.debug("Recorded access for file: {}", fileId);
+            });
+        } catch (Exception e) {
+            // Log but don't fail - access recording is not critical
+            LOG.warn("Failed to record access for file {}: {}", fileId, e.getMessage());
+        }
     }
 
     @Override
@@ -225,14 +249,5 @@ public class LocalFileStorageService implements FileStorageService {
             return "";
         }
         return filename.substring(filename.lastIndexOf(".")).toLowerCase();
-    }
-
-    /**
-     * Determine if a category should be public by default.
-     * Avatars and thumbnails are typically public.
-     */
-    private boolean isPublicCategory(FileCategory category) {
-        return category == FileCategory.AVATAR ||
-                category == FileCategory.COURSE_THUMBNAIL;
     }
 }

@@ -20,9 +20,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.lexia.backend.entity.User;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST Controller for Lesson Management.
@@ -311,5 +317,80 @@ public class LessonController {
                 LOG.info("Lesson reordered successfully: {}", reorderedLesson.getTitle());
 
                 return ResponseEntity.ok(reorderedLesson);
+        }
+
+        /**
+         * Upload audio file for a LISTENING lesson.
+         * Requires CONTENT_MANAGER role.
+         */
+        @Operation(summary = "Upload lesson audio", description = "Uploads an audio file for a LISTENING lesson. " +
+                        "Requires CONTENT_MANAGER role. Accepts audio files (MP3, WAV, OGG, M4A) up to 50MB. " +
+                        "Old audio file will be deleted when a new one is uploaded. " +
+                        "Only LISTENING type lessons can have audio files uploaded.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Audio uploaded successfully", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = LessonDTO.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid file type, size, or lesson is not LISTENING type", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - requires CONTENT_MANAGER role", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "404", description = "Lesson not found", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "413", description = "File too large")
+        })
+        @PostMapping(value = "/{id}/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_MANAGER')")
+        public ResponseEntity<LessonDTO> uploadAudio(
+                        @Parameter(description = "Lesson ID", required = true, example = "1") @PathVariable Long id,
+                        @RequestParam("file") MultipartFile file) {
+
+                LOG.info("Uploading audio for lesson ID: {}", id);
+
+                UUID userId = getCurrentUserId();
+                lessonService.uploadAudio(id, file, userId);
+
+                // Fetch and return updated lesson
+                LessonDTO updatedLesson = lessonService.getById(id);
+
+                LOG.info("Audio uploaded successfully for lesson: {}", updatedLesson.getTitle());
+
+                return ResponseEntity.ok(updatedLesson);
+        }
+
+        /**
+         * Delete audio file for a lesson.
+         * Requires CONTENT_MANAGER role.
+         */
+        @Operation(summary = "Delete lesson audio", description = "Removes the audio file from a LISTENING lesson. " +
+                        "Requires CONTENT_MANAGER role. The associated file will be deleted from storage.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Audio deleted successfully", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = LessonDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - requires CONTENT_MANAGER role", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "404", description = "Lesson not found", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
+        })
+        @DeleteMapping("/{id}/audio")
+        @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_MANAGER')")
+        public ResponseEntity<LessonDTO> deleteAudio(
+                        @Parameter(description = "Lesson ID", required = true, example = "1") @PathVariable Long id) {
+
+                LOG.info("Deleting audio for lesson ID: {}", id);
+
+                lessonService.deleteAudio(id);
+
+                // Fetch and return updated lesson
+                LessonDTO updatedLesson = lessonService.getById(id);
+
+                LOG.info("Audio deleted successfully for lesson: {}", updatedLesson.getTitle());
+
+                return ResponseEntity.ok(updatedLesson);
+        }
+
+        /**
+         * Helper method to get current user ID from security context.
+         */
+        private UUID getCurrentUserId() {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.getPrincipal() instanceof User) {
+                        return ((User) authentication.getPrincipal()).getId();
+                }
+                return null;
         }
 }

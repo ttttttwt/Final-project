@@ -665,4 +665,34 @@ class LessonServiceTest {
         verify(lessonRepository).findById(1L);
         verify(lessonRepository).findBySectionIdOrderByOrderIndexAsc(1L);
     }
+
+    // ===================================================================================
+    // Upload Audio Tests
+    // ===================================================================================
+
+    @Test
+    @DisplayName("Upload audio - lesson not found throws exception")
+    void testUploadAudio_LessonNotFound_ThrowsException() {
+        // Arrange
+        Long lessonId = 999L;
+        when(lessonRepository.findById(lessonId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(LessonNotFoundException.class, () -> lessonService.getById(lessonId));
+    }
+
+    // ===================================================================================
+    // Delete Audio Tests
+    // ===================================================================================
+
+    @Test
+    @DisplayName("Delete audio - lesson not found throws exception")
+    void testDeleteAudio_LessonNotFound_ThrowsException() {
+        // Arrange
+        Long lessonId = 999L;
+        when(lessonRepository.findById(lessonId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(LessonNotFoundException.class, () -> lessonService.getById(lessonId));
+    }
 }

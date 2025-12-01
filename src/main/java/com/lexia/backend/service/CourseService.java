@@ -6,8 +6,12 @@ import com.lexia.backend.dto.CreateCourseDTO;
 import com.lexia.backend.dto.UpdateCourseDTO;
 import com.lexia.backend.exception.CourseNotFoundException;
 import com.lexia.backend.exception.DuplicateCourseException;
+import com.lexia.backend.file.dto.FileUploadResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.UUID;
 
 /**
  * Service interface for course management operations.
@@ -153,4 +157,25 @@ public interface CourseService {
      * @return Page of all CourseDTO
      */
     Page<CourseDTO> getAll(Pageable pageable);
+
+    /**
+     * Uploads a thumbnail image for a course.
+     * If the course already has a thumbnail file, it will be replaced.
+     * 
+     * @param id     the course ID
+     * @param file   the image file to upload
+     * @param userId the ID of the user performing the upload
+     * @return FileUploadResponse containing the uploaded file metadata
+     * @throws CourseNotFoundException if course not found
+     */
+    FileUploadResponse uploadThumbnail(Long id, MultipartFile file, UUID userId);
+
+    /**
+     * Deletes the thumbnail file for a course.
+     * Only deletes if the course has an uploaded thumbnail file (not external URL).
+     * 
+     * @param id the course ID
+     * @throws CourseNotFoundException if course not found
+     */
+    void deleteThumbnail(Long id);
 }

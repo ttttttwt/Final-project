@@ -6,8 +6,11 @@ import com.lexia.backend.dto.UpdateLessonDTO;
 import com.lexia.backend.exception.InvalidLessonContentException;
 import com.lexia.backend.exception.LessonNotFoundException;
 import com.lexia.backend.exception.SectionNotFoundException;
+import com.lexia.backend.file.dto.FileUploadResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service interface for lesson management operations.
@@ -113,4 +116,26 @@ public interface LessonService {
      * @throws LessonNotFoundException if lesson not found
      */
     LessonDTO reorder(Long id, Integer newOrderIndex);
+
+    /**
+     * Uploads an audio file for a LISTENING lesson.
+     * If the lesson already has an audio file, it will be replaced.
+     * 
+     * @param id     the lesson ID
+     * @param file   the audio file to upload
+     * @param userId the ID of the user performing the upload
+     * @return FileUploadResponse containing the uploaded file metadata
+     * @throws LessonNotFoundException if lesson not found
+     * @throws IllegalStateException   if lesson is not a LISTENING type
+     */
+    FileUploadResponse uploadAudio(Long id, MultipartFile file, UUID userId);
+
+    /**
+     * Deletes the audio file for a lesson.
+     * Only deletes if the lesson has an uploaded audio file (not URL in content).
+     * 
+     * @param id the lesson ID
+     * @throws LessonNotFoundException if lesson not found
+     */
+    void deleteAudio(Long id);
 }

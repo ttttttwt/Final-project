@@ -1,9 +1,9 @@
 # LEXIA - File Upload System Specification
 
-**Version**: 1.1.0  
+**Version**: 1.5.0  
 **Created**: November 28, 2025  
 **Updated**: December 1, 2025  
-**Status**: ✅ Implemented  
+**Status**: ✅ Implemented (Phase 1-4 Complete + Frontend Integration Complete)  
 **Implemented Sprint**: Sprint 5
 
 ---
@@ -30,7 +30,13 @@ The File Upload System enables secure file management for the LEXIA platform, su
 | File upload endpoint     | ✅ Implemented     | Full CRUD with multipart handling                  |
 | FileStorageService       | ✅ Implemented     | LocalFileStorageService with interface abstraction |
 | FileValidator            | ✅ Implemented     | MIME type, size, magic byte validation             |
+| FileMetadataExtractor    | ✅ Implemented     | Image dimensions, audio duration extraction        |
+| FileSecurityService      | ✅ Implemented     | Centralized access control (canAccess, canDelete)  |
+| Async Access Recording   | ✅ Implemented     | Non-blocking file access tracking                  |
 | Database schema          | ✅ Implemented     | V15 files table, V16 avatar_file_id FK             |
+| Web Frontend             | ✅ Implemented     | AvatarUpload component with userService            |
+| Mobile Frontend          | ✅ Implemented     | expo-image-picker, fileService, AvatarUpload       |
+| Admin Panel              | ✅ Implemented     | coursesApi, lessonsApi with thumbnail/audio upload |
 | Cloud storage            | ❌ Not implemented | No S3/Azure Blob integration (future)              |
 
 ### 1.3. Goals
@@ -616,42 +622,182 @@ export const fileService = {
 // Update: Support file upload via fileService.uploadAvatar()
 ```
 
-### 7.2. Mobile (React Native)
+### 7.2. Mobile (React Native) ✅ Implemented
+
+**File Service** (`lexia-mobile/services/fileService.ts`):
 
 ```typescript
 // services/fileService.ts
 import * as ImagePicker from "expo-image-picker";
+import { api } from "./api";
+import { User } from "@/types";
+
+/** Allowed MIME types for avatar upload */
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
+
+export interface PickedImage {
+  uri: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  width: number;
+  height: number;
+}
+
+export class FileValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FileValidationError";
+  }
+}
 
 export const fileService = {
-  async pickAndUploadAvatar(): Promise<User> {
-    // 1. Pick image
+  /** Request media library permissions */
+  requestMediaLibraryPermission: async (): Promise<boolean> => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    return status === "granted";
+  },
+
+  /** Request camera permissions */
+  requestCameraPermission: async (): Promise<boolean> => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    return status === "granted";
+  },
+
+  /** Pick an image from the device library */
+  pickImage: async (): Promise<PickedImage | null> => {
+    const hasPermission = await fileService.requestMediaLibraryPermission();
+    if (!hasPermission) {
+      throw new FileValidationError("Media library permission is required");
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1], // Square crop for avatar
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets?.length) return null;
+
+    const asset = result.assets[0];
+    return {
+      uri: asset.uri,
+      fileName: asset.fileName || `avatar_${Date.now()}.jpg`,
+      mimeType: asset.mimeType || "image/jpeg",
+      fileSize: asset.fileSize || 0,
+      width: asset.width,
+      height: asset.height,
+    };
+  },
+
+  /** Take a photo with the camera */
+  takePhoto: async (): Promise<PickedImage | null> => {
+    const hasPermission = await fileService.requestCameraPermission();
+    if (!hasPermission) {
+      throw new FileValidationError("Camera permission is required");
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
     });
 
-    if (result.canceled) {
-      throw new Error("Image selection cancelled");
-    }
+    if (result.canceled || !result.assets?.length) return null;
 
-    // 2. Upload
     const asset = result.assets[0];
+    return {
+      uri: asset.uri,
+      fileName: asset.fileName || `photo_${Date.now()}.jpg`,
+      mimeType: asset.mimeType || "image/jpeg",
+      fileSize: asset.fileSize || 0,
+      width: asset.width,
+      height: asset.height,
+    };
+  },
+
+  /** Validate image before upload */
+  validateImage: (image: PickedImage): void => {
+    if (!ALLOWED_IMAGE_TYPES.includes(image.mimeType.toLowerCase())) {
+      throw new FileValidationError(
+        `Invalid file type. Allowed: JPG, PNG, GIF, WebP`
+      );
+    }
+    if (image.fileSize > MAX_AVATAR_SIZE) {
+      throw new FileValidationError(`File size exceeds maximum of 5MB`);
+    }
+  },
+
+  /** Upload avatar image */
+  uploadAvatar: async (image: PickedImage): Promise<User> => {
+    fileService.validateImage(image);
+
     const formData = new FormData();
     formData.append("file", {
-      uri: asset.uri,
-      type: asset.mimeType || "image/jpeg",
-      name: asset.fileName || "avatar.jpg",
-    } as any);
+      uri: image.uri,
+      type: image.mimeType,
+      name: image.fileName,
+    } as unknown as Blob);
 
-    const response = await api.post("/users/avatar", formData, {
+    const response = await api.post<User>("/profile/avatar", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      timeout: 60000,
     });
-
     return response.data;
   },
+
+  /** Delete current user's avatar */
+  deleteAvatar: async (): Promise<User> => {
+    const response = await api.delete<User>("/profile/avatar");
+    return response.data;
+  },
+
+  /** Get file download URL */
+  getFileUrl: (fileId: string): string => `/files/${fileId}/download`,
 };
+```
+
+**AvatarUpload Component** (`lexia-mobile/components/profile/AvatarUpload.tsx`):
+
+```tsx
+// Reusable avatar upload component with:
+// - Image picker (gallery/camera)
+// - Image preview modal
+// - Upload progress indicator
+// - Delete functionality
+// - Validation feedback
+
+interface AvatarUploadProps {
+  currentAvatarUrl?: string;
+  userName: string;
+  size?: number;
+  onAvatarUpdate?: (user: User) => void;
+  disabled?: boolean;
+}
+
+export function AvatarUpload({
+  currentAvatarUrl,
+  userName,
+  size = 120,
+  onAvatarUpdate,
+  disabled,
+}: AvatarUploadProps) {
+  // State: avatarUrl, previewImage, isUploading, showOptionsModal, showPreviewModal
+  // Features:
+  // - Shows Avatar.Image or Avatar.Text with initials
+  // - Camera overlay icon
+  // - Options modal: Take Photo, Choose from Gallery, Remove Photo
+  // - Preview modal with image details and Upload/Cancel buttons
+  // - Integrated with fileService for upload/delete operations
+}
 ```
 
 ### 7.3. Admin Panel
@@ -871,12 +1017,18 @@ class FileControllerIntegrationTest {
 - [x] Update UserProfileMapper
 - [x] Write service tests (LocalFileStorageServiceTest)
 
-### 11.4. Phase 4: Course/Lesson Media (2 pts) ⏳ Pending
+### 11.4. Phase 4: Course/Lesson Media (2 pts) ✅ Complete
 
-- [ ] Create course thumbnail upload endpoint
-- [ ] Create lesson audio upload endpoint
-- [ ] Update Course and Lesson entities
-- [ ] Update admin panel components
+- [x] Create database migrations (V17 thumbnail_file_id, V18 audio_file_id)
+- [x] Create course thumbnail upload endpoint (POST/DELETE /api/v1/courses/{id}/thumbnail)
+- [x] Create lesson audio upload endpoint (POST/DELETE /api/v1/lessons/{id}/audio)
+- [x] Update Course entity with thumbnailFile relationship + getEffectiveThumbnailUrl()
+- [x] Update Lesson entity with audioFile relationship + getEffectiveAudioUrl()
+- [x] Update CourseService with uploadThumbnail/deleteThumbnail methods
+- [x] Update LessonService with uploadAudio/deleteAudio methods (LISTENING type validation)
+- [x] Update CourseMapper to use effective thumbnail URL
+- [x] Update LessonMapper and LessonDTO with audioUrl field
+- [x] Update admin panel APIs (coursesApi, lessonsApi)
 
 ### 11.5. Phase 5: Cloud Storage (Future - 2 pts) ⏳ Pending
 
@@ -885,8 +1037,17 @@ class FileControllerIntegrationTest {
 - [ ] Configure profile-based service selection
 - [ ] Add CloudFront integration
 
-**Total Estimated Points**: 7 pts (local) + 2 pts (cloud) = 9 pts  
-**Completed Points**: 5 pts (Phase 1-3)
+### 11.6. Phase 6: Mobile Frontend (1 pt) ✅ Complete
+
+- [x] Install expo-image-picker and expo-file-system dependencies
+- [x] Create fileService.ts with image picker, validation, upload/delete
+- [x] Create AvatarUpload component with preview modal
+- [x] Integrate AvatarUpload into ProfileScreen
+- [x] Write unit tests for fileService (19 tests)
+- [x] Write component tests for AvatarUpload (11 tests)
+
+**Total Estimated Points**: 8 pts (local + mobile) + 2 pts (cloud) = 10 pts  
+**Completed Points**: 8 pts (Phase 1-4 + Mobile Frontend)
 
 ---
 
@@ -899,6 +1060,9 @@ class FileControllerIntegrationTest {
 dependencies {
     // File upload (already included in spring-boot-starter-web)
     // No additional dependencies for local storage
+
+    // For metadata extraction (image dimensions, audio duration)
+    implementation 'com.drewnoakes:metadata-extractor:2.19.0'
 
     // For image processing (optional)
     implementation 'org.imgscalr:imgscalr-lib:4.2'
@@ -914,11 +1078,11 @@ dependencies {
 // Web - already has File API support
 // No additional dependencies needed
 
-// Mobile
+// Mobile (lexia-mobile/package.json)
 {
   "dependencies": {
-    "expo-image-picker": "~14.3.2",
-    "expo-file-system": "~15.4.2"
+    "expo-image-picker": "~15.0.7",
+    "expo-file-system": "~16.0.10"
   }
 }
 ```
@@ -978,33 +1142,70 @@ spring.servlet.multipart.max-request-size=60MB
 
 ### 15.1. Completed Components
 
-| Component               | File Path                                                          | Notes                                 |
-| ----------------------- | ------------------------------------------------------------------ | ------------------------------------- |
-| Files table migration   | `src/main/resources/db/migration/V15__Create_files_table.sql`      | UUID PK, full metadata support        |
-| Avatar FK migration     | `src/main/resources/db/migration/V16__Add_avatar_file_id_*.sql`    | Added avatar_file_id to user_profiles |
-| FileCategory enum       | `src/main/java/.../file/enums/FileCategory.java`                   | 6 categories with size limits & paths |
-| FileEntity              | `src/main/java/.../file/entity/FileEntity.java`                    | JPA entity with metadata, public flag |
-| FileRepository          | `src/main/java/.../file/repository/FileRepository.java`            | Custom queries for user files         |
-| FileUploadResponse DTO  | `src/main/java/.../file/dto/FileUploadResponse.java`               | Response with download URL            |
-| FileMetadataDTO         | `src/main/java/.../file/dto/FileMetadataDTO.java`                  | Full metadata response                |
-| FileMapper              | `src/main/java/.../file/mapper/FileMapper.java`                    | Entity to DTO conversion              |
-| FileValidationException | `src/main/java/.../file/exception/FileValidationException.java`    | Validation errors                     |
-| FileNotFoundException   | `src/main/java/.../file/exception/FileNotFoundException.java`      | File not found                        |
-| FileStorageException    | `src/main/java/.../file/exception/FileStorageException.java`       | Storage I/O errors                    |
-| FileValidator           | `src/main/java/.../file/validator/FileValidator.java`              | MIME, size, magic byte validation     |
-| FileStorageService      | `src/main/java/.../file/service/FileStorageService.java`           | Interface for storage abstraction     |
-| LocalFileStorageService | `src/main/java/.../file/service/impl/LocalFileStorageService.java` | Local filesystem implementation       |
-| FileController          | `src/main/java/.../file/controller/FileController.java`            | REST endpoints for file operations    |
+| Component               | File Path                                                          | Notes                                    |
+| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------- |
+| Files table migration   | `src/main/resources/db/migration/V15__Create_files_table.sql`      | UUID PK, full metadata support           |
+| Avatar FK migration     | `src/main/resources/db/migration/V16__Add_avatar_file_id_*.sql`    | Added avatar_file_id to user_profiles    |
+| FileCategory enum       | `src/main/java/.../file/enums/FileCategory.java`                   | 6 categories with size limits & paths    |
+| FileEntity              | `src/main/java/.../file/entity/FileEntity.java`                    | JPA entity with metadata, public flag    |
+| FileRepository          | `src/main/java/.../file/repository/FileRepository.java`            | Custom queries for user files            |
+| FileUploadResponse DTO  | `src/main/java/.../file/dto/FileUploadResponse.java`               | Response with download URL               |
+| FileMetadataDTO         | `src/main/java/.../file/dto/FileMetadataDTO.java`                  | Full metadata response                   |
+| FileMapper              | `src/main/java/.../file/mapper/FileMapper.java`                    | Entity to DTO conversion                 |
+| FileValidationException | `src/main/java/.../file/exception/FileValidationException.java`    | Validation errors                        |
+| FileNotFoundException   | `src/main/java/.../file/exception/FileNotFoundException.java`      | File not found                           |
+| FileStorageException    | `src/main/java/.../file/exception/FileStorageException.java`       | Storage I/O errors                       |
+| FileValidator           | `src/main/java/.../file/validator/FileValidator.java`              | MIME, size, magic byte validation        |
+| FileStorageService      | `src/main/java/.../file/service/FileStorageService.java`           | Interface for storage abstraction        |
+| LocalFileStorageService | `src/main/java/.../file/service/impl/LocalFileStorageService.java` | Local filesystem implementation          |
+| FileMetadataExtractor   | `src/main/java/.../file/service/FileMetadataExtractor.java`        | Extract image dimensions, audio duration |
+| FileSecurityService     | `src/main/java/.../file/service/FileSecurityService.java`          | Centralized access control logic         |
+| FileController          | `src/main/java/.../file/controller/FileController.java`            | REST endpoints for file operations       |
 
 ### 15.2. Test Coverage
 
-| Test Class                  | Coverage Target | Status  |
-| --------------------------- | --------------- | ------- |
-| FileValidatorTest           | ≥90%            | ✅ Pass |
-| LocalFileStorageServiceTest | ≥80%            | ✅ Pass |
-| FileControllerTest          | ≥70%            | ✅ Pass |
+| Test Class                   | Tests   | Pass    | Coverage Target | Status          |
+| ---------------------------- | ------- | ------- | --------------- | --------------- |
+| FileValidatorTest            | 47      | 47      | ≥90%            | ✅ Pass         |
+| LocalFileStorageServiceTest  | 18      | 18      | ≥80%            | ✅ Pass         |
+| FileControllerTest           | 17      | 17      | ≥70%            | ✅ Pass         |
+| FileSecurityServiceTest      | 14      | 14      | ≥80%            | ✅ Pass         |
+| FileMetadataExtractorTest    | 13      | 13      | ≥80%            | ✅ Pass         |
+| **Backend Total**            | **109** | **109** | -               | ✅ **All Pass** |
+| Mobile fileService.test.ts   | 19      | 19      | ≥70%            | ✅ Pass         |
+| Mobile AvatarUpload.test.tsx | 11      | 11      | ≥70%            | ✅ Pass         |
+| **Mobile Total**             | **30**  | **30**  | -               | ✅ **All Pass** |
+| **Grand Total**              | **139** | **139** | -               | ✅ **All Pass** |
 
-### 15.3. Configuration Applied
+### 15.3. Bug Fixes Applied (December 1, 2025)
+
+**Issue**: 13 FileControllerTest tests failing with 400 Bad Request
+
+**Root Cause**: Spring MVC `@WebMvcTest` with disabled security filters couldn't bind UUID path variables when `@PathVariable` didn't have explicit name annotation.
+
+**Solution Applied**:
+
+1. **FileController.java**: Changed `@PathVariable UUID id` to `@PathVariable("id") UUID id` for all endpoints (getMetadata, downloadFile, deleteFile)
+2. **GlobalExceptionHandler.java**: Added `MethodArgumentTypeMismatchException` handler for better error messages on type conversion failures
+
+```java
+// FileController fix
+@GetMapping("/{id}")
+public ResponseEntity<FileMetadataDTO> getMetadata(@PathVariable("id") UUID id) { ... }
+
+// GlobalExceptionHandler addition
+@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+        MethodArgumentTypeMismatchException ex) {
+    ErrorResponse error = new ErrorResponse(
+        HttpStatus.BAD_REQUEST.value(),
+        "Invalid parameter: " + ex.getName() + " - " + ex.getMessage()
+    );
+    return ResponseEntity.badRequest().body(error);
+}
+```
+
+### 15.4. Configuration Applied
 
 ```properties
 # application.properties
@@ -1013,21 +1214,438 @@ spring.servlet.multipart.max-request-size=60MB
 file.upload-dir=./uploads
 ```
 
-### 15.4. API Endpoints Implemented
+### 15.5. API Endpoints Implemented
 
-| Method   | Endpoint                      | Auth | Status         |
-| -------- | ----------------------------- | ---- | -------------- |
-| `POST`   | `/api/v1/files/upload`        | Yes  | ✅ Implemented |
-| `GET`    | `/api/v1/files/{id}`          | Yes  | ✅ Implemented |
-| `GET`    | `/api/v1/files/{id}/download` | Yes  | ✅ Implemented |
-| `DELETE` | `/api/v1/files/{id}`          | Yes  | ✅ Implemented |
-| `GET`    | `/api/v1/files/my-files`      | Yes  | ✅ Implemented |
-| `POST`   | `/api/v1/profile/avatar`      | Yes  | ✅ Implemented |
+| Method   | Endpoint                         | Auth     | Status         |
+| -------- | -------------------------------- | -------- | -------------- |
+| `POST`   | `/api/v1/files/upload`           | Yes      | ✅ Implemented |
+| `GET`    | `/api/v1/files/{id}`             | Yes      | ✅ Implemented |
+| `GET`    | `/api/v1/files/{id}/download`    | Yes      | ✅ Implemented |
+| `DELETE` | `/api/v1/files/{id}`             | Yes      | ✅ Implemented |
+| `GET`    | `/api/v1/files/{id}/exists`      | Yes      | ✅ Implemented |
+| `GET`    | `/api/v1/files/my-files`         | Yes      | ✅ Implemented |
+| `POST`   | `/api/v1/profile/avatar`         | Yes      | ✅ Implemented |
+| `DELETE` | `/api/v1/profile/avatar`         | Yes      | ✅ Implemented |
+| `POST`   | `/api/v1/courses/{id}/thumbnail` | Yes (CM) | ✅ Implemented |
+| `DELETE` | `/api/v1/courses/{id}/thumbnail` | Yes (CM) | ✅ Implemented |
+| `POST`   | `/api/v1/lessons/{id}/audio`     | Yes (CM) | ✅ Implemented |
+| `DELETE` | `/api/v1/lessons/{id}/audio`     | Yes (CM) | ✅ Implemented |
 
-### 15.5. Key Design Decisions
+### 15.6. Key Design Decisions
 
 1. **Magic Byte Validation**: Implemented for JPEG, PNG, GIF, WebP, PDF, MP3, WAV, OGG, M4A
 2. **Date-based Partitioning**: Files stored at `./uploads/{category}/{yyyy-MM}/{uuid}.ext`
 3. **Authentication Pattern**: Uses `@AuthenticationPrincipal User user` directly
 4. **Interface Abstraction**: `FileStorageService` interface allows easy cloud storage switch
 5. **Public Files Support**: `isPublic` flag allows unauthenticated access when true
+6. **Explicit @PathVariable Binding**: Required for WebMvcTest compatibility with disabled security filters
+
+---
+
+## 16. Progress Summary
+
+### 16.1. Implementation Status
+
+| Phase     | Description         | Points | Status         | Tests      |
+| --------- | ------------------- | ------ | -------------- | ---------- |
+| 1         | Core Infrastructure | 2      | ✅ Complete    | -          |
+| 2         | File Upload API     | 2      | ✅ Complete    | 16/16 ✅   |
+| 3         | Avatar Integration  | 1      | ✅ Complete    | 62/62 ✅   |
+| 4         | Course/Lesson Media | 2      | ✅ Complete    | ✅         |
+| 5         | Cloud Storage (S3)  | 2      | ⏳ Pending     | -          |
+| **Total** |                     | **9**  | **7 pts done** | **All ✅** |
+
+### 16.2. Test Results (Last Run: December 1, 2025)
+
+```
+Tests:     109 passed, 0 failed
+Duration:  ~17 seconds
+
+Breakdown:
+- FileValidatorTest:           47 tests ✅
+- LocalFileStorageServiceTest: 18 tests ✅
+- FileControllerTest:          17 tests ✅
+- FileSecurityServiceTest:     14 tests ✅
+- FileMetadataExtractorTest:   13 tests ✅
+```
+
+### 16.3. Phase 4 Implementation Details (December 1, 2025)
+
+**Database Migrations Added:**
+
+- `V17__Add_thumbnail_file_id_to_courses.sql` - FK for course thumbnails
+- `V18__Add_audio_file_id_to_lessons.sql` - FK for lesson audio files
+
+**Backend Files Modified:**
+| File | Changes |
+|------|--------|
+| `Course.java` | Added `thumbnailFile` ManyToOne + `getEffectiveThumbnailUrl()` |
+| `Lesson.java` | Added `audioFile` ManyToOne + `getEffectiveAudioUrl()` |
+| `CourseService.java` | Added `uploadThumbnail()`, `deleteThumbnail()` |
+| `CourseServiceImpl.java` | Implemented thumbnail upload/delete with FileStorageService |
+| `LessonService.java` | Added `uploadAudio()`, `deleteAudio()` |
+| `LessonServiceImpl.java` | Implemented audio upload/delete with LISTENING validation |
+| `CourseController.java` | Added POST/DELETE `/courses/{id}/thumbnail` endpoints |
+| `LessonController.java` | Added POST/DELETE `/lessons/{id}/audio` endpoints |
+| `CourseMapper.java` | Uses `getEffectiveThumbnailUrl()` for computed URL |
+| `LessonMapper.java` | Added `audioUrl` from file entity |
+| `LessonDTO.java` | Added `audioUrl` field |
+
+**Admin Panel Files Modified:**
+| File | Changes |
+|------|--------|
+| `coursesApi.ts` | Added `uploadThumbnail()`, `deleteThumbnail()` |
+| `lessonsApi.ts` | Added `uploadAudio()`, `deleteAudio()` |
+| `lesson.types.ts` | Added `audioUrl` optional field to Lesson interface |
+
+**Key Design Decisions:**
+
+1. **Effective URL Pattern**: Entities have `getEffectiveXxxUrl()` methods that return file download URL if uploaded, otherwise fallback to external URL
+2. **LISTENING Type Validation**: Audio upload only allowed for LISTENING type lessons
+3. **Backward Compatibility**: Keep `thumbnailUrl`/`content.audioUrl` for external URLs
+4. **File Cleanup**: Old files are deleted when new ones are uploaded
+
+### 16.4. Next Steps (Phase 5)
+
+1. **Cloud Storage (S3)**:
+
+   - Add AWS SDK dependency
+   - Implement S3FileStorageService
+   - Configure profile-based service selection
+   - Add CloudFront integration
+
+2. **Future Enhancements**:
+   - Image thumbnail generation
+   - Audio transcoding
+   - CDN integration
+
+**Note**: All frontend implementations (Web, Mobile, Admin) are now complete. Only cloud storage (Phase 5) remains.
+
+- Image thumbnail generation
+- Audio transcoding
+- CDN integration
+
+---
+
+## 17. December 1, 2025 Enhancements
+
+### 17.1. New Components Added
+
+| Component                 | Description                                                                       |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| **FileMetadataExtractor** | Extracts image width/height and audio duration using metadata-extractor library   |
+| **FileSecurityService**   | Centralized access control with `canAccess()`, `canDelete()`, `isOwner()` methods |
+| **fileAccessExecutor**    | Dedicated async executor for non-blocking access recording                        |
+
+### 17.2. FileMetadataExtractor
+
+Extracts metadata from uploaded files automatically during upload:
+
+```java
+@Service
+public class FileMetadataExtractor {
+
+    @Data
+    @Builder
+    public static class ExtractedMetadata {
+        private Integer width;        // For images
+        private Integer height;       // For images
+        private Integer durationSeconds; // For audio
+    }
+
+    public ExtractedMetadata extract(MultipartFile file, FileCategory category) {
+        return switch (category) {
+            case AVATAR, COURSE_THUMBNAIL, LESSON_IMAGE -> extractImageMetadata(file);
+            case LESSON_AUDIO -> extractAudioMetadata(file);
+            default -> ExtractedMetadata.builder().build();
+        };
+    }
+}
+```
+
+**Supported Formats:**
+
+- **Images**: JPEG, PNG, GIF, WebP (extracts width, height via EXIF/format headers)
+- **Audio**: MP3, WAV, M4A, OGG (calculates duration from bitrate/sample rate)
+
+### 17.3. FileSecurityService
+
+Centralized access control replacing scattered inline checks:
+
+```java
+@Service
+public class FileSecurityService {
+
+    /**
+     * Check if user can access the file.
+     * Access granted if: public file OR owner OR ADMIN role
+     */
+    public boolean canAccess(FileEntity file, User user) {
+        if (Boolean.TRUE.equals(file.getIsPublic())) return true;
+        if (user == null) return false;
+        if (isOwner(file, user)) return true;
+        return hasAdminRole(user);
+    }
+
+    /**
+     * Check if user can delete the file.
+     * Deletion allowed if: owner OR ADMIN role
+     */
+    public boolean canDelete(FileEntity file, User user) {
+        if (file == null || user == null) return false;
+        if (isOwner(file, user)) return true;
+        return hasAdminRole(user);
+    }
+}
+```
+
+### 17.4. FileCategory with isPublicByDefault
+
+Updated enum to include default access control:
+
+```java
+public enum FileCategory {
+    AVATAR("avatars", true),                    // Public by default
+    COURSE_THUMBNAIL("courses/thumbnails", true), // Public by default
+    LESSON_AUDIO("lessons/audio", false),       // Private
+    LESSON_IMAGE("lessons/images", false),      // Private
+    DOCUMENT("documents", false),               // Private
+    CERTIFICATE("documents/certificates", false); // Private
+
+    private final String storagePath;
+    private final boolean publicByDefault;
+
+    public boolean isPublicByDefault() {
+        return publicByDefault;
+    }
+}
+```
+
+### 17.5. Async Access Recording
+
+Non-blocking file access tracking using dedicated executor:
+
+```java
+// AsyncConfig.java
+@Bean(name = "fileAccessExecutor")
+public Executor fileAccessExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(2);
+    executor.setMaxPoolSize(5);
+    executor.setQueueCapacity(100);
+    executor.setThreadNamePrefix("file-access-");
+    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy()); // Non-critical
+    executor.initialize();
+    return executor;
+}
+
+// LocalFileStorageService.java
+@Override
+@Async("fileAccessExecutor")
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+public void recordAccess(UUID fileId) {
+    fileRepository.findById(fileId).ifPresent(file -> {
+        file.recordAccess();
+        fileRepository.save(file);
+    });
+}
+```
+
+### 17.6. Updated Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        FileController                               │
+└─────────────────────────────────┬───────────────────────────────────┘
+                                  │
+            ┌─────────────────────┼─────────────────────┐
+            │                     │                     │
+┌───────────▼───────────┐ ┌───────▼───────┐ ┌──────────▼──────────┐
+│ FileSecurityService   │ │FileStorage    │ │ FileValidator       │
+│ - canAccess()         │ │Service        │ │ - MIME validation   │
+│ - canDelete()         │ │(Interface)    │ │ - Size validation   │
+│ - isOwner()           │ └───────┬───────┘ │ - Magic bytes       │
+└───────────────────────┘         │         └─────────────────────┘
+                                  │
+                    ┌─────────────┼─────────────┐
+                    │             │             │
+          ┌─────────▼─────────┐   │   ┌─────────▼─────────┐
+          │LocalFileStorage   │   │   │FileMetadata       │
+          │Service            │   │   │Extractor          │
+          │ - store()         │   │   │ - extractImage()  │
+          │ - load()          │   │   │ - extractAudio()  │
+          │ - recordAccess()  │   │   └───────────────────┘
+          │   (async)         │   │
+          └───────────────────┘   │
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │    FileRepository         │
+                    │    (JPA)                  │
+                    └───────────────────────────┘
+```
+
+### 17.7. Performance Improvements
+
+| Improvement          | Before                     | After                              |
+| -------------------- | -------------------------- | ---------------------------------- |
+| Access Recording     | Synchronous (blocking)     | Async with dedicated executor      |
+| Security Checks      | Scattered in Controller    | Centralized in FileSecurityService |
+| Metadata Extraction  | Not implemented            | Auto-extracted on upload           |
+| Public/Private Logic | Hardcoded in service       | Configured in FileCategory enum    |
+| Executor Rejection   | Default (throws exception) | DiscardPolicy (non-critical ops)   |
+
+### 17.8. Files Modified/Created
+
+| File                               | Action   | Description                              |
+| ---------------------------------- | -------- | ---------------------------------------- |
+| `build.gradle`                     | Modified | Added metadata-extractor:2.19.0          |
+| `FileCategory.java`                | Modified | Added isPublicByDefault property         |
+| `FileMetadataExtractor.java`       | Created  | New service for metadata extraction      |
+| `FileSecurityService.java`         | Created  | Centralized access control               |
+| `LocalFileStorageService.java`     | Modified | Integrated extractor, async recordAccess |
+| `FileController.java`              | Modified | Uses FileSecurityService                 |
+| `AsyncConfig.java`                 | Modified | Added fileAccessExecutor bean            |
+| `FileSecurityServiceTest.java`     | Created  | 14 test cases                            |
+| `FileMetadataExtractorTest.java`   | Created  | 13 test cases                            |
+| `LocalFileStorageServiceTest.java` | Modified | Updated for new components               |
+| `FileControllerTest.java`          | Modified | Uses FileSecurityService mock            |
+
+---
+
+## 18. Mobile Frontend Implementation (December 1, 2025)
+
+### 18.1. Implementation Overview
+
+The mobile frontend file upload system has been fully implemented using expo-image-picker for image selection and FormData for upload. The implementation includes:
+
+| Component          | File Path                                                 | Description                                                        |
+| ------------------ | --------------------------------------------------------- | ------------------------------------------------------------------ |
+| fileService        | `lexia-mobile/services/fileService.ts`                    | Complete file service with image picker, validation, upload/delete |
+| AvatarUpload       | `lexia-mobile/components/profile/AvatarUpload.tsx`        | Reusable avatar upload component with preview modal                |
+| ProfileScreen      | `lexia-mobile/app/tabs/ProfileScreen.tsx`                 | Integrated AvatarUpload component                                  |
+| fileService tests  | `lexia-mobile/__tests__/services/fileService.test.ts`     | 19 unit tests                                                      |
+| AvatarUpload tests | `lexia-mobile/__tests__/components/AvatarUpload.test.tsx` | 11 component tests                                                 |
+
+### 18.2. Mobile File Service Features
+
+```typescript
+// Key functions in fileService.ts
+export const fileService = {
+  requestMediaLibraryPermission(): Promise<boolean>  // Request gallery access
+  requestCameraPermission(): Promise<boolean>        // Request camera access
+  pickImage(): Promise<PickedImage | null>           // Pick from gallery
+  takePhoto(): Promise<PickedImage | null>           // Capture with camera
+  validateImage(image: PickedImage): void            // Validate type/size
+  uploadAvatar(image: PickedImage): Promise<User>    // Upload via FormData
+  deleteAvatar(): Promise<User>                       // Delete avatar
+  pickAndUploadAvatar(): Promise<User | null>        // Convenience method
+  takeAndUploadAvatar(): Promise<User | null>        // Convenience method
+  getFileUrl(fileId: string): string                 // Get download URL
+};
+```
+
+### 18.3. AvatarUpload Component Features
+
+| Feature             | Description                                           |
+| ------------------- | ----------------------------------------------------- |
+| **Avatar Display**  | Shows Avatar.Image or Avatar.Text with initials       |
+| **Camera Overlay**  | Circular camera icon button for changing avatar       |
+| **Options Modal**   | Take Photo, Choose from Gallery, Remove Photo options |
+| **Preview Modal**   | Shows selected image with dimensions and file size    |
+| **Upload Progress** | ActivityIndicator during upload                       |
+| **Delete Function** | Confirmation dialog before removal                    |
+| **Accessibility**   | Full ARIA labels and hints                            |
+| **Validation**      | Client-side MIME type and file size validation        |
+
+### 18.4. Mobile Test Coverage
+
+| Test File                          | Tests  | Status             |
+| ---------------------------------- | ------ | ------------------ |
+| `fileService.test.ts`              | 19     | ✅ All passing     |
+| `AvatarUpload.test.tsx`            | 11     | ✅ All passing     |
+| **Total Mobile File Upload Tests** | **30** | ✅ **All passing** |
+
+**Test Categories:**
+
+**fileService tests (19):**
+
+- Permission requests (media library, camera)
+- pickImage (success, cancel, permission denied)
+- takePhoto (success, cancel)
+- validateImage (valid, invalid MIME, size exceeded)
+- uploadAvatar (success, validation error)
+- deleteAvatar
+- getFileUrl
+
+**AvatarUpload tests (11):**
+
+- Render with/without avatar URL
+- Options modal display
+- Remove Photo option when avatar exists
+- Gallery/Camera selection
+- Preview modal after image selection
+- Upload button functionality
+- Disabled state
+- Remove button visibility
+- validateImage integration
+
+### 18.5. Dependencies Installed
+
+```json
+{
+  "expo-image-picker": "~15.0.7",
+  "expo-file-system": "~16.0.10"
+}
+```
+
+### 18.6. Integration with ProfileScreen
+
+```tsx
+// ProfileScreen.tsx integration
+import { AvatarUpload } from "@/components/profile";
+import { useAuthStore } from "@/store/authStore";
+
+function ProfileScreen() {
+  const { user, setUser } = useAuthStore();
+
+  const handleAvatarUpdate = (updatedUser: User) => {
+    setUser(updatedUser); // Update global auth state
+  };
+
+  return (
+    <AvatarUpload
+      currentAvatarUrl={user?.avatarUrl}
+      userName={`${user?.firstName} ${user?.lastName}`}
+      size={120}
+      onAvatarUpdate={handleAvatarUpdate}
+    />
+  );
+}
+```
+
+---
+
+## 19. Frontend Implementation Summary
+
+### 19.1. Platform Implementation Status
+
+| Platform                  | Status  | Components                                              | Tests      |
+| ------------------------- | ------- | ------------------------------------------------------- | ---------- |
+| **Backend**               | ✅ 100% | FileController, FileStorageService, FileValidator, etc. | 109 tests  |
+| **Web (Next.js)**         | ✅ 100% | userService.ts, AvatarUpload.tsx                        | Integrated |
+| **Mobile (React Native)** | ✅ 100% | fileService.ts, AvatarUpload.tsx                        | 30 tests   |
+| **Admin Panel**           | ✅ 100% | coursesApi.ts, lessonsApi.ts                            | Integrated |
+
+### 19.2. Total Test Coverage
+
+| Category                    | Tests                                                                                                          |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Backend (Java)              | 109 tests (FileValidator, LocalFileStorageService, FileController, FileSecurityService, FileMetadataExtractor) |
+| Mobile (TypeScript)         | 30 tests (fileService, AvatarUpload)                                                                           |
+| **Total File Upload Tests** | **139+ tests**                                                                                                 |
+
+---
+
+**Document Owner**: LEXIA Development Team  
+**Last Updated**: December 1, 2025  
+**Next Review**: Before Sprint 6 Planning

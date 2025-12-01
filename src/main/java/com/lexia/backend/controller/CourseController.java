@@ -29,6 +29,7 @@ import com.lexia.backend.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * REST Controller for Course Management.
@@ -355,6 +356,69 @@ public class CourseController {
                 LOG.info("Course unpublished successfully: {}", unpublishedCourse.getTitle());
 
                 return ResponseEntity.ok(unpublishedCourse);
+        }
+
+        /**
+         * Upload course thumbnail image.
+         * Requires CONTENT_MANAGER role.
+         */
+        @Operation(summary = "Upload course thumbnail", description = "Uploads a thumbnail image for the course. " +
+                        "Requires CONTENT_MANAGER role. Accepts image files (JPG, PNG, WebP) up to 5MB. " +
+                        "Old thumbnail file will be deleted when a new one is uploaded.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Thumbnail uploaded successfully", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = CourseDTO.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid file type or size", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - requires CONTENT_MANAGER role", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "404", description = "Course not found", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "413", description = "File too large")
+        })
+        @PostMapping(value = "/{id}/thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_MANAGER')")
+        public ResponseEntity<CourseDTO> uploadThumbnail(
+                        @Parameter(description = "Course ID", required = true, example = "1") @PathVariable Long id,
+                        @RequestParam("file") MultipartFile file) {
+
+                LOG.info("Uploading thumbnail for course ID: {}", id);
+
+                java.util.UUID userId = getCurrentUserId();
+                courseService.uploadThumbnail(id, file, userId);
+
+                // Fetch and return updated course
+                CourseDTO updatedCourse = courseService.getById(id);
+
+                LOG.info("Thumbnail uploaded successfully for course: {}", updatedCourse.getTitle());
+
+                return ResponseEntity.ok(updatedCourse);
+        }
+
+        /**
+         * Delete course thumbnail image.
+         * Requires CONTENT_MANAGER role.
+         */
+        @Operation(summary = "Delete course thumbnail", description = "Removes the thumbnail image from the course. " +
+                        "Requires CONTENT_MANAGER role. The associated file will be deleted from storage.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Thumbnail deleted successfully", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = CourseDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - requires CONTENT_MANAGER role", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
+                        @ApiResponse(responseCode = "404", description = "Course not found", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
+        })
+        @DeleteMapping("/{id}/thumbnail")
+        @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_MANAGER')")
+        public ResponseEntity<CourseDTO> deleteThumbnail(
+                        @Parameter(description = "Course ID", required = true, example = "1") @PathVariable Long id) {
+
+                LOG.info("Deleting thumbnail for course ID: {}", id);
+
+                courseService.deleteThumbnail(id);
+
+                // Fetch and return updated course
+                CourseDTO updatedCourse = courseService.getById(id);
+
+                LOG.info("Thumbnail deleted successfully for course: {}", updatedCourse.getTitle());
+
+                return ResponseEntity.ok(updatedCourse);
         }
 
         /**

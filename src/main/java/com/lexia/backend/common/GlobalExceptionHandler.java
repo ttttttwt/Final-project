@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
 /**
  * Global exception handler for the LEXIA backend.
  * Provides centralized error handling and consistent error responses.
@@ -45,6 +47,29 @@ import java.util.Set;
 public class GlobalExceptionHandler {
 
         private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+        /**
+         * Handle method argument type mismatch exceptions.
+         * Returns 400 Bad Request when a parameter cannot be converted to the expected
+         * type.
+         */
+        @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+        public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
+                        MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+
+                Class<?> requiredType = ex.getRequiredType();
+                String typeName = requiredType != null ? requiredType.getSimpleName() : "unknown";
+                LOG.warn("Method argument type mismatch: {} should be of type {}", ex.getName(), typeName);
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .error("Bad Request")
+                                .message(String.format("Parameter '%s' should be of type %s", ex.getName(), typeName))
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
 
         /**
          * Handle validation errors from @Valid annotations.

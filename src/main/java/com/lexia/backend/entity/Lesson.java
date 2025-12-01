@@ -1,5 +1,6 @@
 package com.lexia.backend.entity;
 
+import com.lexia.backend.file.entity.FileEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -138,6 +139,14 @@ public class Lesson {
     private LocalDateTime updatedAt;
 
     /**
+     * Reference to uploaded audio file (for LISTENING lessons).
+     * If set, takes precedence over content.audioUrl.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "audio_file_id")
+    private FileEntity audioFile;
+
+    /**
      * Enum representing the type of lesson.
      * Maps to the PostgreSQL lesson_type_enum.
      */
@@ -161,5 +170,19 @@ public class Lesson {
          * Speaking practice with AI role-play.
          */
         SPEAKING
+    }
+
+    /**
+     * Get the effective audio URL for LISTENING lessons.
+     * Returns uploaded file URL if available, otherwise null.
+     * Note: The external audioUrl is stored in the content JSON field.
+     *
+     * @return the audio file URL or null if no audio file is uploaded
+     */
+    public String getEffectiveAudioUrl() {
+        if (audioFile != null) {
+            return "/api/v1/files/" + audioFile.getId() + "/download";
+        }
+        return null;
     }
 }

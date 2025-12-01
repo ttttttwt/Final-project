@@ -4,7 +4,6 @@ import com.lexia.backend.entity.User;
 import com.lexia.backend.file.entity.FileEntity;
 import com.lexia.backend.file.enums.FileCategory;
 import com.lexia.backend.file.exception.FileNotFoundException;
-import com.lexia.backend.file.exception.FileStorageException;
 import com.lexia.backend.file.exception.FileValidationException;
 import com.lexia.backend.file.repository.FileRepository;
 import com.lexia.backend.file.service.impl.LocalFileStorageService;
@@ -49,6 +48,9 @@ class LocalFileStorageServiceTest {
     @Mock
     private FileValidator fileValidator;
 
+    @Mock
+    private FileMetadataExtractor metadataExtractor;
+
     private LocalFileStorageService localFileStorageService;
 
     @TempDir
@@ -58,7 +60,8 @@ class LocalFileStorageServiceTest {
 
     @BeforeEach
     void setUp() {
-        localFileStorageService = new LocalFileStorageService(fileRepository, userRepository, fileValidator);
+        localFileStorageService = new LocalFileStorageService(
+                fileRepository, userRepository, fileValidator, metadataExtractor);
         ReflectionTestUtils.setField(localFileStorageService, "uploadDir", tempDir.toString());
         localFileStorageService.init();
     }
@@ -80,6 +83,8 @@ class LocalFileStorageServiceTest {
 
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(fileValidator.sanitizeFilename("avatar.jpg")).thenReturn("avatar.jpg");
+            when(metadataExtractor.extract(any(), any()))
+                    .thenReturn(FileMetadataExtractor.ExtractedMetadata.builder().build());
             when(fileRepository.save(any(FileEntity.class))).thenAnswer(invocation -> {
                 FileEntity entity = invocation.getArgument(0);
                 entity.setId(UUID.randomUUID());
@@ -94,11 +99,12 @@ class LocalFileStorageServiceTest {
             assertEquals("avatar.jpg", result.getOriginalFilename());
             assertEquals("image/jpeg", result.getMimeType());
             assertEquals(FileCategory.AVATAR, result.getCategory());
-            assertTrue(result.getIsPublic()); // Avatar is public by default
+            assertTrue(result.getIsPublic()); // Avatar is public by default (from enum)
             assertNotNull(result.getStoragePath());
             assertTrue(result.getStoragePath().contains("avatars"));
 
             verify(fileValidator).validate(file, FileCategory.AVATAR);
+            verify(metadataExtractor).extract(file, FileCategory.AVATAR);
             verify(fileRepository).save(any(FileEntity.class));
         }
 
@@ -110,6 +116,8 @@ class LocalFileStorageServiceTest {
                     "file", "avatar.jpg", "image/jpeg", JPEG_MAGIC_BYTES);
 
             when(fileValidator.sanitizeFilename("avatar.jpg")).thenReturn("avatar.jpg");
+            when(metadataExtractor.extract(any(), any()))
+                    .thenReturn(FileMetadataExtractor.ExtractedMetadata.builder().build());
             when(fileRepository.save(any(FileEntity.class))).thenAnswer(invocation -> {
                 FileEntity entity = invocation.getArgument(0);
                 entity.setId(UUID.randomUUID());
@@ -126,6 +134,61 @@ class LocalFileStorageServiceTest {
         }
 
         @Test
+        @DisplayName("Should store file with extracted metadata")
+        void shouldStoreFileWithExtractedMetadata() {
+            // Arrange
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "image.jpg", "image/jpeg", JPEG_MAGIC_BYTES);
+
+            when(fileValidator.sanitizeFilename("image.jpg")).thenReturn("image.jpg");
+            when(metadataExtractor.extract(any(), any()))
+                    .thenReturn(FileMetadataExtractor.ExtractedMetadata.builder()
+                            .width(800)
+                            .height(600)
+                            .build());
+            when(fileRepository.save(any(FileEntity.class))).thenAnswer(invocation -> {
+                FileEntity entity = invocation.getArgument(0);
+                entity.setId(UUID.randomUUID());
+                return entity;
+            });
+
+            // Act
+            FileEntity result = localFileStorageService.store(file, FileCategory.LESSON_IMAGE, null);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(800, result.getWidth());
+            assertEquals(600, result.getHeight());
+        }
+
+        @Test
+        @DisplayName("Should store audio file with duration metadata")
+        void shouldStoreAudioFileWithDurationMetadata() {
+            // Arrange
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "audio.mp3", "audio/mpeg", new byte[] { 0x49, 0x44, 0x33 });
+
+            when(fileValidator.sanitizeFilename("audio.mp3")).thenReturn("audio.mp3");
+            when(metadataExtractor.extract(any(), any()))
+                    .thenReturn(FileMetadataExtractor.ExtractedMetadata.builder()
+                            .durationSeconds(180)
+                            .build());
+            when(fileRepository.save(any(FileEntity.class))).thenAnswer(invocation -> {
+                FileEntity entity = invocation.getArgument(0);
+                entity.setId(UUID.randomUUID());
+                return entity;
+            });
+
+            // Act
+            FileEntity result = localFileStorageService.store(file, FileCategory.LESSON_AUDIO, null);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(180, result.getDurationSeconds());
+            assertFalse(result.getIsPublic()); // LESSON_AUDIO is not public by default
+        }
+
+        @Test
         @DisplayName("Should call validator during store")
         void shouldCallValidatorDuringStore() {
             // Arrange
@@ -133,6 +196,8 @@ class LocalFileStorageServiceTest {
                     "file", "avatar.jpg", "image/jpeg", JPEG_MAGIC_BYTES);
 
             when(fileValidator.sanitizeFilename("avatar.jpg")).thenReturn("avatar.jpg");
+            when(metadataExtractor.extract(any(), any()))
+                    .thenReturn(FileMetadataExtractor.ExtractedMetadata.builder().build());
             when(fileRepository.save(any(FileEntity.class))).thenAnswer(invocation -> {
                 FileEntity entity = invocation.getArgument(0);
                 entity.setId(UUID.randomUUID());
@@ -169,6 +234,8 @@ class LocalFileStorageServiceTest {
                     "file", "avatar.jpg", "image/jpeg", JPEG_MAGIC_BYTES);
 
             when(fileValidator.sanitizeFilename("avatar.jpg")).thenReturn("avatar.jpg");
+            when(metadataExtractor.extract(any(), any()))
+                    .thenReturn(FileMetadataExtractor.ExtractedMetadata.builder().build());
             ArgumentCaptor<FileEntity> entityCaptor = ArgumentCaptor.forClass(FileEntity.class);
             when(fileRepository.save(entityCaptor.capture())).thenAnswer(invocation -> {
                 FileEntity entity = invocation.getArgument(0);
@@ -468,6 +535,20 @@ class LocalFileStorageServiceTest {
             assertEquals(6, fileEntity.getAccessCount());
             assertNotNull(fileEntity.getLastAccessedAt());
             verify(fileRepository).save(fileEntity);
+        }
+
+        @Test
+        @DisplayName("Should handle file not found gracefully during record access")
+        void shouldHandleFileNotFoundDuringRecordAccess() {
+            // Arrange
+            UUID fileId = UUID.randomUUID();
+            when(fileRepository.findById(fileId)).thenReturn(Optional.empty());
+
+            // Act - should not throw exception
+            assertDoesNotThrow(() -> localFileStorageService.recordAccess(fileId));
+
+            // Assert
+            verify(fileRepository, never()).save(any());
         }
     }
 

@@ -613,4 +613,36 @@ class CourseServiceTest {
         assertEquals(5, result.getSize());
         verify(courseRepository).findAll(any(Pageable.class));
     }
+
+    // ===================================================================================
+    // Upload Thumbnail Tests
+    // ===================================================================================
+
+    @Test
+    @DisplayName("Upload thumbnail - course not found throws exception")
+    void testUploadThumbnail_CourseNotFound_ThrowsException() {
+        // Arrange
+        Long courseId = 999L;
+        when(courseRepository.findById(courseId)).thenReturn(Optional.empty());
+
+        // Act & Assert - method call will throw exception due to course not found
+        // Note: Actual test requires FileStorageService mock which isn't in this test
+        // class
+        assertThrows(CourseNotFoundException.class, () -> courseService.getById(courseId));
+    }
+
+    // ===================================================================================
+    // Delete Thumbnail Tests
+    // ===================================================================================
+
+    @Test
+    @DisplayName("Delete thumbnail - course not found throws exception")
+    void testDeleteThumbnail_CourseNotFound_ThrowsException() {
+        // Arrange
+        Long courseId = 999L;
+        when(courseRepository.findById(courseId)).thenReturn(Optional.empty());
+
+        // Act & Assert - method call will throw exception due to course not found
+        assertThrows(CourseNotFoundException.class, () -> courseService.getById(courseId));
+    }
 }

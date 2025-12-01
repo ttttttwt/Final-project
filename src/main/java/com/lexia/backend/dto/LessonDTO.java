@@ -79,4 +79,11 @@ public class LessonDTO {
      */
     @Schema(description = "Lesson last update timestamp", example = "2025-10-31T14:22:45", accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime updatedAt;
+
+    /**
+     * URL to uploaded audio file (for LISTENING lessons).
+     * Only set when an audio file has been uploaded via the file upload API.
+     */
+    @Schema(description = "URL to uploaded audio file (for LISTENING lessons)", example = "/api/v1/files/550e8400-e29b-41d4-a716-446655440000/download", nullable = true)
+    private String audioUrl;
 }

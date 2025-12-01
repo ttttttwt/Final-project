@@ -8,6 +8,11 @@ import com.lexia.backend.entity.Section;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.exception.LessonNotFoundException;
 import com.lexia.backend.exception.SectionNotFoundException;
+import com.lexia.backend.file.dto.FileUploadResponse;
+import com.lexia.backend.file.entity.FileEntity;
+import com.lexia.backend.file.enums.FileCategory;
+import com.lexia.backend.file.mapper.FileMapper;
+import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.mapper.LessonMapper;
 import com.lexia.backend.repository.LessonRepository;
 import com.lexia.backend.repository.SectionRepository;
@@ -20,6 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +46,7 @@ public class LessonServiceImpl implements LessonService {
     private final SectionRepository sectionRepository;
     private final LessonContentValidator contentValidator;
     private final AdminActivityLogService adminActivityLogService;
+    private final FileStorageService fileStorageService;
 
     /**
      * {@inheritDoc}
@@ -331,5 +338,95 @@ public class LessonServiceImpl implements LessonService {
             return user.getEmail().split("@")[0];
         }
         return "System";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public FileUploadResponse uploadAudio(Long id, MultipartFile file, UUID userId) {
+        log.debug("Uploading audio for lesson ID: {}", id);
+
+        // Fetch lesson
+        Lesson lesson = lessonRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Lesson not found with ID: {}", id);
+                    return new LessonNotFoundException("Lesson not found with ID: " + id);
+                });
+
+        // Validate lesson type is LISTENING
+        if (lesson.getLessonType() != Lesson.LessonType.LISTENING) {
+            log.warn("Attempted to upload audio to non-LISTENING lesson ID: {}", id);
+            throw new IllegalStateException("Audio can only be uploaded to LISTENING lessons");
+        }
+
+        // Delete existing audio file if present
+        if (lesson.getAudioFile() != null) {
+            UUID existingFileId = lesson.getAudioFile().getId();
+            log.debug("Deleting existing audio file: {}", existingFileId);
+            fileStorageService.delete(existingFileId);
+        }
+
+        // Store new audio file
+        FileEntity savedFile = fileStorageService.store(file, FileCategory.LESSON_AUDIO, userId);
+
+        // Update lesson with new audio file reference
+        lesson.setAudioFile(savedFile);
+        lessonRepository.save(lesson);
+
+        log.info("Successfully uploaded audio for lesson ID: {} with file ID: {}", id, savedFile.getId());
+
+        // Log activity
+        String courseTitle = lesson.getSection().getCourse().getTitle();
+        adminActivityLogService.logLessonUpdated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                lesson.getId(),
+                lesson.getTitle(),
+                courseTitle);
+
+        return FileMapper.toUploadResponse(savedFile);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public void deleteAudio(Long id) {
+        log.debug("Deleting audio for lesson ID: {}", id);
+
+        // Fetch lesson
+        Lesson lesson = lessonRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Lesson not found with ID: {}", id);
+                    return new LessonNotFoundException("Lesson not found with ID: " + id);
+                });
+
+        // Check if lesson has an audio file
+        if (lesson.getAudioFile() != null) {
+            UUID fileId = lesson.getAudioFile().getId();
+
+            // Clear reference first to avoid FK constraint issues
+            lesson.setAudioFile(null);
+            lessonRepository.save(lesson);
+
+            // Delete the file
+            fileStorageService.delete(fileId);
+
+            log.info("Successfully deleted audio for lesson ID: {}", id);
+
+            // Log activity
+            String courseTitle = lesson.getSection().getCourse().getTitle();
+            adminActivityLogService.logLessonUpdated(
+                    getCurrentUserId(),
+                    getCurrentUserName(),
+                    lesson.getId(),
+                    lesson.getTitle(),
+                    courseTitle);
+        } else {
+            log.debug("Lesson ID: {} has no uploaded audio file to delete", id);
+        }
     }
 }

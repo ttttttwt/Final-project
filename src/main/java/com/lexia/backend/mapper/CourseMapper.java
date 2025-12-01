@@ -22,6 +22,7 @@ public class CourseMapper {
     /**
      * Converts a Course entity to CourseDTO.
      * Includes derived fields like sectionCount.
+     * Uses effective thumbnail URL (file URL takes precedence over external URL).
      *
      * @param course the course entity
      * @return CourseDTO representation, or null if course is null
@@ -35,7 +36,7 @@ public class CourseMapper {
                 .id(course.getId())
                 .title(course.getTitle())
                 .description(course.getDescription())
-                .thumbnailUrl(course.getThumbnailUrl())
+                .thumbnailUrl(course.getEffectiveThumbnailUrl())
                 .cefrLevel(course.getCefrLevel())
                 .isPublished(course.getIsPublished())
                 .sectionCount(course.getSections() != null ? course.getSections().size() : 0)

@@ -6,6 +6,7 @@ import com.lexia.backend.file.dto.FileUploadResponse;
 import com.lexia.backend.file.entity.FileEntity;
 import com.lexia.backend.file.enums.FileCategory;
 import com.lexia.backend.file.mapper.FileMapper;
+import com.lexia.backend.file.service.FileSecurityService;
 import com.lexia.backend.file.service.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,9 +43,11 @@ public class FileController {
     private static final Logger LOG = LoggerFactory.getLogger(FileController.class);
 
     private final FileStorageService fileStorageService;
+    private final FileSecurityService fileSecurityService;
 
-    public FileController(FileStorageService fileStorageService) {
+    public FileController(FileStorageService fileStorageService, FileSecurityService fileSecurityService) {
         this.fileStorageService = fileStorageService;
+        this.fileSecurityService = fileSecurityService;
     }
 
     /**
@@ -87,7 +90,7 @@ public class FileController {
     @GetMapping("/{id}/metadata")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<FileMetadataDTO> getMetadata(
-            @Parameter(description = "File ID", required = true) @PathVariable UUID id) {
+            @Parameter(description = "File ID", required = true) @PathVariable("id") UUID id) {
 
         LOG.debug("Get metadata request for file: {}", id);
         FileEntity fileEntity = fileStorageService.getFileById(id);
@@ -107,30 +110,21 @@ public class FileController {
     })
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadFile(
-            @Parameter(description = "File ID", required = true) @PathVariable UUID id,
+            @Parameter(description = "File ID", required = true) @PathVariable("id") UUID id,
             @AuthenticationPrincipal User user) {
 
         LOG.debug("Download request for file: {}", id);
 
         FileEntity fileEntity = fileStorageService.getFileById(id);
 
-        // Check access permission for non-public files
-        if (!fileEntity.getIsPublic()) {
-            if (user == null) {
-                throw new AccessDeniedException("Authentication required for this file");
-            }
-
-            UUID userId = user.getId();
-            boolean isOwner = fileStorageService.isOwner(id, userId);
-            boolean isAdmin = user.getUserRoles().stream()
-                    .anyMatch(r -> r.getRole().getName().equals("ADMIN"));
-
-            if (!isOwner && !isAdmin) {
-                throw new AccessDeniedException("You don't have permission to access this file");
-            }
+        // Use centralized security service for access control
+        if (!fileSecurityService.canAccess(fileEntity, user)) {
+            throw new AccessDeniedException("You don't have permission to access this file");
         }
 
         Resource resource = fileStorageService.loadAsResource(id);
+
+        // Record access asynchronously (non-blocking)
         fileStorageService.recordAccess(id);
 
         // Determine content disposition (inline for images/audio, attachment for
@@ -158,17 +152,15 @@ public class FileController {
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteFile(
-            @Parameter(description = "File ID", required = true) @PathVariable UUID id,
+            @Parameter(description = "File ID", required = true) @PathVariable("id") UUID id,
             @AuthenticationPrincipal User user) {
 
         LOG.info("Delete request for file: {} by user: {}", id, user.getEmail());
 
-        UUID userId = user.getId();
-        boolean isOwner = fileStorageService.isOwner(id, userId);
-        boolean isAdmin = user.getUserRoles().stream()
-                .anyMatch(r -> r.getRole().getName().equals("ADMIN"));
+        FileEntity fileEntity = fileStorageService.getFileById(id);
 
-        if (!isOwner && !isAdmin) {
+        // Use centralized security service for access control
+        if (!fileSecurityService.canDelete(fileEntity, user)) {
             throw new AccessDeniedException("You don't have permission to delete this file");
         }
 
@@ -189,7 +181,7 @@ public class FileController {
     @GetMapping("/{id}/exists")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Boolean> checkExists(
-            @Parameter(description = "File ID", required = true) @PathVariable UUID id) {
+            @Parameter(description = "File ID", required = true) @PathVariable("id") UUID id) {
 
         boolean exists = fileStorageService.exists(id);
         if (!exists) {

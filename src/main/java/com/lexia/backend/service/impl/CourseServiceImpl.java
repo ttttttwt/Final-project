@@ -7,6 +7,11 @@ import com.lexia.backend.dto.UpdateCourseDTO;
 import com.lexia.backend.entity.Course;
 import com.lexia.backend.exception.CourseNotFoundException;
 import com.lexia.backend.exception.DuplicateCourseException;
+import com.lexia.backend.file.dto.FileUploadResponse;
+import com.lexia.backend.file.entity.FileEntity;
+import com.lexia.backend.file.enums.FileCategory;
+import com.lexia.backend.file.mapper.FileMapper;
+import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.mapper.CourseMapper;
 import com.lexia.backend.repository.CourseRepository;
 import com.lexia.backend.service.AdminActivityLogService;
@@ -21,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -37,6 +43,7 @@ public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
     private final AdminActivityLogService adminActivityLogService;
+    private final FileStorageService fileStorageService;
 
     /**
      * {@inheritDoc}
@@ -367,5 +374,89 @@ public class CourseServiceImpl implements CourseService {
             return user.getEmail().split("@")[0];
         }
         return "System";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public FileUploadResponse uploadThumbnail(Long id, MultipartFile file, UUID userId) {
+        log.debug("Uploading thumbnail for course ID: {}", id);
+
+        // Fetch course
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Course not found with ID: {}", id);
+                    return new CourseNotFoundException("Course not found with ID: " + id);
+                });
+
+        // Delete existing thumbnail file if present
+        if (course.getThumbnailFile() != null) {
+            UUID existingFileId = course.getThumbnailFile().getId();
+            log.debug("Deleting existing thumbnail file: {}", existingFileId);
+            fileStorageService.delete(existingFileId);
+        }
+
+        // Store new thumbnail file
+        FileEntity savedFile = fileStorageService.store(file, FileCategory.COURSE_THUMBNAIL, userId);
+
+        // Update course with new thumbnail file reference
+        course.setThumbnailFile(savedFile);
+        // Clear the URL field since we're using file now
+        course.setThumbnailUrl(null);
+        courseRepository.save(course);
+
+        log.info("Successfully uploaded thumbnail for course ID: {} with file ID: {}", id, savedFile.getId());
+
+        // Log activity
+        adminActivityLogService.logCourseUpdated(
+                getCurrentUserId(),
+                getCurrentUserName(),
+                course.getId(),
+                course.getTitle(),
+                "Uploaded thumbnail");
+
+        return FileMapper.toUploadResponse(savedFile);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public void deleteThumbnail(Long id) {
+        log.debug("Deleting thumbnail for course ID: {}", id);
+
+        // Fetch course
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Course not found with ID: {}", id);
+                    return new CourseNotFoundException("Course not found with ID: " + id);
+                });
+
+        // Check if course has a thumbnail file
+        if (course.getThumbnailFile() != null) {
+            UUID fileId = course.getThumbnailFile().getId();
+
+            // Clear reference first to avoid FK constraint issues
+            course.setThumbnailFile(null);
+            courseRepository.save(course);
+
+            // Delete the file
+            fileStorageService.delete(fileId);
+
+            log.info("Successfully deleted thumbnail for course ID: {}", id);
+
+            // Log activity
+            adminActivityLogService.logCourseUpdated(
+                    getCurrentUserId(),
+                    getCurrentUserName(),
+                    course.getId(),
+                    course.getTitle(),
+                    "Deleted thumbnail");
+        } else {
+            log.debug("Course ID: {} has no uploaded thumbnail file to delete", id);
+        }
     }
 }

@@ -21,6 +21,7 @@ public class LessonMapper {
     /**
      * Converts a Lesson entity to LessonDTO.
      * Content is returned as-is (JSON string) without parsing.
+     * Audio URL is included if an audio file is uploaded.
      *
      * @param lesson the lesson entity
      * @return LessonDTO representation, or null if lesson is null
@@ -40,6 +41,7 @@ public class LessonMapper {
                 .durationMinutes(lesson.getDurationMinutes())
                 .createdAt(lesson.getCreatedAt())
                 .updatedAt(lesson.getUpdatedAt())
+                .audioUrl(lesson.getEffectiveAudioUrl())
                 .build();
     }
 

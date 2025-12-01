@@ -1,5 +1,6 @@
 package com.lexia.backend.entity;
 
+import com.lexia.backend.file.entity.FileEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -11,6 +12,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Entity representing a CEFR-leveled English learning course.
@@ -64,11 +66,20 @@ public class Course {
     private String description;
 
     /**
-     * URL to course thumbnail image.
+     * URL to course thumbnail image (external URL).
+     * For backward compatibility with external URLs.
      */
     @Size(max = 255, message = "Thumbnail URL must not exceed 255 characters")
     @Column(name = "thumbnail_url", length = 255)
     private String thumbnailUrl;
+
+    /**
+     * Reference to uploaded thumbnail file.
+     * If set, takes precedence over thumbnailUrl.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "thumbnail_file_id")
+    private FileEntity thumbnailFile;
 
     /**
      * Common European Framework of Reference level.
@@ -130,5 +141,18 @@ public class Course {
     public void removeSection(Section section) {
         sections.remove(section);
         section.setCourse(null);
+    }
+
+    /**
+     * Get the effective thumbnail URL.
+     * Returns uploaded file URL if available, otherwise returns external URL.
+     *
+     * @return the thumbnail URL or null if no thumbnail is set
+     */
+    public String getEffectiveThumbnailUrl() {
+        if (thumbnailFile != null) {
+            return "/api/v1/files/" + thumbnailFile.getId() + "/download";
+        }
+        return thumbnailUrl;
     }
 }
