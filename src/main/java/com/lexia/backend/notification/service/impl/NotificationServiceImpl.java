@@ -194,7 +194,8 @@ public class NotificationServiceImpl implements NotificationService {
 
             for (UUID userId : userPage.getContent()) {
                 try {
-                    // Use getReferenceById to get a JPA proxy reference without fetching the full User entity
+                    // Use getReferenceById to get a JPA proxy reference without fetching the full
+                    // User entity
                     // This is more efficient and JPA-compliant than creating a new User object
                     User userRef = userRepository.getReferenceById(userId);
 
@@ -258,29 +259,93 @@ public class NotificationServiceImpl implements NotificationService {
     public int sendToUsers(SendNotificationRequest request) {
         log.info("Sending notification to {} users", request.getUserIds().size());
 
-        CreateNotificationRequest createRequest = CreateNotificationRequest.builder()
-                .type(request.getType())
-                .title(request.getTitle())
-                .message(request.getMessage())
-                .data(request.getData())
-                .priority(request.getPriority())
-                .build();
+        List<UUID> userIds = request.getUserIds();
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("No user IDs provided for sendToUsers");
+            return 0;
+        }
 
+        // Calculate expiration date once for all notifications
+        OffsetDateTime expiresAt = calculateExpirationDate(request.getPriority());
+
+        // Batch processing configuration
+        int batchSize = 100;
+        List<Notification> batch = new ArrayList<>(batchSize);
+        List<UUID> successfulUserIds = new ArrayList<>();
         int count = 0;
-        for (UUID userId : request.getUserIds()) {
+
+        for (UUID userId : userIds) {
             try {
-                NotificationDTO notification = createNotification(userId, createRequest);
-                if (notification != null) {
-                    sendRealTimeNotification(userId, notification);
-                    count++;
+                // Use getReferenceById for efficient JPA proxy without DB query
+                User userRef = userRepository.getReferenceById(userId);
+
+                Notification notification = Notification.builder()
+                        .user(userRef)
+                        .type(request.getType())
+                        .title(request.getTitle())
+                        .message(request.getMessage())
+                        .data(request.getData() != null ? request.getData() : new java.util.HashMap<>())
+                        .priority(request.getPriority() != null ? request.getPriority()
+                                : Notification.NotificationPriority.NORMAL)
+                        .isRead(false)
+                        .expiresAt(expiresAt)
+                        .build();
+
+                batch.add(notification);
+                successfulUserIds.add(userId);
+
+                // Save batch when it reaches the batch size
+                if (batch.size() >= batchSize) {
+                    List<Notification> savedBatch = notificationRepository.saveAll(batch);
+                    count += savedBatch.size();
+
+                    // Send real-time notifications for this batch
+                    sendRealTimeNotificationsAsync(successfulUserIds, savedBatch);
+
+                    batch.clear();
+                    successfulUserIds.clear();
                 }
-            } catch (ResourceNotFoundException e) {
-                log.warn("User not found: {}", userId);
+            } catch (Exception e) {
+                log.warn("Failed to create notification for user: {}", userId, e);
             }
+        }
+
+        // Save remaining notifications in the last batch
+        if (!batch.isEmpty()) {
+            List<Notification> savedBatch = notificationRepository.saveAll(batch);
+            count += savedBatch.size();
+
+            // Send real-time notifications for remaining batch
+            sendRealTimeNotificationsAsync(successfulUserIds, savedBatch);
         }
 
         log.info("Notification sent to {} users", count);
         return count;
+    }
+
+    /**
+     * Send real-time notifications asynchronously for a batch of notifications.
+     * This method is called after batch save to ensure notifications have IDs.
+     *
+     * @param userIds       list of user IDs corresponding to notifications
+     * @param notifications list of saved notifications with IDs
+     */
+    @Async
+    protected void sendRealTimeNotificationsAsync(List<UUID> userIds, List<Notification> notifications) {
+        for (int i = 0; i < Math.min(userIds.size(), notifications.size()); i++) {
+            UUID userId = userIds.get(i);
+            Notification notification = notifications.get(i);
+
+            try {
+                NotificationDTO dto = NotificationMapper.toDTO(notification);
+                messagingTemplate.convertAndSendToUser(
+                        userId.toString(),
+                        "/queue/notifications",
+                        dto);
+            } catch (Exception e) {
+                log.warn("Failed to send real-time notification to user: {}", userId, e);
+            }
+        }
     }
 
     // ==================== Preferences ====================

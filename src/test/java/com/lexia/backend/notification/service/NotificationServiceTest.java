@@ -611,7 +611,7 @@ class NotificationServiceTest {
     class SendToUsersTests {
 
         @Test
-        @DisplayName("Should send to specific users and deliver real-time based on preferences")
+        @DisplayName("Should send to specific users using batch processing")
         void testSendToUsers_Success() {
             // Arrange
             UUID user1 = UUID.randomUUID();
@@ -625,20 +625,43 @@ class NotificationServiceTest {
                     .priority(NotificationPriority.NORMAL)
                     .build();
 
-            when(userRepository.findById(any())).thenReturn(Optional.of(testUser));
-            when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
+            // New implementation uses getReferenceById for efficiency (no DB query)
+            when(userRepository.getReferenceById(any())).thenReturn(testUser);
+            // New implementation uses saveAll for batch processing
+            when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> {
+                List<Notification> notifications = invocation.getArgument(0);
+                // Set IDs for saved notifications
+                notifications.forEach(n -> {
+                    if (n.getId() == null) {
+                        // Use reflection or builder to set ID for test
+                        try {
+                            java.lang.reflect.Field idField = Notification.class.getDeclaredField("id");
+                            idField.setAccessible(true);
+                            idField.set(n, UUID.randomUUID());
+                        } catch (Exception e) {
+                            // Ignore
+                        }
+                    }
+                });
+                return notifications;
+            });
 
             // Act
             int count = notificationService.sendToUsers(sendRequest);
 
-            // Assert - notifications should be persisted for both users
+            // Assert - notifications should be persisted for both users via batch
             assertEquals(2, count);
-            verify(notificationRepository, times(2)).save(any(Notification.class));
+            // Verify batch save was used (not individual saves)
+            verify(notificationRepository, atLeastOnce()).saveAll(anyList());
+            // Verify getReferenceById was used (efficient proxy, no DB query)
+            verify(userRepository, times(2)).getReferenceById(any());
+            // Verify findById was NOT used (optimization)
+            verify(userRepository, never()).findById(any());
         }
 
         @Test
-        @DisplayName("Should skip users not found")
-        void testSendToUsers_UserNotFound() {
+        @DisplayName("Should skip users that fail during batch processing")
+        void testSendToUsers_PartialFailure() {
             // Arrange
             UUID user1 = UUID.randomUUID();
             UUID user2 = UUID.randomUUID();
@@ -651,15 +674,39 @@ class NotificationServiceTest {
                     .priority(NotificationPriority.NORMAL)
                     .build();
 
-            when(userRepository.findById(user1)).thenReturn(Optional.of(testUser));
-            when(userRepository.findById(user2)).thenReturn(Optional.empty());
-            when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
+            // First user succeeds, second throws exception
+            when(userRepository.getReferenceById(user1)).thenReturn(testUser);
+            when(userRepository.getReferenceById(user2)).thenThrow(new RuntimeException("User reference failed"));
+            // Only one notification will be in the batch
+            when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            int count = notificationService.sendToUsers(sendRequest);
+
+            // Assert - only one notification should be saved
+            assertEquals(1, count);
+            verify(notificationRepository, atLeastOnce()).saveAll(anyList());
+        }
+
+        @Test
+        @DisplayName("Should return 0 when userIds is empty")
+        void testSendToUsers_EmptyUserIds() {
+            // Arrange
+            SendNotificationRequest sendRequest = SendNotificationRequest.builder()
+                    .userIds(List.of())
+                    .type(NotificationType.SYSTEM_ANNOUNCEMENT)
+                    .title("Important Update")
+                    .message("Check this out!")
+                    .priority(NotificationPriority.NORMAL)
+                    .build();
 
             // Act
             int count = notificationService.sendToUsers(sendRequest);
 
             // Assert
-            assertEquals(1, count);
+            assertEquals(0, count);
+            verify(notificationRepository, never()).saveAll(anyList());
+            verify(userRepository, never()).getReferenceById(any());
         }
     }
 
