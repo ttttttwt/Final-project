@@ -87,7 +87,8 @@
 - **AdminActivityLogService**: Records content management actions (course/section/lesson CRUD) for admin activity tracking and compliance.
 - **AuditLogService**: Tracks user profile changes for security compliance; records field-level changes with IP and user agent.
 - **UserProfileService**: Manages user profiles including personal info, preferences, avatar management with audit logging.
-- **Notification/File Services (planned)**: Queued delivery via WebSocket/STOMP and object storage abstractions for avatars/course media.
+- **NotificationService**: Manages user notifications, preferences, and admin broadcasts. Supports in-app, email, and push channels.
+- **FileStorageService**: Handles file uploads, metadata storage, and secure retrieval with access control. Supports local and cloud storage strategies.
 
 ## Learning Path & Progress Flow
 
@@ -104,4 +105,4 @@
 - **Admin Activity Logs**: Content management actions (course/section/lesson CRUD, publish/unpublish) are logged to `admin_activity_logs` with actor info, timestamp, and change details. Accessible via `/admin/activity-logs` with filters, export to CSV.
 - **User Audit Logs**: Profile changes tracked in `audit_logs` table with field-level diff, IP address, and user agent. Accessible via `/admin/audit-logs` with filters, export to CSV.
 - **Runtime Monitoring**: Spring Boot Actuator exposed at `/actuator/**` with health/info/metrics plus Prometheus scraping; health root remains unauthenticated for load balancers, detailed nodes require ADMIN.
-- **Alerting Hooks**: Planned NotificationService uses the same audit data to dispatch broadcasts through WebSocket + push providers once enabled in Sprint 5.
+- **Alerting Hooks**: NotificationService uses the same audit data to dispatch broadcasts through WebSocket + push providers.

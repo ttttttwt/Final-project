@@ -974,7 +974,7 @@ FROM lesson_counts;
 
 ---
 
-## 🔔 Module 5: Notifications (Planned - Sprint 5+)
+## 🔔 Module 5: Notifications
 
 ### 5.1. Key Tables
 
@@ -1030,7 +1030,7 @@ FROM lesson_counts;
 
 ---
 
-## 📁 Module 6: File Storage (Planned - Sprint 5+)
+## 📁 Module 6: File Storage
 
 ### 6.1. Key Tables
 
@@ -1078,6 +1078,6 @@ FROM lesson_counts;
 
 ---
 
-**Last Updated**: November 29, 2025 (Sprint 4 - Added Audit Logs, Admin Activity Logs, User Profile enhancements)  
-**Version**: 1.4  
-**Next Update**: Sprint 5 (Notification & File Upload implementation)
+**Last Updated**: December 1, 2025 (Sprint 4 - Implemented Notifications & File Storage)  
+**Version**: 1.5  
+**Next Update**: Sprint 5 (AI Features implementation)

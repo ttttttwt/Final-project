@@ -1,7 +1,7 @@
 # LEXIA - API Specification
 
-**Version**: 2.4.0  
-**Last Updated**: November 29, 2025  
+**Version**: 2.5.0  
+**Last Updated**: December 1, 2025  
 **Sprint**: 4 / 8
 
 ---
@@ -606,7 +606,7 @@ Response (200):
 
 ---
 
-### 11. Notification Endpoints (Planned - Sprint 5+)
+### 11. Notification Endpoints
 
 | Method | Endpoint                         | Auth Required | Role  | Description                         |
 | ------ | -------------------------------- | ------------- | ----- | ----------------------------------- |
@@ -629,28 +629,23 @@ Response (200):
 - `/user/queue/notifications` - Personal notifications
 - `/topic/announcements` - Broadcast announcements
 
-**Status**: Not yet implemented (Planned for Sprint 5+)
+**Status**: Implemented (Sprint 4)
 
 > **Full Specification**: See `docs/context/NOTIFICATION-SPECIFICATION.md`
 
 ---
 
-### 12. File Upload Endpoints (Planned - Sprint 5+)
+### 12. File Upload Endpoints
 
-| Method | Endpoint                  | Auth Required | Role            | Max Size | Description             |
-| ------ | ------------------------- | ------------- | --------------- | -------- | ----------------------- |
-| POST   | `/files/upload`           | Yes           | Any             | 10 MB    | Upload single file      |
-| POST   | `/files/upload/multiple`  | Yes           | CONTENT_MANAGER | 50 MB    | Upload multiple files   |
-| GET    | `/files/{id}`             | Yes           | Any             | -        | Get file metadata       |
-| GET    | `/files/{id}/download`    | Conditional   | -               | -        | Download file           |
-| DELETE | `/files/{id}`             | Yes           | Owner/Admin     | -        | Delete file             |
-| POST   | `/users/avatar`           | Yes           | Any             | 5 MB     | Upload user avatar      |
-| DELETE | `/users/avatar`           | Yes           | Any             | -        | Delete user avatar      |
-| POST   | `/courses/{id}/thumbnail` | Yes           | CONTENT_MANAGER | 5 MB     | Upload course thumbnail |
-| DELETE | `/courses/{id}/thumbnail` | Yes           | CONTENT_MANAGER | -        | Delete course thumbnail |
-| POST   | `/lessons/{id}/audio`     | Yes           | CONTENT_MANAGER | 50 MB    | Upload lesson audio     |
-| POST   | `/lessons/{id}/images`    | Yes           | CONTENT_MANAGER | 10 MB    | Upload lesson images    |
-| DELETE | `/lessons/{id}/audio`     | Yes           | CONTENT_MANAGER | -        | Delete lesson audio     |
+| Method | Endpoint                | Auth Required | Role        | Max Size | Description          |
+| ------ | ----------------------- | ------------- | ----------- | -------- | -------------------- |
+| POST   | `/files/upload`         | Yes           | Any         | 10 MB    | Upload single file   |
+| GET    | `/files/{id}/metadata`  | Yes           | Any         | -        | Get file metadata    |
+| GET    | `/files/{id}/download`  | Conditional   | -           | -        | Download file        |
+| GET    | `/files/{id}/exists`    | Yes           | Any         | -        | Check if file exists |
+| DELETE | `/files/{id}`           | Yes           | Owner/Admin | -        | Delete file          |
+| POST   | `/users/profile/avatar` | Yes           | Any         | 5 MB     | Upload user avatar   |
+| DELETE | `/users/profile/avatar` | Yes           | Any         | -        | Delete user avatar   |
 
 **Supported File Types**:
 
@@ -658,7 +653,7 @@ Response (200):
 - Audio: MP3, WAV, OGG, M4A (max 50 MB)
 - Documents: PDF (max 10 MB)
 
-**Status**: Not yet implemented (Planned for Sprint 5+)
+**Status**: Implemented (Sprint 4)
 
 > **Full Specification**: See `docs/context/FILE-UPLOAD-SPECIFICATION.md`
 
@@ -878,6 +873,7 @@ Each endpoint includes:
 | 2.2.0   | Nov 28, 2025 | Added Notification & File Upload specifications (planned)                 |
 | 2.3.0   | Nov 29, 2025 | Documented learning path, enrollment, progress, admin endpoints           |
 | 2.4.0   | Nov 29, 2025 | Added Section Management, Avatar endpoints, Audit logs, Activity logs API |
+| 2.5.0   | Dec 01, 2025 | Implemented Notification & File Upload endpoints (Sprint 4)               |
 
 ---
 
