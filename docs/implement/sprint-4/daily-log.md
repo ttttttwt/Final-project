@@ -2455,10 +2455,225 @@ ESLint: PASS (0 errors)
 
 #### 🔜 Next Session (Day 15)
 
-- E2: Profile Screen completion (0.5 pt)
-- E3: Network Detection component (0.5 pt)
-- E4: Offline Queue implementation (1.5 pts)
-- Target: 2-3 points
+- F1: Unit tests for auth store (1 pt)
+- F2: Unit tests for API client (1 pt)
+- F3: Integration tests (1.5 pts)
+- Target: 3-4 points
+
+---
+
+### Day 14 - Monday, December 2, 2025 (E5 Session)
+
+**Status**: ✅ Complete  
+**Progress**: 32.5/43 points (75.6%)  
+**Today's Target**: 2 points (E5) ✅ **ACHIEVED**
+
+#### 🎯 Goals
+
+- ✅ Implement lesson download service with FileSystem
+- ✅ Create download state management hook
+- ✅ Build download UI components
+- ✅ Add storage usage display
+- ✅ Create unit tests
+
+#### ✅ Completed
+
+- [x] **E5**: Offline-First Features (2 pts) ✅ **COMPLETE**
+
+  - ✅ Created `offlineDownloadService.ts` (~670 lines)
+    - Download lessons with audio files to FileSystem
+    - Download entire courses (all sections and lessons)
+    - Track downloaded lessons/courses in AsyncStorage
+    - Storage management (get storage info, clear downloads)
+    - Metadata tracking (downloadedAt, fileSize, duration)
+    - Progress callback for download operations
+    - Used `expo-file-system/legacy` for backward compatibility
+  - ✅ Created `useDownloads` hook (~250 lines)
+    - Download state management (downloadedLessonIds, downloadedCourseIds)
+    - Download progress tracking (downloadingLessons Map)
+    - Storage info (total, used, available, itemCount)
+    - Functions: downloadLesson, downloadCourse, deleteLesson, deleteCourse
+    - Load initial state from AsyncStorage on mount
+  - ✅ Created `DownloadButton` component (~280 lines)
+    - Download/delete toggle with progress indicator
+    - ActivityIndicator during download
+    - Confirmation dialog for delete
+    - Multiple size variants (small, medium, large)
+    - Disabled state during operations
+  - ✅ Created `DownloadedBadge` component (~120 lines)
+    - Visual indicator for downloaded lessons
+    - Positionable as overlay (top-left, top-right, etc.)
+    - Multiple sizes (small, medium, large)
+    - Custom styling support
+  - ✅ Created `StorageUsage` component (~290 lines)
+    - Storage progress bar (used/total)
+    - Downloaded lesson/course counts
+    - Clear all downloads option with confirmation
+    - Loading and error states
+    - Pull-to-refresh for storage info
+  - ✅ Created `utils/formatters.ts` (~80 lines)
+    - formatBytes() - human-readable file sizes (B, KB, MB, GB)
+    - formatDuration() - HH:MM:SS format
+    - formatRelativeTime() - "2 hours ago" format
+    - formatPercentage() - percentage formatting
+  - ✅ Created component/hook index files for clean exports
+  - ✅ Unit Tests: 22 tests for offlineDownloadService
+
+#### 📝 Implementation Details
+
+**1. offlineDownloadService.ts**:
+
+```typescript
+// Key Features:
+- downloadLesson(lesson): Download lesson with audio to FileSystem
+- downloadCourse(courseId): Download all lessons in course
+- deleteLesson(lessonId): Remove lesson and audio file
+- deleteCourse(courseId): Remove all lessons in course
+- getDownloadedLessons(): Get all downloaded lesson IDs
+- isLessonDownloaded(lessonId): Check if lesson is downloaded
+- getStorageInfo(): Get storage usage stats
+- clearAllDownloads(): Remove all downloads
+
+// Storage Keys:
+- @lexia/downloaded_lessons: Array of DownloadedLesson
+- @lexia/downloaded_courses: Array of DownloadedCourse
+- @lexia/download_metadata: Download statistics
+
+// FileSystem:
+- DOWNLOAD_DIR: documentDirectory + 'downloads/'
+- Audio files stored as: {lessonId}_{filename}
+```
+
+**2. useDownloads Hook**:
+
+```typescript
+// State:
+- downloadedLessonIds: Set<number>
+- downloadedCourseIds: Set<number>
+- downloadingLessons: Map<number, DownloadProgress>
+- storageInfo: StorageInfo | null
+
+// Functions:
+- downloadLesson(lesson): Promise<void>
+- downloadCourse(courseId): Promise<void>
+- deleteLesson(lessonId): Promise<void>
+- deleteCourse(courseId): Promise<void>
+- clearAllDownloads(): Promise<void>
+- refreshStorageInfo(): Promise<void>
+```
+
+**3. expo-file-system Legacy API**:
+
+```typescript
+// Used legacy import for backward compatibility:
+import * as FileSystem from "expo-file-system/legacy";
+
+// Methods available:
+-FileSystem.getInfoAsync(uri) -
+  FileSystem.downloadAsync(url, localUri) -
+  FileSystem.deleteAsync(uri) -
+  FileSystem.makeDirectoryAsync(uri, options) -
+  FileSystem.documentDirectory;
+```
+
+#### 📊 Test Results
+
+```
+Test Suites: 14 passed, 14 total
+Tests:       241 passed, 241 total
+  - offlineDownloadService.test.ts: 22 tests ✅
+  - All previous tests: 219 tests ✅
+
+TypeScript: PASS (0 errors)
+ESLint: PASS (warnings only)
+```
+
+#### 🎯 Epic E Status Update
+
+- ✅ E1: Progress Screen with Charts (1.5 pts) - **COMPLETE**
+- ✅ E2: Profile Screen Completion (0.5 pt) - **COMPLETE**
+- ✅ E3: Network Detection Component (0.5 pt) - **COMPLETE**
+- ✅ E4: Offline Queue Implementation (1.5 pts) - **COMPLETE**
+- ✅ E5: Offline-First Features (2 pts) - **COMPLETE** ✅ **NEW**
+- ⬜ E6: Image Caching (1 pt) - Deferred (react-native-fast-image already caches)
+- ⬜ E7: Sync Status UI (1 pt) - Integrated in E4 (SyncIndicator)
+
+**Epic E Progress**: 6.5/8 points (81.25%)
+
+#### 📝 Files Created/Modified
+
+**Created**:
+
+- `services/offlineDownloadService.ts` (~670 lines)
+- `hooks/useDownloads.ts` (~250 lines)
+- `hooks/index.ts` (export file)
+- `components/lessons/DownloadButton.tsx` (~280 lines)
+- `components/lessons/DownloadedBadge.tsx` (~120 lines)
+- `components/lessons/StorageUsage.tsx` (~290 lines)
+- `components/lessons/index.ts` (export file)
+- `utils/formatters.ts` (~80 lines)
+- `__tests__/services/offlineDownloadService.test.ts` (~500 lines)
+
+**Total**: 9 files created, ~2,200 lines of production code + tests
+
+#### 🎊 Key Achievements
+
+1. **Complete Download Infrastructure**:
+
+   - Lesson download with audio files to FileSystem
+   - Course download (all sections/lessons)
+   - Metadata tracking with timestamps
+   - Progress callbacks for UI updates
+
+2. **State Management**:
+
+   - useDownloads hook for React integration
+   - Persistent state in AsyncStorage
+   - Real-time download progress tracking
+   - Storage usage monitoring
+
+3. **UI Components**:
+
+   - DownloadButton with progress indicator
+   - DownloadedBadge for visual feedback
+   - StorageUsage for settings screen
+   - Clear all downloads with confirmation
+
+4. **Comprehensive Testing**:
+
+   - 22 unit tests for offlineDownloadService
+   - Mocked FileSystem and AsyncStorage
+   - Coverage of all main flows
+
+5. **expo-file-system Compatibility**:
+   - Used legacy API for SDK 52+ compatibility
+   - All FileSystem operations working
+   - Proper directory creation and cleanup
+
+#### 📊 Sprint Progress Update
+
+**Progress**: 32.5/43 points (75.6%) 🎉
+**Velocity**: ~5.4 pts/day - exceeding target!
+
+**Epic Status**:
+
+- Epic A (Initialization): 7/7 pts (100%) ✅
+- Epic B (Authentication): 5/8 pts (62.5%) ✅
+- Epic C (Navigation): 4/4 pts (100%) ✅
+- Epic D (Core Features): 10/10 pts (100%) ✅
+- Epic E (Offline & Progress): 6.5/8 pts (81.25%) 🟢
+- Epic F (Testing): 0/6 pts (0%) ⬜
+
+#### 🚧 Blockers
+
+- None
+
+#### 🔜 Next Session (Day 15)
+
+- F1: Unit tests for auth store (1 pt)
+- F2: Unit tests for API client (1 pt)
+- F3: Integration tests (1.5 pts)
+- Target: 3-4 points
 
 ---
 
@@ -2554,26 +2769,42 @@ ESLint: PASS (0 errors)
 ## 📊 Sprint Summary
 
 **Total Points**: 43  
-**Completed**: 16.5  
-**Remaining**: 26.5  
-**Velocity**: 5.5 pts/day 🚀 (Target: 2.4 pts/day)
+**Completed**: 32.5  
+**Remaining**: 10.5  
+**Velocity**: 5.4 pts/day 🚀 (Target: 2.4 pts/day)
 
 **Epic Status**:
 
 - Epic A (Initialization): 7/7 pts (100%) ✅
 - Epic B (Authentication): 5/8 pts (62.5%) 🟢 (B7 Biometric deferred)
 - Epic C (Navigation): 4/4 pts (100%) ✅
-- Epic D (Core Features): 0/10 pts (0%) ⬜
-- Epic E (Offline): 0/8 pts (0%) ⬜
+- Epic D (Core Features): 10/10 pts (100%) ✅
+- Epic E (Offline): 6.5/8 pts (81.25%) 🟢
 - Epic F (Testing): 0/6 pts (0%) ⬜
 
-**Last Updated**: November 27, 2025 (Day 9)
+**Last Updated**: December 2, 2025 (Day 14 - E5 Complete)
 
 ---
 
 ## 🎓 Key Learnings
 
-_To be filled during sprint_
+**Expo SDK 52 Breaking Changes**:
+
+- `expo-file-system` v19 introduced new class-based API
+- Old methods like `getInfoAsync`, `downloadAsync` not directly available
+- Solution: Use `expo-file-system/legacy` import for backward compatibility
+
+**Offline Storage Strategy**:
+
+- AsyncStorage for metadata (lesson info, timestamps)
+- FileSystem for actual files (audio, images)
+- Combine both for complete offline experience
+
+**Testing Mocks**:
+
+- Mock expo-file-system with jest.mock
+- Mock AsyncStorage with @react-native-async-storage/async-storage/jest/async-storage-mock
+- Use array format for storage mocks matching actual implementation
 
 ---
 
@@ -2581,12 +2812,13 @@ _To be filled during sprint_
 
 **Active Blockers**:
 
-- None yet
+- None
 
 **Resolved Blockers**:
 
-- None yet
+- ✅ expo-file-system v19 API changes - resolved with legacy import
+- ✅ Test mock format mismatch - resolved by matching array storage format
 
 ---
 
-**Last Updated**: November 24, 2025
+**Last Updated**: December 2, 2025

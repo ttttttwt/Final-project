@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Welcome to LEXIA!</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <h1 th:text="#{email.welcome.title}">🎉 Welcome to LEXIA!</h1>
+
+      <p>
+        <span th:text="#{email.welcome.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p th:text="#{email.welcome.message}">
+        Congratulations! Your email has been verified and your LEXIA account is
+        now active. You're ready to start your personalized English learning
+        journey!
+      </p>
+
+      <div class="card card-success">
+        <h2 style="margin-top: 0" th:text="#{email.welcome.getting.started}">
+          🚀 Getting Started
+        </h2>
+        <ul style="margin: 0; padding-left: 20px">
+          <li th:text="#{email.welcome.step1}">
+            Take the placement test to find your level
+          </li>
+          <li th:text="#{email.welcome.step2}">
+            Browse courses tailored for working professionals
+          </li>
+          <li th:text="#{email.welcome.step3}">
+            Set daily learning goals and build your streak
+          </li>
+          <li th:text="#{email.welcome.step4}">
+            Track your progress and earn achievements
+          </li>
+        </ul>
+      </div>
+
+      <div class="btn-container">
+        <a
+          th:href="${dashboardUrl}"
+          class="btn"
+          th:text="#{email.welcome.button}"
+        >
+          Start Learning Now
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="card card-highlight">
+        <h2 style="margin-top: 0" th:text="#{email.welcome.tips.title}">
+          💡 Pro Tips
+        </h2>
+        <p style="margin-bottom: 8px" th:text="#{email.welcome.tip1}">
+          <strong>Stay consistent:</strong> Just 15 minutes a day can make a
+          huge difference!
+        </p>
+        <p style="margin-bottom: 8px" th:text="#{email.welcome.tip2}">
+          <strong>Build your streak:</strong> Log in daily to maintain your
+          learning streak.
+        </p>
+        <p style="margin: 0" th:text="#{email.welcome.tip3}">
+          <strong>Practice speaking:</strong> Don't just read - practice
+          pronunciation too!
+        </p>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text" th:text="#{email.welcome.support}">
+        Have questions? Our support team is here to help. Just reply to this
+        email or visit our Help Center.
+      </p>
+    </th:block>
+  </body>
+</html>

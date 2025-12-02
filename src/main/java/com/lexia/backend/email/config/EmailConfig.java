@@ -2,7 +2,10 @@ package com.lexia.backend.email.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.MessageSource;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.NotBlank;
@@ -74,6 +77,21 @@ public class EmailConfig {
      * Rate limiting configuration.
      */
     private RateLimitConfig rateLimit = new RateLimitConfig();
+
+    /**
+     * Creates message source for email i18n.
+     *
+     * @return configured MessageSource
+     */
+    @Bean(name = "emailMessageSource")
+    public MessageSource emailMessageSource() {
+        ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+        messageSource.setBasename("classpath:i18n/email/messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setCacheSeconds(3600); // 1 hour cache
+        messageSource.setFallbackToSystemLocale(false);
+        return messageSource;
+    }
 
     /**
      * Queue processing settings.

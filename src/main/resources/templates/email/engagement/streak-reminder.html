@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Don't Lose Your Streak! - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <div style="text-align: center;">
+        <span style="font-size: 64px;">🔥</span>
+      </div>
+
+      <h1 style="text-align: center;" th:text="#{email.streak.reminder.title}">
+        🔥 Your Streak is at Risk!
+      </h1>
+
+      <p>
+        <span th:text="#{email.streak.reminder.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p th:text="#{email.streak.reminder.message}">
+        You haven't completed any lessons today. Keep your streak alive!
+      </p>
+
+      <!-- Current Streak Card -->
+      <div class="card card-warning" style="text-align: center;">
+        <div style="font-size: 48px; font-weight: 700; color: #d97706;">
+          🔥 <span th:text="${currentStreak}">14</span>
+        </div>
+        <p style="margin: 8px 0 0 0; color: #92400e; font-weight: 600;">
+          Day Streak
+        </p>
+        <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">
+          <span th:text="#{email.streak.reminder.hours.left}">Only</span>
+          <strong th:text="${hoursRemaining}">6</strong>
+          <span th:text="#{email.streak.reminder.hours.remaining}">hours remaining!</span>
+        </p>
+      </div>
+
+      <!-- Motivation -->
+      <div class="card">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">💪 You've Got This!</h3>
+        <p style="margin: 0; color: #4b5563; font-size: 14px;">
+          <span th:text="#{email.streak.reminder.motivation}">
+            Just 5-10 minutes of learning is all it takes to keep your streak going.
+            Your consistency is what makes the difference!
+          </span>
+        </p>
+      </div>
+
+      <!-- Quick Lesson Suggestion -->
+      <div th:if="${suggestedLesson}" class="card card-highlight">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">📚 Quick Lesson Suggestion</h3>
+        <p style="margin: 0 0 8px 0; font-weight: 600;" th:text="${suggestedLesson.title}">
+          Business Email Writing
+        </p>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          <span th:text="${suggestedLesson.duration}">5 min</span> •
+          <span th:text="${suggestedLesson.courseName}">Business English</span>
+        </p>
+      </div>
+
+      <div class="btn-container">
+        <a
+          th:href="${continueUrl ?: dashboardUrl}"
+          class="btn"
+          th:text="#{email.streak.reminder.button}"
+        >
+          Continue Learning
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        <span th:text="#{email.streak.reminder.tip}">
+          Pro tip: Set a daily reminder to build a consistent learning habit! 📱
+        </span>
+      </p>
+    </th:block>
+  </body>
+</html>

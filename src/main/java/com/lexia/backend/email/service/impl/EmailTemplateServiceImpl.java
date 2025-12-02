@@ -3,9 +3,10 @@ package com.lexia.backend.email.service.impl;
 import com.lexia.backend.email.config.EmailConfig;
 import com.lexia.backend.email.enums.EmailType;
 import com.lexia.backend.email.service.EmailTemplateService;
-import lombok.RequiredArgsConstructor;
+import com.lexia.backend.email.service.UnsubscribeTokenService;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -14,6 +15,7 @@ import org.thymeleaf.context.Context;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Implementation of EmailTemplateService.
@@ -23,13 +25,24 @@ import java.util.Map;
  * @since 1.0.0
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmailTemplateServiceImpl implements EmailTemplateService {
 
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
     private final EmailConfig emailConfig;
+    private final UnsubscribeTokenService unsubscribeTokenService;
+
+    public EmailTemplateServiceImpl(
+            TemplateEngine templateEngine,
+            @Qualifier("emailMessageSource") MessageSource messageSource,
+            EmailConfig emailConfig,
+            UnsubscribeTokenService unsubscribeTokenService) {
+        this.templateEngine = templateEngine;
+        this.messageSource = messageSource;
+        this.emailConfig = emailConfig;
+        this.unsubscribeTokenService = unsubscribeTokenService;
+    }
 
     @Override
     public String renderTemplate(String templateName, Map<String, Object> variables, Locale locale) {
@@ -94,10 +107,16 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
         // Add tracking flag
         variables.put("trackingEnabled", emailConfig.isTrackingEnabled());
 
-        // Add unsubscribe URL if recipient ID is available
+        // Add unsubscribe URL with cryptographically signed token
         if (recipientId != null && !recipientId.isBlank()) {
-            // TODO: Generate proper unsubscribe token
-            variables.put("unsubscribeUrl", emailConfig.getUnsubscribeBaseUrl() + "?uid=" + recipientId);
+            try {
+                UUID userId = UUID.fromString(recipientId);
+                String unsubscribeToken = unsubscribeTokenService.generateToken(userId);
+                variables.put("unsubscribeUrl", emailConfig.getUnsubscribeUrl(unsubscribeToken));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid recipient ID format for unsubscribe token: {}", recipientId);
+                variables.put("unsubscribeUrl", emailConfig.getUnsubscribeBaseUrl());
+            }
         } else {
             variables.put("unsubscribeUrl", emailConfig.getUnsubscribeBaseUrl());
         }

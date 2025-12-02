@@ -40,14 +40,23 @@ public class EmailSendResult {
     /**
      * Creates a successful result.
      *
-     * @param messageId the provider's message ID
+     * @param messageId the provider's message ID (can be null)
      * @return success result
      */
     public static EmailSendResult success(String messageId) {
         return EmailSendResult.builder()
                 .success(true)
-                .messageId(messageId)
+                .messageId(messageId != null ? messageId : generateFallbackMessageId())
                 .build();
+    }
+
+    /**
+     * Generates a fallback message ID when the provider doesn't return one.
+     *
+     * @return generated message ID
+     */
+    private static String generateFallbackMessageId() {
+        return "lexia-" + java.util.UUID.randomUUID().toString() + "@local";
     }
 
     /**

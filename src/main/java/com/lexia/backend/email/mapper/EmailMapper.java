@@ -43,6 +43,7 @@ public final class EmailMapper {
                 .templateData(request.getTemplateData())
                 .priority(request.getEffectivePriority())
                 .maxAttempts(request.getEffectivePriority().getMaxAttempts())
+                .locale(request.getLocale())
                 .build();
     }
 

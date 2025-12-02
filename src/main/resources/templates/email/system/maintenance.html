@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Scheduled Maintenance - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <div style="text-align: center;">
+        <span style="font-size: 64px;">🔧</span>
+      </div>
+
+      <h1 style="text-align: center;" th:text="#{email.maintenance.notice.title}">
+        🔧 Scheduled Maintenance
+      </h1>
+
+      <p>
+        <span th:text="#{email.maintenance.notice.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p th:text="#{email.maintenance.notice.message}">
+        We'll be performing maintenance to improve your experience.
+      </p>
+
+      <!-- Maintenance Window -->
+      <div class="card card-warning">
+        <h3 style="margin: 0 0 16px 0; font-size: 16px; text-align: center;">⏰ Maintenance Window</h3>
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Start Time</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${startTime}">
+              Dec 3, 2025 at 02:00 AM UTC
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">End Time</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${endTime}">
+              Dec 3, 2025 at 04:00 AM UTC
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Duration</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${duration}">
+              ~2 hours
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- What to Expect -->
+      <div class="card">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">📋 What to Expect</h3>
+        <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
+          <li th:each="item : ${whatToExpect}" th:text="${item}">
+            Service may be unavailable
+          </li>
+          <li th:if="${whatToExpect == null or whatToExpect.empty}">
+            The platform may be temporarily unavailable
+          </li>
+          <li th:if="${whatToExpect == null or whatToExpect.empty}">
+            Your progress will be saved automatically
+          </li>
+          <li th:if="${whatToExpect == null or whatToExpect.empty}">
+            No action is required from you
+          </li>
+        </ul>
+      </div>
+
+      <!-- Improvements -->
+      <div th:if="${improvements and !improvements.empty}" class="card card-highlight">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">✨ What We're Improving</h3>
+        <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
+          <li th:each="improvement : ${improvements}" th:text="${improvement}">
+            Improvement item
+          </li>
+        </ul>
+      </div>
+
+      <!-- Status Page -->
+      <div th:if="${statusPageUrl}" style="text-align: center; margin: 24px 0;">
+        <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0;">
+          Check our status page for real-time updates:
+        </p>
+        <a th:href="${statusPageUrl}" style="color: #2563eb; text-decoration: none; font-weight: 600;">
+          status.lexia.app
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        <span th:text="#{email.maintenance.notice.apology}">
+          We apologize for any inconvenience. Thank you for your patience!
+        </span>
+      </p>
+    </th:block>
+  </body>
+</html>

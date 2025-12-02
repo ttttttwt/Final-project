@@ -112,6 +112,15 @@ public class EmailQueue {
     @Column(name = "last_error", columnDefinition = "TEXT")
     private String lastError;
 
+    /**
+     * Locale for template rendering (e.g., "en", "vi").
+     * Defaults to English if not specified.
+     */
+    @Size(max = 10)
+    @Column(name = "locale", length = 10)
+    @Builder.Default
+    private String locale = "en";
+
     // Timestamps
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

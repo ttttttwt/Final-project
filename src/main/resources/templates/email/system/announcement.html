@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Important Announcement - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <div style="text-align: center;">
+        <span style="font-size: 64px;">📢</span>
+      </div>
+
+      <h1 style="text-align: center;" th:text="#{email.system.announcement.title}">
+        📢 Important Announcement
+      </h1>
+
+      <p>
+        <span th:text="#{email.system.announcement.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <!-- Announcement Content -->
+      <div class="card card-highlight">
+        <h2 style="margin: 0 0 12px 0;" th:text="${announcementTitle}">
+          Announcement Title
+        </h2>
+        <div th:utext="${announcementContent}">
+          <p>Announcement content goes here...</p>
+        </div>
+      </div>
+
+      <!-- Action Required -->
+      <div th:if="${actionRequired}" class="card card-warning">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">⚠️ Action Required</h3>
+        <p style="margin: 0; color: #92400e;" th:text="${actionRequiredMessage}">
+          Please take action before the deadline.
+        </p>
+      </div>
+
+      <!-- Important Dates -->
+      <div th:if="${importantDates and !importantDates.empty}" class="card">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">📅 Important Dates</h3>
+        <table style="width: 100%; font-size: 14px;">
+          <tr th:each="dateItem : ${importantDates}">
+            <td style="padding: 8px 0; color: #6b7280;" th:text="${dateItem.label}">Date Label</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${dateItem.value}">
+              Date Value
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- CTA Button -->
+      <div th:if="${actionUrl}" class="btn-container">
+        <a
+          th:href="${actionUrl}"
+          class="btn"
+          th:text="${actionButtonText ?: 'Learn More'}"
+        >
+          Learn More
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        <span th:text="#{email.system.announcement.footer}">
+          This is an important system announcement from LEXIA.
+        </span>
+      </p>
+    </th:block>
+  </body>
+</html>

@@ -10,6 +10,7 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -21,11 +22,17 @@ import java.io.UnsupportedEncodingException;
 /**
  * SMTP implementation of EmailProviderService.
  * Uses Spring's JavaMailSender for sending emails via SMTP.
+ * 
+ * <p>
+ * This service is only activated when JavaMailSender bean is available,
+ * which requires spring.mail.host configuration to be present.
+ * </p>
  *
  * @author LEXIA Development Team
  * @since 1.0.0
  */
 @Service
+@ConditionalOnBean(JavaMailSender.class)
 @RequiredArgsConstructor
 @Slf4j
 public class SmtpEmailProvider implements EmailProviderService {

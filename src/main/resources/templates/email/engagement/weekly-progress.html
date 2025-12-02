@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Your Weekly Progress - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <h1 th:text="#{email.weekly.title}">Your Weekly Progress</h1>
+
+      <p>
+        <span th:text="#{email.weekly.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p>
+        <span th:text="#{email.weekly.intro}">Here's your learning summary for</span>
+        <strong th:text="${weekRange}">Nov 25 - Dec 1, 2025</strong>
+      </p>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-item" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+          <div class="stat-value" style="color: #16a34a;" th:text="${lessonsCompleted}">12</div>
+          <div class="stat-label">Lessons</div>
+        </div>
+        <div class="stat-item" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
+          <div class="stat-value" style="color: #d97706;" th:text="${studyMinutes}">245</div>
+          <div class="stat-label">Minutes</div>
+        </div>
+        <div class="stat-item" style="background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);">
+          <div class="stat-value" style="color: #7c3aed;">
+            🔥 <span th:text="${currentStreak}">14</span>
+          </div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+      </div>
+
+      <!-- Comparison with Previous Week -->
+      <div th:if="${weekOverWeekChange}" class="card">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">📈 Week-over-Week</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #6b7280;">Study time change</span>
+          <span th:class="${weekOverWeekChange >= 0 ? 'positive' : 'negative'}"
+                th:style="${weekOverWeekChange >= 0 ? 'color: #16a34a; font-weight: 600;' : 'color: #dc2626; font-weight: 600;'}">
+            <span th:if="${weekOverWeekChange >= 0}">+</span>
+            <span th:text="${weekOverWeekChange}">15</span>%
+          </span>
+        </div>
+      </div>
+
+      <!-- Streak Milestone Near -->
+      <div th:if="${streakMilestoneNear}" class="card card-warning">
+        <p style="margin: 0;">
+          <strong>🎯</strong>
+          <span th:text="#{email.weekly.streak.milestone}">Only</span>
+          <strong th:text="${daysToMilestone}">2</strong>
+          <span>days until your milestone!</span>
+        </p>
+      </div>
+
+      <!-- Course Progress -->
+      <div th:if="${activeCourses and !activeCourses.empty}">
+        <h3 th:text="#{email.weekly.courses}">Course Progress</h3>
+        
+        <div th:each="course : ${activeCourses}" class="card" style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 600;" th:text="${course.title}">Business English</span>
+            <span style="color: #16a34a; font-weight: 600;">
+              <span th:text="${course.progress}">75</span>%
+            </span>
+          </div>
+          <div style="background: #e2e8f0; height: 8px; border-radius: 4px;">
+            <div style="background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%); height: 100%; border-radius: 4px;"
+                 th:style="'width: ' + ${course.progress} + '%'"></div>
+          </div>
+          <p th:if="${course.lessonsThisWeek}" style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280;">
+            +<span th:text="${course.lessonsThisWeek}">3</span> lessons this week
+          </p>
+        </div>
+      </div>
+
+      <!-- Achievements This Week -->
+      <div th:if="${achievementsThisWeek and !achievementsThisWeek.empty}" class="card card-highlight">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">🏅 Achievements This Week</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li th:each="achievement : ${achievementsThisWeek}" th:text="${achievement.name}">
+            Achievement name
+          </li>
+        </ul>
+      </div>
+
+      <!-- Recommendations -->
+      <div th:if="${recommendedLessons and !recommendedLessons.empty}">
+        <h3>📚 Recommended for You</h3>
+        <div th:each="lesson : ${recommendedLessons}" class="card" style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <p style="margin: 0; font-weight: 600;" th:text="${lesson.title}">Lesson Title</p>
+              <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px;" th:text="${lesson.courseName}">
+                Course Name
+              </p>
+            </div>
+            <span style="color: #6b7280; font-size: 12px;" th:text="${lesson.duration}">5 min</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-container">
+        <a
+          th:href="${dashboardUrl}"
+          class="btn"
+          th:text="#{email.weekly.cta}"
+        >
+          Continue Learning
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        Keep up the great work! Consistency is the key to fluency. 🚀
+      </p>
+    </th:block>
+  </body>
+</html>

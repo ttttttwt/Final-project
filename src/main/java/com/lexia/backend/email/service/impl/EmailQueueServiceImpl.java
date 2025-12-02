@@ -145,8 +145,9 @@ public class EmailQueueServiceImpl implements EmailQueueService {
             emailQueue.markAsProcessing();
             emailQueueRepository.save(emailQueue);
 
-            // Render template
-            Locale locale = Locale.ENGLISH; // TODO: Get from user preferences
+            // Render template with locale from queue (defaults to 'en')
+            String localeStr = emailQueue.getLocale() != null ? emailQueue.getLocale() : "en";
+            Locale locale = Locale.forLanguageTag(localeStr);
             Map<String, Object> variables = emailQueue.getTemplateData();
 
             String recipientId = emailQueue.getRecipient() != null

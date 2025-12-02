@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Streak Milestone Reached! - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <div style="text-align: center;">
+        <span style="font-size: 64px;">🏆</span>
+      </div>
+
+      <h1 style="text-align: center;" th:text="#{email.streak.milestone.title}">
+        🏆 Amazing Achievement!
+      </h1>
+
+      <p>
+        <span th:text="#{email.streak.milestone.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p>
+        <span th:text="#{email.streak.milestone.message}">
+          You've reached a
+        </span>
+        <strong th:text="${streakDays}">30</strong>-day
+        <span th:text="#{email.streak.milestone.message2}">
+          learning streak! Your dedication is inspiring.
+        </span>
+      </p>
+
+      <!-- Milestone Badge -->
+      <div class="card card-highlight" style="text-align: center;">
+        <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+          <div>
+            <span style="font-size: 32px;">🔥</span>
+            <div style="color: white; font-size: 24px; font-weight: 700;" th:text="${streakDays}">30</div>
+          </div>
+        </div>
+        <h2 style="margin: 0; color: #92400e;">
+          <span th:text="${streakDays}">30</span>-Day Streak!
+        </h2>
+        <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">
+          <span th:text="#{email.streak.milestone.badge}">
+            You've unlocked the Streak Master badge!
+          </span>
+        </p>
+      </div>
+
+      <!-- Achievement Stats -->
+      <div class="card">
+        <h3 style="margin: 0 0 16px 0; font-size: 16px; text-align: center;">📊 Your Journey</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" th:text="${lessonsInStreak}">45</div>
+            <div class="stat-label">Lessons</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" th:text="${minutesInStreak}">720</div>
+            <div class="stat-label">Minutes</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" style="color: #16a34a;">
+              <span th:text="${averageScore}">88</span>%
+            </div>
+            <div class="stat-label">Avg Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next Milestone -->
+      <div th:if="${nextMilestone}" class="card card-success">
+        <h3 style="margin: 0 0 8px 0; font-size: 16px;">🎯 Next Milestone</h3>
+        <p style="margin: 0; color: #4b5563;">
+          <span th:text="${nextMilestone}">50</span>-day streak
+          <span th:text="#{email.streak.milestone.next.info}">
+            - Only
+          </span>
+          <strong th:text="${daysToNextMilestone}">20</strong>
+          <span th:text="#{email.streak.milestone.next.days}">days to go!</span>
+        </p>
+      </div>
+
+      <!-- Share -->
+      <div style="text-align: center; margin: 24px 0;">
+        <p style="color: #6b7280; font-size: 14px; margin: 0 0 12px 0;">
+          <span th:text="#{email.streak.milestone.share}">
+            Share your achievement:
+          </span>
+        </p>
+        <a th:if="${shareUrl}" th:href="${shareUrl}" style="color: #2563eb; text-decoration: none; font-weight: 600;">
+          Share on LinkedIn
+        </a>
+      </div>
+
+      <div class="btn-container">
+        <a
+          th:href="${dashboardUrl}"
+          class="btn"
+          th:text="#{email.streak.milestone.keep.going}"
+        >
+          Keep the Streak Going!
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        <span th:text="#{email.streak.milestone.congrats}">
+          Congratulations! You're in the top 5% of dedicated learners. 🌟
+        </span>
+      </p>
+    </th:block>
+  </body>
+</html>

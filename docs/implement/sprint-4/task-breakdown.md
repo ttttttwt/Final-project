@@ -2,9 +2,9 @@
 
 **Sprint**: 4 / 8  
 **Duration**: November 24 – December 11, 2025 (18 days)  
-**Status**: 🟢 In Progress (Day 12) | **Progress**: 24.5/43 pts (57%)  
+**Status**: 🟢 In Progress (Day 14) | **Progress**: 32.5/43 pts (75.6%)  
 **Created**: November 24, 2025  
-**Last Updated**: December 1, 2025
+**Last Updated**: December 2, 2025
 
 ---
 
@@ -13,7 +13,7 @@
 **Goal**: Build foundation of Lexia Mobile App (React Native + Expo) with authentication, navigation, core features, and offline support.
 
 **Total Points**: 43 points over 18 days = **2.4 pts/day**  
-**Current Velocity**: 4.1 pts/day 🚀 (exceeding target!)
+**Current Velocity**: 5.4 pts/day 🚀 (exceeding target!)
 
 ---
 
@@ -406,14 +406,32 @@ npm install --save-dev jest-expo @types/jest
 
 **Tasks**:
 
-- [ ] **E5**: Add Offline-First Features (2 pts)
-  - Download lessons: `AsyncStorage` + `FileSystem.downloadAsync`
-  - Download images: `react-native-fast-image` with cache
-  - Download button: On lesson cards
-  - Progress indicator: During download
-  - "Downloaded" badge: On lesson cards
-  - Delete download: Option in lesson viewer
-  - Storage usage: Display in settings
+- [x] **E5**: Add Offline-First Features (2 pts) ✅ **COMPLETE** (Dec 2)
+  - ✅ Created `offlineDownloadService.ts` (~670 lines)
+    - Download lessons with audio files to FileSystem
+    - Download entire courses (all sections and lessons)
+    - Track downloaded lessons/courses in AsyncStorage
+    - Storage management (get storage info, clear downloads)
+  - ✅ Created `useDownloads` hook (~250 lines)
+    - Download state management (downloadedLessonIds, downloadedCourseIds)
+    - Download progress tracking (downloadingLessons Map)
+    - Storage info (total, used, available, itemCount)
+  - ✅ Created `DownloadButton` component (~280 lines)
+    - Download/delete toggle with progress indicator
+    - Confirmation dialog for delete
+    - Multiple size variants (small, medium, large)
+  - ✅ Created `DownloadedBadge` component (~120 lines)
+    - Visual indicator for downloaded lessons
+    - Positionable as overlay
+    - Multiple sizes
+  - ✅ Created `StorageUsage` component (~290 lines)
+    - Storage progress bar (used/total)
+    - Downloaded lesson/course counts
+    - Clear all downloads option
+  - ✅ Created `utils/formatters.ts` (~80 lines)
+    - formatBytes(), formatDuration()
+    - formatRelativeTime(), formatPercentage()
+  - ✅ Unit Tests: 22 tests passing
 
 **End of Day Check**: ✅ Lessons downloadable, viewable offline, images cached
 
@@ -504,16 +522,17 @@ npm install --save-dev jest-expo @types/jest
 | B: Authentication         | 5/8    | 🟢 Mostly Done | Nov 25-26, 2025 |
 | C: Navigation & Layout    | 4/4    | ✅ Complete    | Nov 27, 2025    |
 | D: Core Features          | 10/10  | ✅ Complete    | Dec 2, 2025     |
-| E: Progress & Offline     | 1.5/8  | 🟢 In Progress | -               |
+| E: Progress & Offline     | 6.5/8  | 🟢 In Progress | Dec 2, 2025     |
 | F: Testing & Performance  | 0/6    | ⬜ Not Started | -               |
 
-**Total**: 43 points | **Completed**: 27.5 points (64%)
+**Total**: 43 points | **Completed**: 32.5 points (75.6%)
 
 **Notes**:
 
 - B7 (Biometric Auth) deferred to Sprint 5 (1 pt)
 - D4 (Lesson Viewer) completed with all 4 lesson types (Dec 1)
 - D5 (Lesson Navigation) integrated into D4
+- E1-E5 completed (Dec 2) - Progress screen, offline queue, download service
 
 ---
 
@@ -575,20 +594,29 @@ Each development session should create a summary in `docs/implement/sprint-4/ses
 
 ---
 
-## 🎯 Remaining Work (Day 13-18)
+## 🎯 Remaining Work (Day 15-18)
 
-| Day            | Tasks                                       | Points  |
-| -------------- | ------------------------------------------- | ------- |
-| Day 13 (Dec 2) | D6: Push Notifications, E1: Progress Screen | 3 pts   |
-| Day 14 (Dec 3) | E2: Offline Strategy, E4: Offline Support   | 2 pts   |
-| Day 15 (Dec 4) | E5: Offline-First Features                  | 2 pts   |
-| Day 16 (Dec 5) | F1: Auth Store Tests, F2: API Client Tests  | 2 pts   |
-| Day 17 (Dec 6) | F3: Integration Tests, F4: Snapshot Tests   | 2.5 pts |
-| Day 18 (Dec 7) | F5: Coverage & Performance, Polish          | 1.5 pts |
+| Day            | Tasks                                         | Points  |
+| -------------- | --------------------------------------------- | ------- |
+| Day 15 (Dec 3) | F1: Auth Store Unit Tests                     | 1 pt    |
+| Day 16 (Dec 4) | F2: API Client Tests, F3: Integration Tests   | 2.5 pts |
+| Day 17 (Dec 5) | F4: Snapshot Tests, F5: Coverage Verification | 1.5 pts |
+| Day 18 (Dec 6) | F5: Performance Profiling, Bug Fixes, Polish  | 1.5 pts |
 
-**Remaining**: 18.5 points over 6 days = **3.1 pts/day** (achievable with current velocity)
+**Remaining**: 10.5 points over 4 days = **2.6 pts/day** (easily achievable!)
+
+### ✅ Completed (Day 13-14)
+
+| Day            | Tasks                            | Points     |
+| -------------- | -------------------------------- | ---------- |
+| Day 13 (Dec 2) | D6: Push Notifications           | 1.5 pts ✅ |
+| Day 14 (Dec 2) | E1: Progress Screen with Charts  | 1.5 pts ✅ |
+| Day 14 (Dec 2) | E2: Profile Screen Completion    | 0.5 pts ✅ |
+| Day 14 (Dec 2) | E3: Network Detection Component  | 0.5 pts ✅ |
+| Day 14 (Dec 2) | E4: Offline Queue Implementation | 1.5 pts ✅ |
+| Day 14 (Dec 2) | E5: Offline-First Features       | 2 pts ✅   |
 
 ---
 
-**Last Updated**: December 1, 2025  
+**Last Updated**: December 2, 2025  
 **Next Review**: December 11, 2025 (End of Sprint 4)

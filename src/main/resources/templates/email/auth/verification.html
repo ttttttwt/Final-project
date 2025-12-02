@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Verify Your Email - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <h1 th:text="#{email.verification.title}">Verify Your Email Address</h1>
+
+      <p>
+        <span th:text="#{email.verification.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p th:text="#{email.verification.message}">
+        Thank you for signing up for LEXIA! To complete your registration and
+        start your English learning journey, please verify your email address.
+      </p>
+
+      <div class="btn-container">
+        <a
+          th:href="${verificationUrl}"
+          class="btn"
+          th:text="#{email.verification.button}"
+        >
+          Verify Email Address
+        </a>
+      </div>
+
+      <div class="card card-warning">
+        <p style="margin: 0">
+          <strong>⏰</strong>
+          <span th:text="#{email.verification.expiry}">
+            This verification link will expire in 24 hours.
+          </span>
+        </p>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text">
+        <span th:text="#{email.verification.alternative}">
+          If the button above doesn't work, copy and paste this link into your
+          browser:
+        </span>
+      </p>
+      <p class="link-alt">
+        <a th:href="${verificationUrl}" th:text="${verificationUrl}">
+          https://lexia.app/verify-email?token=xxx
+        </a>
+      </p>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" th:text="#{email.verification.ignore}">
+        If you didn't create a LEXIA account, you can safely ignore this email.
+      </p>
+    </th:block>
+  </body>
+</html>

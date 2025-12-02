@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Course Completed - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <div style="text-align: center;">
+        <span style="font-size: 64px;">🎉</span>
+      </div>
+
+      <h1 style="text-align: center;" th:text="#{email.course.completed.title}">
+        🎉 Congratulations!
+      </h1>
+
+      <p>
+        <span th:text="#{email.course.completed.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p>
+        <span th:text="#{email.course.completed.message}">
+          You've successfully completed the course!
+        </span>
+        <strong th:text="${courseTitle}">Business English Basics</strong>
+      </p>
+
+      <!-- Achievement Stats Card -->
+      <div class="card card-success">
+        <h3 style="margin: 0 0 16px 0; text-align: center;" th:text="#{email.course.completed.stats}">
+          Your Achievement
+        </h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" th:text="${lessonsCompleted}">24</div>
+            <div class="stat-label">Lessons</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" th:text="${totalTimeFormatted}">12h 30m</div>
+            <div class="stat-label">Total Time</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" style="color: #16a34a;">
+              <span th:text="${averageScore}">85</span>%
+            </div>
+            <div class="stat-label">Avg Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certificate CTA -->
+      <div th:if="${certificateAvailable}" class="btn-container">
+        <a
+          th:href="${certificateUrl}"
+          class="btn"
+          th:text="#{email.course.completed.certificate}"
+        >
+          Download Certificate
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- Next Course Recommendation -->
+      <div th:if="${nextCourse}">
+        <h3 th:text="#{email.course.completed.next}">Continue Your Journey</h3>
+        
+        <div class="card card-highlight">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img
+              th:if="${nextCourse.thumbnailUrl}"
+              th:src="${nextCourse.thumbnailUrl}"
+              alt="Next course thumbnail"
+              style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover;"
+            />
+            <div style="flex: 1;">
+              <h4 style="margin: 0 0 4px 0;" th:text="${nextCourse.title}">
+                Advanced Business Communication
+              </h4>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;" th:text="${nextCourse.level}">
+                B2
+              </p>
+            </div>
+          </div>
+          <div style="text-align: right; margin-top: 12px;">
+            <a
+              th:href="${nextCourse.url}"
+              style="color: #2563eb; text-decoration: none; font-weight: 600;"
+              th:text="#{email.course.completed.enroll}"
+            >
+              Enroll Now →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        Keep up the amazing work! Every lesson brings you closer to fluency. 🌟
+      </p>
+    </th:block>
+  </body>
+</html>

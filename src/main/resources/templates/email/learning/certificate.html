@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Your Certificate is Ready - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <div style="text-align: center;">
+        <span style="font-size: 64px;">🏆</span>
+      </div>
+
+      <h1 style="text-align: center;" th:text="#{email.certificate.title}">
+        Your Certificate is Ready!
+      </h1>
+
+      <p>
+        <span th:text="#{email.certificate.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p th:text="#{email.certificate.message}">
+        Congratulations on completing your course! Your certificate of completion is now ready to download.
+      </p>
+
+      <!-- Certificate Preview Card -->
+      <div class="card card-highlight" style="text-align: center;">
+        <div style="border: 2px solid #2563eb; border-radius: 8px; padding: 24px; background: #fff;">
+          <p style="color: #6b7280; font-size: 12px; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 2px;">
+            Certificate of Completion
+          </p>
+          <h2 style="margin: 0 0 8px 0; color: #1f2937;" th:text="${courseTitle}">
+            Business English Basics
+          </h2>
+          <p style="margin: 0 0 16px 0; color: #4b5563;">
+            Awarded to <strong th:text="${userName}">John Doe</strong>
+          </p>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">
+            Completed on <span th:text="${completionDate}">December 2, 2025</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Certificate Details -->
+      <div class="card">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">📄 Certificate Details</h3>
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Certificate ID</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${certificateId}">
+              CERT-2025-XXXXX
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Course Level</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${courseLevel}">
+              B1 Intermediate
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Duration</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${totalTimeFormatted}">
+              12h 30m
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Final Score</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #16a34a;">
+              <span th:text="${averageScore}">85</span>%
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="btn-container">
+        <a
+          th:href="${certificateUrl}"
+          class="btn"
+          th:text="#{email.certificate.button}"
+        >
+          Download Certificate (PDF)
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text" style="text-align: center;">
+        <span th:text="#{email.certificate.share}">
+          Share your achievement on LinkedIn or add it to your resume!
+        </span>
+      </p>
+
+      <div th:if="${verificationUrl}" style="text-align: center; margin-top: 16px;">
+        <p class="small-text muted">
+          <span th:text="#{email.certificate.verify}">Verify this certificate:</span><br/>
+          <a th:href="${verificationUrl}" th:text="${verificationUrl}" style="font-size: 11px;">
+            https://lexia.app/verify/CERT-XXX
+          </a>
+        </p>
+      </div>
+    </th:block>
+  </body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: *}"
+  lang="en"
+>
+  <head>
+    <title>Enrollment Confirmed - LEXIA</title>
+  </head>
+  <body>
+    <th:block th:fragment="content">
+      <h1 th:text="#{email.enrollment.title}">Enrollment Confirmed! 📚</h1>
+
+      <p>
+        <span th:text="#{email.enrollment.greeting}">Hi</span>
+        <strong th:text="${userName ?: 'there'}">John</strong>,
+      </p>
+
+      <p th:text="#{email.enrollment.message}">
+        You've successfully enrolled in the course.
+      </p>
+
+      <!-- Course Card -->
+      <div class="card card-highlight">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <img
+            th:if="${courseThumbnailUrl}"
+            th:src="${courseThumbnailUrl}"
+            alt="Course thumbnail"
+            style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover;"
+          />
+          <div>
+            <h2 style="margin: 0 0 8px 0; font-size: 18px;" th:text="${courseTitle}">
+              Business English Basics
+            </h2>
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">
+              <span th:text="${courseLevel}">B1</span> •
+              <span th:text="${courseDuration}">8 hours</span> •
+              <span th:text="${lessonCount}">24</span> lessons
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Course Details -->
+      <div class="card">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">📋 Course Overview</h3>
+        <p style="margin: 0; color: #4b5563; font-size: 14px;" th:text="${courseDescription}">
+          Learn essential business English skills for the workplace.
+        </p>
+      </div>
+
+      <!-- What You'll Learn -->
+      <div th:if="${learningOutcomes}" class="card card-success">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">🎯 What You'll Learn</h3>
+        <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
+          <li th:each="outcome : ${learningOutcomes}" th:text="${outcome}">
+            Skill or topic
+          </li>
+        </ul>
+      </div>
+
+      <div class="btn-container">
+        <a
+          th:href="${courseUrl}"
+          class="btn"
+          th:text="#{email.enrollment.button}"
+        >
+          Start Learning
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        Happy learning! Your journey to better English starts now. 🚀
+      </p>
+    </th:block>
+  </body>
+</html>
