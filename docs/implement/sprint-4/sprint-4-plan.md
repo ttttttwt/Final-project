@@ -2,7 +2,7 @@
 
 **Sprint**: 4 / 8
 **Duration**: November 24 – December 11, 2025 (18 days)
-**Status**: 🟢 In Progress (Day 14) | **Progress**: 32.5/43 pts (75.6%)
+**Status**: 🟢 In Progress (Day 14) | **Progress**: 34/43 pts (79.1%)
 **Goal**: Build the foundation of the Lexia Mobile App using React Native (Expo) and integrate with the Backend API.
 **Last Updated**: December 2, 2025
 
@@ -14,10 +14,10 @@
 | B: Authentication         | 5/8    | 🟢 Mostly Done | 62.5%      |
 | C: Navigation & Layout    | 4/4    | ✅ Complete    | 100%       |
 | D: Core Features          | 10/10  | ✅ Complete    | 100%       |
-| E: Progress & Offline     | 6.5/8  | 🟢 In Progress | 81.25%     |
+| E: Progress & Offline     | 8/8    | ✅ Complete    | 100%       |
 | F: Testing & Performance  | 0/6    | ⬜ Not Started | 0%         |
 
-**Velocity**: 5.4 pts/day (target: 2.4) - exceeding target! 🚀
+**Velocity**: 5.7 pts/day (target: 2.4) - exceeding target! 🚀
 
 ## 📱 Technical Stack
 
@@ -225,6 +225,7 @@
   - ✅ "Syncing..." indicator
   - ✅ Conflict resolution: last-write-wins
 - [x] **E5**: **Offline-First Features** (2 pts) ✅ **COMPLETE** (Dec 2)
+
   - ✅ Download lessons for offline viewing (AsyncStorage + FileSystem)
   - ✅ Download images with react-native-fast-image
   - ✅ Show download button on lesson cards
@@ -242,6 +243,26 @@
     - ✅ "Downloaded" badge on lesson cards
     - ✅ Delete download option
     - ✅ Storage usage display in settings
+
+- [x] **E6**: **React Query Offline Persister** (1.5 pts) ✅ **COMPLETE** (Dec 2)
+  - ✅ Created `lib/queryClient.ts` (~150 lines)
+    - QueryClient configuration with optimized stale times
+    - AsyncStorage persister using `@tanstack/react-query-persist-client`
+    - QUERY_KEYS constants for all queries
+    - CACHE_TIME constants (SHORT: 30s, DEFAULT: 5min, LONG: 30min)
+    - clearQueryCache() helper for logout
+  - ✅ Created `components/QueryProvider.tsx` (~110 lines)
+    - PersistQueryClientProvider wrapper
+    - Network state listener (pause/resume queries when offline)
+    - AppState listener (refetch on app resume)
+    - Cache cleanup on logout
+  - ✅ Created `hooks/useCourses.ts` (~150 lines)
+    - 8 hooks: useCourses, useSearchCourses, useCourse, useCourseWithSections, useMyEnrollments, useEnrollmentStatus, useEnrollCourse, usePrefetchCourse
+  - ✅ Created `hooks/useProgress.ts` (~140 lines)
+    - 6 hooks: useDashboard, useStreak, useProgressSummary, useCourseProgress, useCompleteLesson, useRefreshProgress
+  - ✅ Updated App.tsx with QueryProvider
+  - ✅ 22 new unit tests (useCourses: 11, useProgress: 11)
+  - ✅ **263 Total Tests Passing** 🎊
 
 ### Epic F: Testing & Performance (6 pts) - **NEW**
 

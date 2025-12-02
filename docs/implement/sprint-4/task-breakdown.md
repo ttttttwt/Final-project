@@ -2,7 +2,7 @@
 
 **Sprint**: 4 / 8  
 **Duration**: November 24 – December 11, 2025 (18 days)  
-**Status**: 🟢 In Progress (Day 14) | **Progress**: 32.5/43 pts (75.6%)  
+**Status**: 🟢 In Progress (Day 14) | **Progress**: 34/43 pts (79.1%)  
 **Created**: November 24, 2025  
 **Last Updated**: December 2, 2025
 
@@ -13,7 +13,7 @@
 **Goal**: Build foundation of Lexia Mobile App (React Native + Expo) with authentication, navigation, core features, and offline support.
 
 **Total Points**: 43 points over 18 days = **2.4 pts/day**  
-**Current Velocity**: 5.4 pts/day 🚀 (exceeding target!)
+**Current Velocity**: 5.7 pts/day 🚀 (exceeding target!)
 
 ---
 
@@ -407,6 +407,7 @@ npm install --save-dev jest-expo @types/jest
 **Tasks**:
 
 - [x] **E5**: Add Offline-First Features (2 pts) ✅ **COMPLETE** (Dec 2)
+
   - ✅ Created `offlineDownloadService.ts` (~670 lines)
     - Download lessons with audio files to FileSystem
     - Download entire courses (all sections and lessons)
@@ -433,7 +434,40 @@ npm install --save-dev jest-expo @types/jest
     - formatRelativeTime(), formatPercentage()
   - ✅ Unit Tests: 22 tests passing
 
-**End of Day Check**: ✅ Lessons downloadable, viewable offline, images cached
+- [x] **E6**: React Query Offline Persister (1.5 pts) ✅ **COMPLETE** (Dec 2)
+  - ✅ Created `lib/queryClient.ts` (~150 lines)
+    - QueryClient configuration with stale times
+    - AsyncStorage persister with createAsyncStoragePersister
+    - QUERY_KEYS constants for all queries
+    - CACHE_TIME constants (SHORT, DEFAULT, LONG stale times)
+    - persistOptions for PersistQueryClientProvider
+    - clearQueryCache() helper function
+  - ✅ Created `components/QueryProvider.tsx` (~110 lines)
+    - PersistQueryClientProvider wrapper
+    - Network state listener (pause/resume queries)
+    - AppState listener (refetch on app resume)
+    - Cache cleanup on logout
+  - ✅ Created `hooks/useCourses.ts` (~150 lines)
+    - useCourses() - paginated course list
+    - useSearchCourses() - search with filters
+    - useCourse() - single course by ID
+    - useCourseWithSections() - course with lessons
+    - useMyEnrollments() - user's enrollments
+    - useEnrollmentStatus() - check if enrolled
+    - useEnrollCourse() - enroll mutation
+    - usePrefetchCourse() - prefetch helpers
+  - ✅ Created `hooks/useProgress.ts` (~140 lines)
+    - useDashboard() - dashboard overview
+    - useStreak() - streak data
+    - useProgressSummary() - progress summary
+    - useCourseProgress() - course progress
+    - useCompleteLesson() - complete lesson mutation
+    - useRefreshProgress() - refresh all progress data
+  - ✅ Updated `App.tsx` with QueryProvider
+  - ✅ Unit Tests: 22 tests (11 useCourses + 11 useProgress)
+  - ✅ **263 Total Tests Passing** 🎊
+
+**End of Day Check**: ✅ Lessons downloadable, viewable offline, React Query with persistence
 
 ---
 
@@ -522,17 +556,17 @@ npm install --save-dev jest-expo @types/jest
 | B: Authentication         | 5/8    | 🟢 Mostly Done | Nov 25-26, 2025 |
 | C: Navigation & Layout    | 4/4    | ✅ Complete    | Nov 27, 2025    |
 | D: Core Features          | 10/10  | ✅ Complete    | Dec 2, 2025     |
-| E: Progress & Offline     | 6.5/8  | 🟢 In Progress | Dec 2, 2025     |
+| E: Progress & Offline     | 8/8    | ✅ Complete    | Dec 2, 2025     |
 | F: Testing & Performance  | 0/6    | ⬜ Not Started | -               |
 
-**Total**: 43 points | **Completed**: 32.5 points (75.6%)
+**Total**: 43 points | **Completed**: 34 points (79.1%)
 
 **Notes**:
 
 - B7 (Biometric Auth) deferred to Sprint 5 (1 pt)
 - D4 (Lesson Viewer) completed with all 4 lesson types (Dec 1)
 - D5 (Lesson Navigation) integrated into D4
-- E1-E5 completed (Dec 2) - Progress screen, offline queue, download service
+- E1-E6 completed (Dec 2) - Progress screen, offline queue, download service, React Query hooks 🎊
 
 ---
 
@@ -603,18 +637,19 @@ Each development session should create a summary in `docs/implement/sprint-4/ses
 | Day 17 (Dec 5) | F4: Snapshot Tests, F5: Coverage Verification | 1.5 pts |
 | Day 18 (Dec 6) | F5: Performance Profiling, Bug Fixes, Polish  | 1.5 pts |
 
-**Remaining**: 10.5 points over 4 days = **2.6 pts/day** (easily achievable!)
+**Remaining**: 9 points over 4 days = **2.25 pts/day** (easily achievable!)
 
 ### ✅ Completed (Day 13-14)
 
-| Day            | Tasks                            | Points     |
-| -------------- | -------------------------------- | ---------- |
-| Day 13 (Dec 2) | D6: Push Notifications           | 1.5 pts ✅ |
-| Day 14 (Dec 2) | E1: Progress Screen with Charts  | 1.5 pts ✅ |
-| Day 14 (Dec 2) | E2: Profile Screen Completion    | 0.5 pts ✅ |
-| Day 14 (Dec 2) | E3: Network Detection Component  | 0.5 pts ✅ |
-| Day 14 (Dec 2) | E4: Offline Queue Implementation | 1.5 pts ✅ |
-| Day 14 (Dec 2) | E5: Offline-First Features       | 2 pts ✅   |
+| Day            | Tasks                             | Points     |
+| -------------- | --------------------------------- | ---------- |
+| Day 13 (Dec 2) | D6: Push Notifications            | 1.5 pts ✅ |
+| Day 14 (Dec 2) | E1: Progress Screen with Charts   | 1.5 pts ✅ |
+| Day 14 (Dec 2) | E2: Profile Screen Completion     | 0.5 pts ✅ |
+| Day 14 (Dec 2) | E3: Network Detection Component   | 0.5 pts ✅ |
+| Day 14 (Dec 2) | E4: Offline Queue Implementation  | 1.5 pts ✅ |
+| Day 14 (Dec 2) | E5: Offline-First Features        | 2 pts ✅   |
+| Day 14 (Dec 2) | E6: React Query Offline Persister | 1.5 pts ✅ |
 
 ---
 

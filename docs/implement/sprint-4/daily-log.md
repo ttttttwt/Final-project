@@ -2670,6 +2670,231 @@ ESLint: PASS (warnings only)
 
 #### 🔜 Next Session (Day 15)
 
+- E6: React Query Offline Persister (1.5 pts)
+- Target: 1.5 points
+
+---
+
+### Day 14 - Monday, December 2, 2025 (E6 Session)
+
+**Status**: ✅ Complete  
+**Progress**: 34/43 points (79.1%)  
+**Today's Target**: 1.5 points (E6) ✅ **ACHIEVED**
+
+#### 🎯 Goals
+
+- ✅ Implement React Query with offline persistence
+- ✅ Create query hooks for courses and progress
+- ✅ Setup network/app state listeners
+- ✅ Add unit tests for new hooks
+
+#### ✅ Completed
+
+- [x] **E6**: React Query Offline Persister (1.5 pts) ✅ **COMPLETE**
+
+  - ✅ Created `lib/queryClient.ts` (~150 lines)
+    - QueryClient configuration with optimized stale times
+    - AsyncStorage persister using `@tanstack/react-query-persist-client`
+    - QUERY_KEYS constants for all queries (courses, enrollments, progress, dashboard)
+    - CACHE_TIME constants:
+      - SHORT: 30 seconds (dashboard, streak)
+      - DEFAULT: 5 minutes (courses, enrollments)
+      - LONG: 30 minutes (course details)
+    - persistOptions for PersistQueryClientProvider
+    - clearQueryCache() helper function for logout
+  - ✅ Created `components/QueryProvider.tsx` (~110 lines)
+    - PersistQueryClientProvider wrapper with AsyncStorage persistence
+    - Network state listener (pause queries when offline, resume when online)
+    - AppState listener (refetch queries when app becomes active)
+    - Cache cleanup on logout integration
+    - Loading state during cache restoration
+  - ✅ Created `hooks/useCourses.ts` (~150 lines)
+    - useCourses() - paginated course list with staleTime
+    - useSearchCourses() - search with filters
+    - useCourse() - single course by ID
+    - useCourseWithSections() - course with lessons
+    - useMyEnrollments() - user's enrollments
+    - useEnrollmentStatus() - check if enrolled
+    - useEnrollCourse() - enroll mutation with cache invalidation
+    - usePrefetchCourse() - prefetch helpers for navigation
+  - ✅ Created `hooks/useProgress.ts` (~140 lines)
+    - useDashboard() - dashboard overview data
+    - useStreak() - streak data with short stale time
+    - useProgressSummary() - progress summary for N days
+    - useCourseProgress() - course progress by enrollmentId
+    - useCompleteLesson() - complete lesson mutation with cache invalidation
+    - useRefreshProgress() - refresh all progress queries
+  - ✅ Updated `App.tsx` with QueryProvider wrapper
+  - ✅ Fixed lexia-web tests (5 tests)
+    - CourseCard.test.tsx - Changed "Enroll Now" to "View Detail"
+    - CoursesPage.test.tsx - Updated button text and regex matcher
+    - RegisterForm.test.tsx - Added fullName field to test helper
+  - ✅ Unit Tests: 22 tests (11 useCourses + 11 useProgress)
+  - ✅ **263 Total Mobile Tests Passing** 🎊
+  - ✅ **37 Total Web Tests Passing** 🎊
+
+#### 📝 Implementation Details
+
+**1. QueryClient Configuration** (`lib/queryClient.ts`):
+
+```typescript
+// Query Keys structure:
+export const QUERY_KEYS = {
+  courses: {
+    all: ["courses"],
+    list: ["courses", "list"],
+    search: (query: string) => ["courses", "search", query],
+    detail: (id: number) => ["courses", "detail", id],
+    withSections: (id: number) => ["courses", "sections", id],
+  },
+  enrollments: {
+    all: ["enrollments"],
+    my: ["enrollments", "my"],
+    status: (courseId: number) => ["enrollments", "status", courseId],
+  },
+  progress: {
+    all: ["progress"],
+    dashboard: ["progress", "dashboard"],
+    summary: (days: number) => ["progress", "summary", days],
+    course: (enrollmentId: number) => ["progress", "course", enrollmentId],
+    streak: ["progress", "streak"],
+  },
+};
+```
+
+**2. QueryProvider Features**:
+
+```typescript
+// Network listener:
+- NetInfo.addEventListener → pause/resume queries
+- Offline: focusManager.setFocused(false)
+- Online: focusManager.setFocused(true)
+
+// AppState listener:
+- Background → Foreground: invalidateQueries
+- Refetch all stale data on resume
+```
+
+**3. React Query Hooks Pattern**:
+
+```typescript
+// Query example:
+export function useCourses(page = 0, size = 10) {
+  return useQuery({
+    queryKey: QUERY_KEYS.courses.list,
+    queryFn: () => courseService.getCourses(page, size),
+    staleTime: CACHE_TIME.DEFAULT,
+  });
+}
+
+// Mutation example with cache invalidation:
+export function useEnrollCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courseId: number) => enrollmentService.enrollCourse(courseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.enrollments.all });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.courses.all });
+    },
+  });
+}
+```
+
+#### 📊 Test Results
+
+```
+Mobile Tests:
+Test Suites: 26 passed, 26 total
+Tests:       263 passed, 263 total
+  - useCourses.test.ts: 11 tests ✅
+  - useProgress.test.ts: 11 tests ✅
+  - All previous tests: 241 tests ✅
+
+Web Tests:
+Test Suites: 37 passed, 37 total (all fixed)
+
+TypeScript: PASS (0 errors)
+ESLint: PASS (0 errors)
+```
+
+#### 🎯 Epic E Status Update - COMPLETE! 🎊
+
+- ✅ E1: Progress Screen with Charts (1.5 pts) - **COMPLETE**
+- ✅ E2: Profile Screen Completion (0.5 pt) - **COMPLETE**
+- ✅ E3: Network Detection Component (0.5 pt) - **COMPLETE**
+- ✅ E4: Offline Queue Implementation (1.5 pts) - **COMPLETE**
+- ✅ E5: Offline-First Features (2 pts) - **COMPLETE**
+- ✅ E6: React Query Offline Persister (1.5 pts) - **COMPLETE** ✅ **NEW**
+
+**Epic E Progress**: 8/8 points (100%) 🎉
+
+#### 📝 Files Created/Modified
+
+**Created (Mobile)**:
+
+- `lib/queryClient.ts` (150 lines)
+- `components/QueryProvider.tsx` (110 lines)
+- `hooks/useCourses.ts` (150 lines)
+- `hooks/useProgress.ts` (140 lines)
+- `__tests__/hooks/useCourses.test.ts` (200 lines)
+- `__tests__/hooks/useProgress.test.ts` (200 lines)
+
+**Modified (Mobile)**:
+
+- `App.tsx` (added QueryProvider wrapper)
+
+**Modified (Web)**:
+
+- `tests/components/courses/CourseCard.test.tsx` (fixed button text)
+- `tests/components/courses/CoursesPage.test.tsx` (fixed button text and regex)
+- `tests/components/auth/RegisterForm.test.tsx` (added fullName field)
+
+**Total**: 6 files created, 4 files modified, ~950 lines of production code
+
+#### 🎊 Key Achievements
+
+1. **React Query v5 Integration**:
+
+   - Full TanStack Query v5 with @tanstack/react-query-persist-client
+   - AsyncStorage persistence for offline cache survival
+   - Automatic cache restoration on app launch
+
+2. **Smart Network Handling**:
+
+   - Pause queries when offline
+   - Resume and refetch when back online
+   - AppState listener for background/foreground transitions
+
+3. **Type-Safe Query Hooks**:
+
+   - QUERY_KEYS constants prevent typos
+   - Proper TypeScript generics for all hooks
+   - Mutation hooks with cache invalidation
+
+4. **Web Test Fixes**:
+   - All 37 web tests passing
+   - Fixed CourseCard, CoursesPage, RegisterForm tests
+
+#### 📊 Sprint Progress Update
+
+**Progress**: 34/43 points (79.1%) 🎉
+**Velocity**: ~5.7 pts/day - exceeding target!
+
+**Epic Status**:
+
+- Epic A (Initialization): 7/7 pts (100%) ✅
+- Epic B (Authentication): 5/8 pts (62.5%) ✅
+- Epic C (Navigation): 4/4 pts (100%) ✅
+- Epic D (Core Features): 10/10 pts (100%) ✅
+- Epic E (Offline & Progress): 8/8 pts (100%) ✅ **COMPLETE** 🎊
+- Epic F (Testing): 0/6 pts (0%) ⬜
+
+#### 🚧 Blockers
+
+- None
+
+#### 🔜 Next Session (Day 15)
+
 - F1: Unit tests for auth store (1 pt)
 - F2: Unit tests for API client (1 pt)
 - F3: Integration tests (1.5 pts)
@@ -2680,64 +2905,49 @@ ESLint: PASS (warnings only)
 ### Day 15 - Tuesday, December 3, 2025
 
 **Status**: 🔵 Not Started  
-**Today's Target**: 1.5 points (D4.5, D5, D6)
-
-#### 🎯 Goals
-
-- Complete Lesson button with API call
-- Lesson navigation (prev/next)
-- Push Notifications setup (permissions only)
-
----
-
-## Week 3: Progress, Offline, Testing (Dec 6-11)
-
-### Day 13 - Friday, December 6, 2025
-
-**Status**: 🔵 Not Started  
-**Today's Target**: 2.5 points (E1, D5)
-
-#### 🎯 Goals
-
-- Progress Screen with charts
-- Profile Screen with user info
-
----
-
-### Day 14 - Saturday, December 7, 2025
-
-**Status**: 🔵 Not Started  
-**Today's Target**: 2 points (E2, E4)
-
-#### 🎯 Goals
-
-- Document offline strategy
-- Implement offline support (network detection, queue mutations)
-
----
-
-### Day 15 - Sunday, December 8, 2025
-
-**Status**: 🔵 Not Started  
-**Today's Target**: 2 points (E5)
-
-#### 🎯 Goals
-
-- Download lessons for offline viewing
-- Image caching with react-native-fast-image
-
----
-
-### Day 16 - Monday, December 9, 2025
-
-**Status**: 🔵 Not Started  
-**Today's Target**: 3 points (F1, F2, F3)
+**Today's Target**: 3.5 points (F1, F2, F3)
 
 #### 🎯 Goals
 
 - Unit tests for auth store
 - Unit tests for API client interceptors
 - Integration tests for auth flow
+
+---
+
+### Day 16 - Wednesday, December 4, 2025
+
+**Status**: 🔵 Not Started  
+**Today's Target**: 2.5 points (F3, F4)
+
+#### 🎯 Goals
+
+- Complete integration tests
+- Snapshot tests for core components
+
+---
+
+### Day 17 - Thursday, December 5, 2025
+
+**Status**: 🔵 Not Started  
+**Today's Target**: 1.5 points (F5)
+
+#### 🎯 Goals
+
+- Coverage verification (≥50% global, ≥80% services)
+- Performance profiling
+
+---
+
+### Day 18 - Friday, December 6, 2025
+
+**Status**: 🔵 Not Started  
+**Today's Target**: 1.5 points (polish)
+
+#### 🎯 Goals
+
+- Bug fixes and polish
+- Sprint 4 retrospective
 
 ---
 
@@ -2769,9 +2979,9 @@ ESLint: PASS (warnings only)
 ## 📊 Sprint Summary
 
 **Total Points**: 43  
-**Completed**: 32.5  
-**Remaining**: 10.5  
-**Velocity**: 5.4 pts/day 🚀 (Target: 2.4 pts/day)
+**Completed**: 34  
+**Remaining**: 9  
+**Velocity**: 5.7 pts/day 🚀 (Target: 2.4 pts/day)
 
 **Epic Status**:
 
@@ -2779,10 +2989,10 @@ ESLint: PASS (warnings only)
 - Epic B (Authentication): 5/8 pts (62.5%) 🟢 (B7 Biometric deferred)
 - Epic C (Navigation): 4/4 pts (100%) ✅
 - Epic D (Core Features): 10/10 pts (100%) ✅
-- Epic E (Offline): 6.5/8 pts (81.25%) 🟢
+- Epic E (Offline): 8/8 pts (100%) ✅ **COMPLETE** 🎊
 - Epic F (Testing): 0/6 pts (0%) ⬜
 
-**Last Updated**: December 2, 2025 (Day 14 - E5 Complete)
+**Last Updated**: December 2, 2025 (Day 14 - E6 Complete, Epic E 100%)
 
 ---
 

@@ -3,8 +3,8 @@
 ## Sprint 4 — Mobile App Development
 
 **Sprint**: 4 / 8 | **Duration**: Nov 24 – Dec 11, 2025 (18 days)  
-**Status**: 🟢 In Progress (Day 14) | **Progress**: 32.5/43 points (75.6%) 🎉  
-**Last Updated**: December 2, 2025 (Epic A: 100% ✅ | Epic B: 62.5% ✅ | Epic C: 100% ✅ | Epic D: 100% ✅ | Epic E: 81.25%)
+**Status**: 🟢 In Progress (Day 14) | **Progress**: 34/43 points (79.1%) 🎉  
+**Last Updated**: December 2, 2025 (Epic A: 100% ✅ | Epic B: 62.5% ✅ | Epic C: 100% ✅ | Epic D: 100% ✅ | Epic E: 100% ✅)
 
 ---
 
@@ -18,23 +18,22 @@
 - 🔄 Authentication flow (Login + Register + Token management) - **62.5% DONE**
 - ✅ Tab navigation (Home, Courses, Progress, Profile) - **100% DONE**
 - ✅ Core features (Course list, detail, lesson viewer, push notifications) - **100% DONE**
-- 🔄 Progress visualization & offline support - **IN PROGRESS**
+- ✅ Progress visualization & offline support - **100% DONE** 🎊
 - ⬜ Testing (≥50% global → 60% Sprint 5, ≥80% services)
 
 **Velocity Target**: 2.4 pts/day (43 points / 18 days)
 
-**Recent Updates** (Dec 2 - E5 Session):
+**Recent Updates** (Dec 2 - E6 Session):
 
-- ✅ **E5 Complete**: Offline-First Features (2 pts)
-- ✅ **offlineDownloadService Created**: ~670 lines - lesson/course download, storage management
-- ✅ **useDownloads Hook Created**: ~250 lines - download state management
-- ✅ **DownloadButton Component Created**: ~280 lines - download/delete toggle with progress
-- ✅ **DownloadedBadge Component Created**: ~120 lines - visual indicator badge
-- ✅ **StorageUsage Component Created**: ~290 lines - storage usage display
-- ✅ **formatters Utility Created**: ~80 lines - formatBytes, formatDuration
-- ✅ **22 Unit Tests Passing**: offlineDownloadService tests
-- ✅ **241 Total Tests**: All passing! 🎊
-- 📊 **Velocity**: ~5.4 pts/day (Day 14) - exceeding target! 🚀
+- ✅ **E6 Complete**: React Query Offline Persister (1.5 pts)
+- ✅ **lib/queryClient.ts Created**: ~150 lines - QueryClient config, AsyncStorage persister, QUERY_KEYS
+- ✅ **QueryProvider.tsx Created**: ~110 lines - Provider with network/app state listeners
+- ✅ **hooks/useCourses.ts Created**: ~150 lines - Course React Query hooks (8 hooks)
+- ✅ **hooks/useProgress.ts Created**: ~140 lines - Progress React Query hooks (6 hooks)
+- ✅ **22 New Unit Tests**: useCourses (11 tests) + useProgress (11 tests)
+- ✅ **263 Total Tests**: All passing! 🎊
+- ✅ **Epic E Complete**: 8/8 points (100%) 🎊
+- 📊 **Velocity**: ~5.7 pts/day (Day 14) - exceeding target! 🚀
 - 🎯 **Next**: Epic F (Testing & Performance)
 
 ---
@@ -464,7 +463,7 @@
 
 ### Epic E: Progress & Offline (8 pts)
 
-**Status**: 🟢 In Progress (6.5/8 pts - 81.25%)  
+**Status**: ✅ Complete (8/8 pts - 100%) 🎊  
 **Timeline**: Day 14-15 (December 2-8)
 
 - [x] **E1**: Progress Screen with Charts (1.5 pt) ✅ **COMPLETE** (Dec 2)
@@ -537,6 +536,7 @@
   - ✅ **219 Total Tests Passing** 🎊
 
 - [x] **E5**: Offline-First Features (2 pts) ✅ **COMPLETE** (Dec 2)
+
   - ✅ Created `offlineDownloadService.ts` (~670 lines)
     - Download lessons with audio files to FileSystem
     - Download entire courses (all sections and lessons)
@@ -570,6 +570,39 @@
     - formatPercentage() - percentage formatting
   - ✅ Unit Tests: 22 tests for offlineDownloadService
   - ✅ **241 Total Tests Passing** 🎊
+
+- [x] **E6**: React Query Offline Persister (1.5 pts) ✅ **COMPLETE** (Dec 2)
+  - ✅ Created `lib/queryClient.ts` (~150 lines)
+    - QueryClient configuration with stale times
+    - AsyncStorage persister with createAsyncStoragePersister
+    - QUERY_KEYS constants for all queries
+    - CACHE_TIME constants (SHORT, DEFAULT, LONG stale times)
+    - persistOptions for PersistQueryClientProvider
+    - clearQueryCache() helper function
+  - ✅ Created `components/QueryProvider.tsx` (~110 lines)
+    - PersistQueryClientProvider wrapper
+    - Network state listener (pause/resume queries)
+    - AppState listener (refetch on app resume)
+    - Cache cleanup on logout
+  - ✅ Created `hooks/useCourses.ts` (~150 lines)
+    - useCourses() - paginated course list
+    - useSearchCourses() - search with filters
+    - useCourse() - single course by ID
+    - useCourseWithSections() - course with lessons
+    - useMyEnrollments() - user's enrollments
+    - useEnrollmentStatus() - check if enrolled
+    - useEnrollCourse() - enroll mutation
+    - usePrefetchCourse() - prefetch helpers
+  - ✅ Created `hooks/useProgress.ts` (~140 lines)
+    - useDashboard() - dashboard overview
+    - useStreak() - streak data
+    - useProgressSummary() - progress summary
+    - useCourseProgress() - course progress
+    - useCompleteLesson() - complete lesson mutation
+    - useRefreshProgress() - refresh all progress data
+  - ✅ Updated `App.tsx` with QueryProvider
+  - ✅ Unit Tests: 22 tests (11 useCourses + 11 useProgress)
+  - ✅ **263 Total Tests Passing** 🎊
 
 **🎊 Epic E Achievements (Dec 2)**:
 
