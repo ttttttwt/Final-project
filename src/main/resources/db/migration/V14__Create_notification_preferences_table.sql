@@ -1,7 +1,7 @@
 -- V14: Create notification_preferences table for user notification settings
 -- This table stores user preferences for notification delivery
 
-CREATE TABLE notification_preferences (
+CREATE TABLE IF NOT EXISTS notification_preferences (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
 
     -- Channel preferences

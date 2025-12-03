@@ -1,7 +1,7 @@
 -- V19: Create email_queue table for async email processing
 -- This table manages outgoing emails with retry support and priority queuing
 
-CREATE TABLE email_queue (
+CREATE TABLE IF NOT EXISTS email_queue (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     -- Recipient info
@@ -44,13 +44,13 @@ CREATE TABLE email_queue (
 );
 
 -- Indexes for queue processing
-CREATE INDEX idx_email_queue_pending ON email_queue(status, priority, created_at)
+CREATE INDEX IF NOT EXISTS idx_email_queue_pending ON email_queue(status, priority, created_at)
     WHERE status = 'PENDING';
-CREATE INDEX idx_email_queue_retry ON email_queue(next_retry_at)
+CREATE INDEX IF NOT EXISTS idx_email_queue_retry ON email_queue(next_retry_at)
     WHERE status = 'PENDING' AND next_retry_at IS NOT NULL;
-CREATE INDEX idx_email_queue_recipient ON email_queue(recipient_id, created_at DESC);
-CREATE INDEX idx_email_queue_type ON email_queue(email_type, created_at DESC);
-CREATE INDEX idx_email_queue_status ON email_queue(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_queue_recipient ON email_queue(recipient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_queue_type ON email_queue(email_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_queue_status ON email_queue(status, created_at DESC);
 
 -- Comments
 COMMENT ON TABLE email_queue IS 'Async email queue with retry support for reliable email delivery';

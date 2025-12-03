@@ -1,7 +1,7 @@
 -- V20: Create email_logs table for email delivery tracking and analytics
 -- This table stores historical email delivery data and engagement metrics
 
-CREATE TABLE email_logs (
+CREATE TABLE IF NOT EXISTS email_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     queue_id UUID REFERENCES email_queue(id) ON DELETE SET NULL,
 
@@ -41,13 +41,13 @@ CREATE TABLE email_logs (
 );
 
 -- Indexes for analytics and querying
-CREATE INDEX idx_email_logs_recipient ON email_logs(recipient_id, created_at DESC);
-CREATE INDEX idx_email_logs_type ON email_logs(email_type, created_at DESC);
-CREATE INDEX idx_email_logs_status ON email_logs(status, created_at DESC);
-CREATE INDEX idx_email_logs_opened ON email_logs(opened_at) WHERE opened_at IS NOT NULL;
-CREATE INDEX idx_email_logs_clicked ON email_logs(clicked_at) WHERE clicked_at IS NOT NULL;
-CREATE INDEX idx_email_logs_queue ON email_logs(queue_id);
-CREATE INDEX idx_email_logs_created ON email_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON email_logs(recipient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_logs_type ON email_logs(email_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_logs_status ON email_logs(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_logs_opened ON email_logs(opened_at) WHERE opened_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_email_logs_clicked ON email_logs(clicked_at) WHERE clicked_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_email_logs_queue ON email_logs(queue_id);
+CREATE INDEX IF NOT EXISTS idx_email_logs_created ON email_logs(created_at DESC);
 
 -- Comments
 COMMENT ON TABLE email_logs IS 'Email delivery and engagement tracking logs for analytics';

@@ -5,11 +5,20 @@
 
 -- Add thumbnail_file_id column as FK to files table
 -- Keep existing thumbnail_url for backward compatibility with external URLs
-ALTER TABLE courses
-ADD COLUMN thumbnail_file_id UUID REFERENCES files(id) ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'courses' AND column_name = 'thumbnail_file_id'
+    ) THEN
+        ALTER TABLE courses
+        ADD COLUMN thumbnail_file_id UUID REFERENCES files(id) ON DELETE SET NULL;
+    END IF;
+END
+$$;
 
 -- Create index for efficient joins
-CREATE INDEX idx_courses_thumbnail_file ON courses(thumbnail_file_id);
+CREATE INDEX IF NOT EXISTS idx_courses_thumbnail_file ON courses(thumbnail_file_id);
 
 -- Comments for documentation
 COMMENT ON COLUMN courses.thumbnail_file_id IS 'Foreign key to files table for uploaded thumbnails. If set, takes precedence over thumbnail_url';

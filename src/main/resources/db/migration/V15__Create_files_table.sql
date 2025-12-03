@@ -1,7 +1,7 @@
 -- V15__Create_files_table.sql
 -- File upload system - stores metadata for uploaded files
 
-CREATE TABLE files (
+CREATE TABLE IF NOT EXISTS files (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     original_filename VARCHAR(255) NOT NULL,
     storage_path VARCHAR(500) NOT NULL UNIQUE,
@@ -29,9 +29,9 @@ CREATE TABLE files (
 );
 
 -- Indexes
-CREATE INDEX idx_files_uploaded_by ON files(uploaded_by);
-CREATE INDEX idx_files_category ON files(category);
-CREATE INDEX idx_files_uploaded_at ON files(uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_files_uploaded_by ON files(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_files_category ON files(category);
+CREATE INDEX IF NOT EXISTS idx_files_uploaded_at ON files(uploaded_at DESC);
 
 COMMENT ON TABLE files IS 'Metadata for uploaded files';
 COMMENT ON COLUMN files.storage_path IS 'Relative path from upload root directory';
