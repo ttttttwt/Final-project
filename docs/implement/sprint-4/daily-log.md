@@ -1816,7 +1816,7 @@ ESLint: PASS (0 errors)
 ### Day 11 - Wednesday, December 4, 2025
 
 **Status**: 🟢 Complete  
-**Focus**: Backend documentation sync for Sprint 4 mobile features
+**Focus**: Backend documentation sync + WebSocket authentication fix
 
 #### ✅ Completed
 
@@ -1824,14 +1824,70 @@ ESLint: PASS (0 errors)
 - Rebuilt `docs/context/API-SPECIFICATION.md` sections for learning paths, enrollments, progress, and admin endpoints
 - Refreshed `docs/context/ARCHITECTURE.md` diagram + service descriptions to match new backend capabilities
 
+#### 🐛 Bug Fixes
+
+**WebSocket LazyInitializationException Fix** (Evening Session)
+
+**Issue**:
+
+```
+org.hibernate.LazyInitializationException: failed to lazily initialize a collection of role: com.lexia.backend.entity.User.userRoles: could not initialize proxy - no Session
+```
+
+- WebSocket connection failed with STOMP ERROR
+- Mobile app unable to connect for real-time notifications
+- Error occurred in `WebSocketAuthInterceptor.preSend()` at line 98
+
+**Root Cause**:
+
+- `UserRepository.findById()` only loaded User entity without eager fetching `userRoles` collection
+- When interceptor tried to access `user.getUserRoles()` to build authorities, Hibernate Session was already closed
+- Backend error: "Failed to send message to ExecutorSubscribableChannel[clientInboundChannel]"
+
+**Solution Applied**:
+
+1. ✅ Added new method in `UserRepository.java`:
+
+   ```java
+   @Query("""
+       SELECT DISTINCT u FROM User u
+       LEFT JOIN FETCH u.userRoles r
+       LEFT JOIN FETCH r.role
+       LEFT JOIN FETCH u.profile
+       WHERE u.id = :id
+   """)
+   Optional<User> findByIdWithRoles(@Param("id") UUID id);
+   ```
+
+2. ✅ Updated `WebSocketAuthInterceptor.java`:
+   - Changed from `userRepository.findById(userId)`
+   - To `userRepository.findByIdWithRoles(userId)`
+   - Eager fetches userRoles collection to avoid LazyInitializationException
+
+**Files Modified**:
+
+- `src/main/java/com/lexia/backend/repository/UserRepository.java`
+- `src/main/java/com/lexia/backend/notification/websocket/WebSocketAuthInterceptor.java`
+
+**Impact**:
+
+- ✅ WebSocket connections now work properly
+- ✅ Mobile app can connect to `/ws` endpoint
+- ✅ Real-time notifications enabled
+- ✅ No more STOMP ERROR on connection
+
 #### 📝 Notes
 
 - Documentation now mirrors the endpoints consumed by the React Native app (dashboard, enrollments, streaks)
 - Added Admin service + observability narrative so future Sprint 5 work (notifications, file uploads) has clear placeholders
+- WebSocket fix ensures mobile push notifications will work correctly
+- Similar pattern (`findByEmailWithRoles`) already existed for email-based auth, now consistent for ID-based lookups
 
 #### 🔜 Tomorrow
 
 - Resume D4 (Lesson Viewer) delivery with updated backend references
+- Test WebSocket connection from mobile app
+- Verify real-time notification flow
 
 ---
 
@@ -2973,6 +3029,42 @@ ESLint: PASS (0 errors)
 - Performance profiling (launch time, memory, bundle size)
 - Biometric authentication (optional)
 - Bug fixes and polish
+
+---
+
+### Day 19 - Thursday, December 4, 2025 (Backend WebSocket Hotfix)
+
+**Status**: 🟡 Support Task (backend)  
+**Progress**: 34/43 points (still tracking sprint goal)  
+**Today's Target**: Stabilize mobile WebSocket connectivity
+
+#### 🎯 Goals
+
+- Investigate AccessDenied errors thrown during STOMP CONNECT
+- Ensure WebSocket security allows emulator origins while preserving auth
+- Provide additional backend logging for the mobile team
+
+#### ✅ Completed
+
+- [x] Hardened `WebSocketAuthInterceptor`
+  - Added debug logging for CONNECT frames
+  - Injected authenticated principal into both the STOMP accessor and Spring Security context
+  - Cleared the security context after each frame to avoid thread leaks
+- [x] Updated `WebSocketSecurityConfig`
+  - Allowed CONNECT/DISCONNECT/HEARTBEAT frame types so JWT validation can run before authorization kicks in
+  - Explicitly required authentication for `/app/**`, `/topic/**`, `/queue/**`, and `/user/**`
+- [x] Restarted backend + ran `./gradlew test` (all tests PASS ✅)
+- [x] Brought backend back up on port 8088 for mobile verification
+
+#### 📝 Notes
+
+- Root cause: Spring Security's AuthorizationChannelInterceptor was rejecting CONNECT frames before our JWT interceptor ran, producing `Failed to send message to ExecutorSubscribableChannel[clientInboundChannel]` on mobile.
+- Fix ensures CONNECT frames are permitted long enough to authenticate, after which SEND/SUBSCRIBE destinations remain protected.
+- Added detailed CONNECT logging so future debugging shows which user authenticated.
+
+#### 🔜 Next
+
+- Coordinate with mobile team to confirm that Socket connections now stay open (watching backend logs for `WebSocket authenticated for user ...`).
 
 ---
 

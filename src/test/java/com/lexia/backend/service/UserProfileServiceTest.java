@@ -42,6 +42,12 @@ class UserProfileServiceTest {
     private UserProfileRepository userProfileRepository;
 
     @Mock
+    private AuditLogService auditLogService;
+
+    @Mock
+    private com.lexia.backend.file.service.FileStorageService fileStorageService;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock

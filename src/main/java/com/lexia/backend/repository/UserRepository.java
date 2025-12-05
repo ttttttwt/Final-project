@@ -63,6 +63,22 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     Optional<User> findByEmailWithRoles(@Param("email") String email);
 
     /**
+     * Find user by ID and fetch roles eagerly.
+     * Used for WebSocket authentication to avoid LazyInitializationException.
+     *
+     * @param id the user ID to search for
+     * @return Optional containing the user with roles if found
+     */
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            LEFT JOIN FETCH u.userRoles r
+            LEFT JOIN FETCH r.role
+            LEFT JOIN FETCH u.profile
+            WHERE u.id = :id
+            """)
+    Optional<User> findByIdWithRoles(@Param("id") UUID id);
+
+    /**
      * Find recently registered users.
      * Used for admin dashboard recent activity.
      * 

@@ -1,5 +1,7 @@
 package com.lexia.backend.notification.websocket;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
@@ -34,7 +36,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketConfig.class);
+
     private final WebSocketAuthInterceptor authInterceptor;
+    private final WebSocketHandshakeInterceptor handshakeInterceptor;
 
     /**
      * Allowed origins for WebSocket connections.
@@ -44,8 +49,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${lexia.websocket.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:19006}")
     private String allowedOriginsString;
 
-    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor) {
+    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor,
+            WebSocketHandshakeInterceptor handshakeInterceptor) {
         this.authInterceptor = authInterceptor;
+        this.handshakeInterceptor = handshakeInterceptor;
     }
 
     @Override
@@ -62,17 +69,38 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
-        // Parse allowed origins from configuration
-        String[] allowedOrigins = allowedOriginsString.split(",");
+        LOG.info("🔌 Configuring WebSocket endpoints with allowed origins: {}", allowedOriginsString);
 
-        // WebSocket endpoint with SockJS fallback (for web browsers)
-        registry.addEndpoint("/ws")
-                .setAllowedOrigins(allowedOrigins)
-                .withSockJS();
+        // Check if wildcard origin is configured (development mode)
+        if ("*".equals(allowedOriginsString.trim())) {
+            LOG.info("🔓 WebSocket: Allowing ALL origins (development mode)");
+            // Allow all origins for development (mobile emulators, etc.)
+            registry.addEndpoint("/ws")
+                    .setAllowedOriginPatterns("*")
+                    .addInterceptors(handshakeInterceptor)
+                    .withSockJS();
 
-        // Raw WebSocket endpoint for mobile clients
-        registry.addEndpoint("/ws")
-                .setAllowedOrigins(allowedOrigins);
+            registry.addEndpoint("/ws")
+                    .setAllowedOriginPatterns("*")
+                    .addInterceptors(handshakeInterceptor);
+        } else {
+            // Parse allowed origins from configuration
+            String[] allowedOrigins = allowedOriginsString.split(",");
+            LOG.info("🔒 WebSocket: Restricted to origins: {}", (Object) allowedOrigins);
+
+            // WebSocket endpoint with SockJS fallback (for web browsers)
+            registry.addEndpoint("/ws")
+                    .setAllowedOrigins(allowedOrigins)
+                    .addInterceptors(handshakeInterceptor)
+                    .withSockJS();
+
+            // Raw WebSocket endpoint for mobile clients
+            registry.addEndpoint("/ws")
+                    .setAllowedOrigins(allowedOrigins)
+                    .addInterceptors(handshakeInterceptor);
+        }
+
+        LOG.info("✅ WebSocket endpoint /ws registered successfully");
     }
 
     @Override

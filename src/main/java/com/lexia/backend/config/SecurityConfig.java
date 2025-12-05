@@ -56,6 +56,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh")
                         .permitAll()
 
+                        // Allow public access to WebSocket endpoints (auth handled at STOMP level)
+                        .requestMatchers("/ws/**", "/ws").permitAll()
+
                         // Allow public access to Swagger UI and OpenAPI documentation
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**")
                         .permitAll()
@@ -112,16 +115,19 @@ public class SecurityConfig {
     }
 
     /**
-     * Configure CORS to allow the Next.js frontend to communicate with the API
-     * while using cookies.
+     * Configure CORS to allow the frontend and mobile apps to communicate with the
+     * API.
+     * Supports credentials for authentication.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+        // Allow all origins in development (for mobile emulators)
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-        configuration.setExposedHeaders(List.of("Set-Cookie"));
+        configuration
+                .setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        configuration.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
