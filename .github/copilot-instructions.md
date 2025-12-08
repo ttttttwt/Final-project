@@ -1,57 +1,45 @@
 # GitHub Copilot Instructions - LEXIA
 
 ## 🎯 Project Identity
-
 **LEXIA** - AI English Learning Platform for Working Professionals  
 **Backend**: Spring Boot 3.x | Java 17 | PostgreSQL | JWT  
 **Frontend Web**: Next.js 14+ | TypeScript | Tailwind CSS | Zustand  
-**Frontend Mobile**: React Native (Expo) | TypeScript | React Navigation | Zustand  
-**Admin Panel**: React 18+ | TypeScript | Vite | shadcn/ui | TanStack Query
+**Mobile**: React Native (Expo) | TypeScript | React Navigation | Zustand  
+**Admin**: React 18+ | Vite | shadcn/ui | TanStack Query
 
 ---
 
-## 📚 Context Documents (Read First Each Session)
-
+## 📚 Read First Each Session
 **Mandatory**:
-
-1. `docs/context/QUICK-START.md` - Project overview & rules
+1. `docs/context/QUICK-START.md` - Overview & rules
 2. `docs/plan/current-sprint-status.md` - Current tasks
-3. `docs/implement/sprint-X/session-X-*.md` - Previous session summaries
+3. `docs/implement/sprint-X/session-X-*.md` - Previous sessions
 
-**Reference**:
-
-- `docs/context/ARCHITECTURE.md` - System design
-- `docs/context/DATABASE-SCHEMA.md` - Database structure
-- `docs/context/API-SPECIFICATION.md` - API contracts
-- `docs/context/CODING-STANDARDS.md` - Coding conventions & standards (1)
-- `docs/context/CODE-STANDARDS.md` - Coding conventions (2)
-- `docs/context/FRONTEND-DESIGN-REQUIREMENTS.md` - ✨ **Medium-inspired UI Design**
+**Reference**: `docs/context/ARCHITECTURE.md`, `DATABASE-SCHEMA.md`, `API-SPECIFICATION.md`, `CODING-STANDARDS.md`, `FRONTEND-DESIGN-REQUIREMENTS.md`
 
 ---
 
 ## 🔄 Task Workflow
-
 ```
 1. Read current-sprint-status.md
-2. Read previous session summaries (docs/implement/sprint-X/session-X-*.md)
+2. Read previous sessions
 3. Pick ONE task
 4. Implement + Tests (70%+ coverage)
-5. Run: ./gradlew test (must PASS)
+5. Run tests (must PASS)
 6. Update daily-log.md
 7. Commit (conventional format)
 8. Update sprint status
-9. Create session summary ONLY when user explicitly requests it
+9. Session summary ONLY when requested
 ```
 
 ---
 
-## ✅ Quality Gates (All Must Pass)
-
+## ✅ Quality Gates
 - [ ] Code compiles
-- [ ] All tests PASS (./gradlew test)
+- [ ] Tests PASS (./gradlew test | npm test)
 - [ ] Coverage ≥ 70% (Services ≥ 80%)
-- [ ] No secrets in code
-- [ ] JavaDoc added
+- [ ] No secrets
+- [ ] JavaDoc/Comments added
 - [ ] daily-log.md updated
 - [ ] Conventional commit
 
@@ -59,367 +47,201 @@
 
 ## 💻 Project Structure
 
-> **Note**: For detailed coding standards, examples, and best practices, see `docs/context/CODING-STANDARDS.md`
-
-### Backend (Spring Boot)
-
+### Backend
 ```
 com.lexia.backend/
-├── auth/              # JWT, Security filters
-├── controller/        # REST API endpoints
-├── service/           # Business logic
-│   ├── impl/          # Service implementations
-├── repository/        # JPA repositories
-├── entity/            # JPA entities
+├── auth/              # JWT, Security
+├── controller/        # REST APIs
+├── service/impl/      # Business logic
+├── repository/        # JPA repos
+├── entity/            # Database models
 ├── dto/               # Data Transfer Objects
 ├── mapper/            # Entity-DTO mappers
-├── config/            # Configuration classes
+├── config/            # Spring configs
 ├── exception/         # Custom exceptions
-├── validation/        # Custom validators
-├── specification/     # JPA Specifications
-├── util/              # Utility classes
-├── converter/         # Custom converters
-├── seeder/            # Database seeders
-└── common/            # Shared utilities
+└── validation/        # Validators
 ```
 
-### Frontend Web (Next.js)
-
+### Frontend Web
 ```
 lexia-web/
-├── app/                    # Next.js App Router pages
-├── components/            # React components
-├── services/             # API service functions
-├── store/                # Zustand stores
-├── types/                # TypeScript types
-├── lib/                  # Utilities, helpers
-├── hooks/                # Custom React hooks
-├── tests/                # Test files
-└── public/               # Static assets
+├── app/              # Next.js pages
+├── components/       # React components
+├── services/         # API services
+├── store/           # Zustand stores
+├── types/           # TypeScript types
+├── lib/             # Utilities
+└── hooks/           # Custom hooks
 ```
 
-### Mobile (React Native + Expo)
-
+### Mobile
 ```
 lexia-mobile/
-├── app/                    # Screen components
-│   ├── auth/              # Auth screens
-│   ├── tabs/              # Tab navigation screens
-│   ├── courses/           # Course screens
-│   └── lessons/           # Lesson screens
-├── components/            # Reusable components
-├── services/             # API service functions
-├── store/                # Zustand stores
-├── types/                # TypeScript types
-├── assets/               # Static assets
-├── App.tsx               # Root component
-├── index.ts              # Entry point
-└── app.json              # Expo configuration
+├── app/             # Screens (auth, tabs, courses, lessons)
+├── components/      # Reusable components
+├── services/        # API services
+├── store/          # Zustand stores
+├── types/          # TypeScript types
+└── assets/         # Static files
 ```
 
-### Admin Panel (React + Vite)
-
+### Admin
 ```
-lexia-admin/
-├── src/
-│   ├── main.tsx                 # App entry point
-│   ├── App.tsx                  # Root component
-│   ├── router.tsx               # Route configuration
-│   ├── components/              # Reusable UI components
-│   │   ├── ui/                  # shadcn/ui components
-│   │   ├── layout/              # Layout components (Sidebar, Header)
-│   │   ├── auth/                # Auth components (ProtectedRoute, RoleGuard)
-│   │   └── shared/              # Shared components (DataTable, ConfirmDialog)
-│   ├── features/                # Feature-based modules
-│   │   ├── auth/                # Authentication (login, logout)
-│   │   ├── dashboard/           # Dashboard page
-│   │   ├── users/               # User management (ADMIN only)
-│   │   ├── courses/             # Course management
-│   │   ├── lessons/             # Lesson management
-│   │   └── monitoring/          # System monitoring (ADMIN only)
-│   ├── lib/                     # Utilities (api.ts, utils.ts)
-│   ├── hooks/                   # Global custom hooks
-│   ├── store/                   # Zustand stores
-│   ├── types/                   # TypeScript types
-│   ├── styles/                  # Global styles
-│   └── config/                  # Configuration files
-├── public/                      # Static assets
-└── package.json
+lexia-admin/src/
+├── main.tsx         # Entry point
+├── router.tsx       # Routes
+├── components/      # UI components (ui/, layout/, auth/, shared/)
+├── features/        # Modules (auth, dashboard, users, courses, lessons)
+├── lib/            # Utilities (api.ts)
+├── store/          # Zustand stores
+└── types/          # TypeScript types
 ```
 
 ---
 
 ## 🚫 Never Do
-
 **Backend**:
+- ❌ Plain-text passwords/tokens
+- ❌ Log sensitive data
+- ❌ Skip tests
+- ❌ Generic `Exception` catches
 
-- ❌ Store plain-text passwords/refresh tokens
-- ❌ Log sensitive data (passwords, tokens)
-- ❌ Skip tests (70% minimum)
-- ❌ Use generic `Exception` catches
+**Frontend (All)**:
+- ❌ Store passwords in localStorage/AsyncStorage
+- ❌ Skip validation (use Zod)
+- ❌ Ignore error/loading states
+- ❌ Skip accessibility (ARIA, keyboard)
+- ❌ Forget responsive design
+- ❌ Use inline styles (Web: Tailwind, Mobile: StyleSheet)
 
-**Frontend (Web)**:
-
-- ❌ Store passwords or sensitive data in localStorage
-- ❌ Skip form validation (use Zod)
-- ❌ Ignore error states (network, timeout, server)
-- ❌ Forget loading states/skeletons
-- ❌ Skip accessibility (ARIA, keyboard nav)
-- ❌ Use `<img>` (use Next.js `<Image>`)
-
-**Mobile**:
-
-- ❌ Store sensitive data in plain AsyncStorage (except tokens)
-- ❌ Skip platform-specific handling (iOS/Android)
-- ❌ Ignore navigation type safety
-- ❌ Forget error boundaries
-- ❌ Skip accessibility labels
-- ❌ Use inline styles without StyleSheet
-
-**Admin Panel**:
-
-- ❌ Allow non-ADMIN users to access user management
-- ❌ Skip role-based access control (RoleGuard)
-- ❌ Forget loading states on data tables
-- ❌ Skip form validation (use Zod)
+**Admin**:
+- ❌ Allow non-ADMIN to user management
+- ❌ Skip RoleGuard
 - ❌ Ignore TanStack Query cache invalidation
-- ❌ Skip confirmation dialogs for destructive actions
 
-**Both**:
-
+**All**:
 - ❌ Edit `docs/context/` without approval
 - ❌ Commit failing tests
-- ❌ Work on multiple tasks at once
+- ❌ Work on multiple tasks
+
+---
 
 ## ✅ Always Do
-
 **Backend**:
-
 - ✅ Bcrypt passwords (cost 12)
 - ✅ Return JWT in response body
-- ✅ Hash refresh tokens before DB (SHA-256)
-- ✅ Validate all inputs
-- ✅ Use DTOs for APIs
+- ✅ Hash refresh tokens (SHA-256)
+- ✅ Validate inputs
+- ✅ Use DTOs
 
-**Frontend (Web)**:
-
-- ✅ localStorage for tokens (temporary, will migrate to httpOnly cookies)
-- ✅ Validate forms (React Hook Form + Zod)
-- ✅ Handle all errors (network, timeout, 500)
-- ✅ Add retry logic (3 attempts)
-- ✅ Test responsive (320px - 1920px)
-- ✅ ARIA labels + keyboard nav
-- ✅ TypeScript strict mode
+**Frontend Web**:
+- ✅ localStorage for tokens (temp, will migrate to httpOnly)
+- ✅ React Hook Form + Zod validation
+- ✅ Handle errors (network, timeout, 500)
+- ✅ Retry logic (3x)
+- ✅ Test 320px-1920px
+- ✅ Next.js `<Image>`
 
 **Mobile**:
+- ✅ AsyncStorage for tokens
+- ✅ Validate inputs
+- ✅ Error handling + retry (3x)
+- ✅ Test iOS & Android
+- ✅ Accessibility labels
+- ✅ React Native Paper UI
+- ✅ Type-safe navigation
 
-- ✅ AsyncStorage for tokens with proper encryption consideration
-- ✅ Validate all inputs (manual validation or libraries)
-- ✅ Handle all errors (network, timeout, server)
-- ✅ Add retry logic (3 attempts)
-- ✅ Test on iOS & Android
-- ✅ Accessibility labels (accessible, accessibilityLabel)
-- ✅ TypeScript strict mode
-- ✅ Use React Native Paper for consistent UI
-- ✅ Type-safe navigation (React Navigation types)
+**Admin**:
+- ✅ TanStack Query + cache invalidation
+- ✅ shadcn/ui components
+- ✅ RoleGuard for protected routes
+- ✅ Toast notifications
 
-**Admin Panel**:
-
-- ✅ localStorage for tokens with Authorization header
-- ✅ Validate forms (React Hook Form + Zod)
-- ✅ Use TanStack Query for server state management
-- ✅ Invalidate queries after mutations
-- ✅ Show toast notifications for actions
-- ✅ Use shadcn/ui components consistently
-- ✅ Implement RoleGuard for protected routes
-- ✅ TypeScript strict mode
-- ✅ Handle all API errors with proper messages
-
-**Both**:
-
+**All**:
 - ✅ Update daily-log.md
 - ✅ Conventional commits
-- ✅ Tests pass (Backend: ./gradlew test, Frontend: npm test)
+- ✅ TypeScript strict mode
 
 ---
 
 ## 📌 Daily Checklist
-
-**Start Session**:
-
-1. Read `docs/plan/current-sprint-status.md`
-2. Check `docs/implement/sprint-X/daily-log.md`
-3. Pick next task
-
-**During Dev**:
-
-1. Code + Tests
-2. **Backend**: `./gradlew test` | **Frontend Web**: `npm test` | **Mobile**: `npm test` (in lexia-mobile)
-3. Update daily-log.md
-
-**End Session**:
-
-1. Commit changes (conventional format)
-2. Update sprint status
-3. Create session summary ONLY when user explicitly requests it
+**Start**: Read `current-sprint-status.md` → `daily-log.md` → Pick task  
+**During**: Code + Tests → Run tests → Update daily-log.md  
+**End**: Commit → Update sprint status → Session summary (if requested)
 
 ---
 
 ## 📊 Success Metrics
-
-**Backend**:
-
-- ✅ Tests pass (100%)
-- ✅ Coverage ≥ 70% (Services ≥ 80%)
-- ✅ API response < 500ms
-
-**Frontend (Web)**:
-
-- ✅ Tests pass (100%)
-- ✅ Coverage ≥ 60% (Services ≥ 80%)
-- ✅ Token management implemented correctly
-- ✅ Responsive (320px - 1920px)
-- ✅ WCAG AA compliant
-
-**Mobile**:
-
-- ✅ Tests pass (100%)
-- ✅ Coverage ≥ 60% (Services ≥ 80%)
-- ✅ Token management with AsyncStorage
-- ✅ Works on iOS & Android
-- ✅ Accessibility labels present
-
-**Admin Panel**:
-
-- ✅ Tests pass (100%)
-- ✅ Coverage ≥ 60% (Services ≥ 80%)
-- ✅ Role-based access control working
-- ✅ TanStack Query caching properly configured
-- ✅ All CRUD operations with toast feedback
-
-**Both**:
-
-- ✅ No security issues
-- ✅ Docs updated
+**Backend**: Tests 100%, Coverage ≥70% (Services ≥80%), API <500ms  
+**Frontend Web**: Tests 100%, Coverage ≥60%, Responsive 320px-1920px, WCAG AA  
+**Mobile**: Tests 100%, Coverage ≥60%, iOS+Android, Accessibility labels  
+**Admin**: Tests 100%, Coverage ≥60%, RBAC working, TanStack Query optimized  
+**All**: No security issues, Docs updated
 
 ---
 
-## � Session Documentation
+## 📝 Session Documentation
+**Create `session-X-topic.md` with**:
+1. **Accomplished** - Task list
+2. **Code Generated** - Files + LOC
+3. **Key Decisions** - Top 3 choices
+4. **Challenges** - Problems + solutions
+5. **Quality** - 1-10 rating + why
+6. **Best Prompts** - Reusable prompts
+7. **Next Steps** - Roadmap
 
-### Session Summary Requirements
-
-Each development session must create a comprehensive summary in `docs/implement/sprint-X/session-X-topic.md` with:
-
-**Required Sections**:
-
-1. **What We Accomplished** - Detailed task completion list
-2. **Code Generated** - Files created/modified with LOC metrics
-3. **Key Decisions** - Top 3 architectural decisions made
-4. **Challenges Faced** - Problems and solutions implemented
-5. **Quality Assessment** - 1-10 rating with detailed explanation
-6. **Best Prompts Used** - Effective prompts for future reuse
-7. **Next Steps** - Clear roadmap for subsequent session
-
-**Why Required**:
-
-- **Knowledge Preservation**: Document decisions and solutions for team reference
-- **Progress Tracking**: Maintain clear development history
-- **Quality Assurance**: Ensure comprehensive implementation coverage
-- **Learning Tool**: Capture challenges and solutions for future sessions
-- **Onboarding Aid**: Help new developers understand project evolution
-
----
-
-## 🔍 Decision Framework
-
-1. Check `docs/context/ARCHITECTURE.md` first
-2. Security-first mindset
-3. Keep it simple
-4. Ask if unsure
-
----
-
-## � Key Principles
-
-1. **Context First**: Read docs before coding
-2. **Security First**: httpOnly cookies, Bcrypt, hash, validate
-3. **Test-Driven**: Tests alongside code (TDD)
-4. **User Experience**: Loading states, error handling, responsive
-5. **Accessibility**: ARIA, keyboard nav, WCAG AA
-6. **Document Daily**: Update logs every session
-7. **Focus**: One task at a time
+**Why**: Knowledge preservation, progress tracking, quality assurance, learning tool, onboarding aid
 
 ---
 
 ## 🔐 Security Checklist
-
-**Backend**:
-
-- [ ] Passwords Bcrypt (cost 12)
-- [ ] JWT returned in response body
-- [ ] Refresh tokens hashed in DB (SHA-256)
-- [ ] All inputs validated
-- [ ] No secrets in logs/code
-
-**Frontend (Web)**:
-
-- [ ] localStorage for tokens with Authorization header
-- [ ] Clear tokens on logout
-- [ ] Form validation (Zod)
-- [ ] Error handling (network, timeout, 500)
-- [ ] Retry logic (3 attempts)
-- [ ] No sensitive data in client code
-
-**Mobile**:
-
-- [ ] AsyncStorage for tokens with Authorization header
-- [ ] Clear tokens on logout (AsyncStorage.multiRemove)
-- [ ] Input validation
-- [ ] Error handling (network, timeout, 500)
-- [ ] Retry logic (3 attempts)
-- [ ] No sensitive data in client code
+**Backend**: Bcrypt passwords, JWT in response, hash refresh tokens, validate inputs, no secrets  
+**Frontend**: localStorage/AsyncStorage tokens, clear on logout, Zod validation, error handling, retry logic  
 
 ---
 
-## ♿ Accessibility Checklist
-
-- [ ] ARIA labels on interactive elements
-- [ ] Semantic HTML (`<nav>`, `<main>`, `<article>`)
-- [ ] Keyboard navigation (Tab, Enter, Escape)
-- [ ] Focus indicators visible
-- [ ] Color contrast ≥ 4.5:1 (WCAG AA)
-- [ ] Error messages linked (`aria-describedby`)
-
----
-
-## � Responsive Checklist (Web)
-
-- [ ] 320px - Mobile S (iPhone SE)
-- [ ] 375px - Mobile M (iPhone 12/13)
-- [ ] 768px - Tablet (iPad)
-- [ ] 1024px - Desktop S
-- [ ] 1280px - Desktop M (MacBook)
-- [ ] 1920px - Desktop L (Full HD)
-- [ ] No horizontal scroll
-- [ ] Touch targets ≥ 44px
-
-## 📱 Mobile Testing Checklist
-
-- [ ] iOS Simulator (iPhone 14/15)
-- [ ] Android Emulator (Pixel 6)
-- [ ] Physical devices (if available)
-- [ ] Portrait & Landscape orientations
-- [ ] Touch targets ≥ 44px
-- [ ] Safe area insets (notch/home indicator)
-- [ ] Keyboard handling (avoid overlapping inputs)
-- [ ] Pull-to-refresh (where applicable)
-- [ ] Network error states (offline mode)
+## ♿ Accessibility
+- [ ] ARIA labels
+- [ ] Semantic HTML (`<nav>`, `<main>`)
+- [ ] Keyboard nav (Tab, Enter, Esc)
+- [ ] Focus indicators
+- [ ] Color contrast ≥4.5:1
+- [ ] Error messages (`aria-describedby`)
 
 ---
 
-**Quick Start**:
+## 📱 Responsive (Web)
+- [ ] 320px (Mobile S), 375px (Mobile M), 768px (Tablet)
+- [ ] 1024px (Desktop S), 1280px (Desktop M), 1920px (Desktop L)
+- [ ] No horizontal scroll, Touch targets ≥44px
 
-1. `docs/plan/current-sprint-status.md`
-2. Pick task
-3. Code + Test + Document
-4. Commit + Update
+## 📱 Mobile Testing
+- [ ] iOS/Android simulators
+- [ ] Portrait & Landscape
+- [ ] Touch targets ≥44px
+- [ ] Safe area insets
+- [ ] Keyboard handling
+- [ ] Network errors
+
+---
+
+## 🔍 Decision Framework
+1. Check `ARCHITECTURE.md` first
+2. Security-first
+3. Keep simple
+4. Ask if unsure
+
+---
+
+## 🎯 Key Principles
+1. **Context First** - Read docs before coding
+2. **Security First** - Bcrypt, hash, validate
+3. **Test-Driven** - Tests alongside code
+4. **User Experience** - Loading, errors, responsive
+5. **Accessibility** - ARIA, keyboard, WCAG AA
+6. **Document Daily** - Update logs every session
+7. **Focus** - One task at a time
+
+---
+
+**Quick Start**: `current-sprint-status.md` → Pick task → Code+Test+Doc → Commit+Update
