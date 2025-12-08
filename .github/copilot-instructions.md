@@ -76,13 +76,19 @@ lexia-web/
 
 ### Mobile
 ```
-lexia-mobile/
+lexia-mobile-2/
 ├── app/             # Screens (auth, tabs, courses, lessons)
+├── app-example/     # Example screens or backup
 ├── components/      # Reusable components
 ├── services/        # API services
 ├── store/          # Zustand stores
 ├── types/          # TypeScript types
-└── assets/         # Static files
+├── assets/         # Static files
+├── constants/      # Constants
+├── docs/           # Documentation
+├── hooks/          # Custom hooks
+├── lib/            # Utilities
+└── utils/          # Utility functions
 ```
 
 ### Admin
