@@ -151,7 +151,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Async
     public int broadcastNotification(BroadcastNotificationRequest request) {
         log.info("Broadcasting notification: {}", request.getTitle());
 
