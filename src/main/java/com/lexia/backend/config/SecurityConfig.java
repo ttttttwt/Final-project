@@ -75,6 +75,9 @@ public class SecurityConfig {
                         // Allow public access to error endpoints
                         .requestMatchers("/error").permitAll()
 
+                        // Allow public access to file downloads (access control handled in controller)
+                        .requestMatchers("/api/v1/files/*/download").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
 
