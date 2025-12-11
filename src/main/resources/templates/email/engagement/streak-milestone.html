@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Streak Milestone Reached! - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <div style="text-align: center;">
         <span style="font-size: 64px;">🏆</span>
       </div>
@@ -113,6 +113,6 @@
           Congratulations! You're in the top 5% of dedicated learners. 🌟
         </span>
       </p>
-    </th:block>
+    </div>
   </body>
 </html>

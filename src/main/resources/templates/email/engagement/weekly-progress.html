@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Your Weekly Progress - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <h1 th:text="#{email.weekly.title}">Your Weekly Progress</h1>
 
       <p>
@@ -124,6 +124,6 @@
       <p class="small-text muted" style="text-align: center;">
         Keep up the great work! Consistency is the key to fluency. 🚀
       </p>
-    </th:block>
+    </div>
   </body>
 </html>

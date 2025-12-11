@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Verify Your Email - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <h1 th:text="#{email.verification.title}">Verify Your Email Address</h1>
 
       <p>
@@ -59,6 +59,6 @@
       <p class="small-text muted" th:text="#{email.verification.ignore}">
         If you didn't create a LEXIA account, you can safely ignore this email.
       </p>
-    </th:block>
+    </div>
   </body>
 </html>

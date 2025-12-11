@@ -1,0 +1,28 @@
+📢 Important Announcement
+
+Hi [(${userName ?: 'there'})],
+
+[(${announcementTitle})]
+----------------------------------------
+[(${announcementContent})]
+
+[# th:if="${actionRequired}"]
+⚠️ Action Required
+[(${actionRequiredMessage})]
+[/]
+
+[# th:if="${importantDates != null and !importantDates.empty}"]
+📅 Important Dates
+[# th:each="dateItem : ${importantDates}"]
+[# th:if="${dateItem != null}"]
+- [(${dateItem?.label})]: [(${dateItem?.value})]
+[/]
+[/]
+[/]
+
+[# th:if="${actionUrl}"]
+[(${actionButtonText ?: 'Learn More'})]: [(${actionUrl})]
+[/]
+
+----------------------------------------
+This is an important system announcement from LEXIA.

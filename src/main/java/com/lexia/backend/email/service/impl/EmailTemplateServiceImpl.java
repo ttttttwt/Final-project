@@ -9,7 +9,7 @@ import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.util.HashMap;
@@ -19,7 +19,7 @@ import java.util.UUID;
 
 /**
  * Implementation of EmailTemplateService.
- * Uses Thymeleaf for template rendering.
+ * Uses Thymeleaf for template rendering with email-specific MessageSource.
  *
  * @author LEXIA Development Team
  * @since 1.0.0
@@ -28,13 +28,13 @@ import java.util.UUID;
 @Slf4j
 public class EmailTemplateServiceImpl implements EmailTemplateService {
 
-    private final TemplateEngine templateEngine;
+    private final SpringTemplateEngine templateEngine;
     private final MessageSource messageSource;
     private final EmailConfig emailConfig;
     private final UnsubscribeTokenService unsubscribeTokenService;
 
     public EmailTemplateServiceImpl(
-            TemplateEngine templateEngine,
+            @Qualifier("emailTemplateEngine") SpringTemplateEngine templateEngine,
             @Qualifier("emailMessageSource") MessageSource messageSource,
             EmailConfig emailConfig,
             UnsubscribeTokenService unsubscribeTokenService) {

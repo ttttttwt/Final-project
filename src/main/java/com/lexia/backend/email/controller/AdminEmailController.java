@@ -320,7 +320,11 @@ public class AdminEmailController {
         @SuppressWarnings("unused") // Some stats variables reserved for future use
         private EmailStatsDTO buildEmailStats(EmailStatsDTO.StatsPeriod period) {
                 // Get queue statistics
-                Object[] stats = emailQueueRepository.getQueueStatistics();
+                List<Object[]> statsList = emailQueueRepository.getQueueStatistics();
+                
+                // Extract the first (and only) result row
+                Object[] stats = statsList.isEmpty() ? new Object[]{0L, 0L, 0L, 0L, 0L, 0L} : statsList.get(0);
+                
                 // pending and processing reserved for future queue monitoring dashboard
                 long pending = stats[0] != null ? ((Number) stats[0]).longValue() : 0;
                 long processing = stats[1] != null ? ((Number) stats[1]).longValue() : 0;

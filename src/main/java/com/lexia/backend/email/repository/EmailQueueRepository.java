@@ -235,13 +235,13 @@ public interface EmailQueueRepository extends JpaRepository<EmailQueue, UUID>,
          */
         @Query("""
                         SELECT
-                            SUM(CASE WHEN e.status = 'PENDING' THEN 1 ELSE 0 END),
-                            SUM(CASE WHEN e.status = 'PROCESSING' THEN 1 ELSE 0 END),
-                            SUM(CASE WHEN e.status = 'SENT' THEN 1 ELSE 0 END),
-                            SUM(CASE WHEN e.status = 'DELIVERED' THEN 1 ELSE 0 END),
-                            SUM(CASE WHEN e.status = 'FAILED' THEN 1 ELSE 0 END),
-                            SUM(CASE WHEN e.status = 'BOUNCED' THEN 1 ELSE 0 END)
+                            COALESCE(SUM(CASE WHEN e.status = 'PENDING' THEN 1 ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN e.status = 'PROCESSING' THEN 1 ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN e.status = 'SENT' THEN 1 ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN e.status = 'DELIVERED' THEN 1 ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN e.status = 'FAILED' THEN 1 ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN e.status = 'BOUNCED' THEN 1 ELSE 0 END), 0)
                         FROM EmailQueue e
                         """)
-        Object[] getQueueStatistics();
+        List<Object[]> getQueueStatistics();
 }

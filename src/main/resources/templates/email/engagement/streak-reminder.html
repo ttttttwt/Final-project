@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Don't Lose Your Streak! - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <div style="text-align: center;">
         <span style="font-size: 64px;">🔥</span>
       </div>
@@ -81,6 +81,6 @@
           Pro tip: Set a daily reminder to build a consistent learning habit! 📱
         </span>
       </p>
-    </th:block>
+    </div>
   </body>
 </html>

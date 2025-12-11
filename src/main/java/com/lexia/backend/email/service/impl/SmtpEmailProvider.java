@@ -43,9 +43,10 @@ public class SmtpEmailProvider implements EmailProviderService {
     public EmailSendResult send(EmailMessage message) throws EmailSendException {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
+            boolean isMultipart = message.hasAttachments() || (message.hasHtmlBody() && message.hasTextBody());
             MimeMessageHelper helper = new MimeMessageHelper(
                     mimeMessage,
-                    message.hasAttachments(),
+                    isMultipart,
                     "UTF-8");
 
             // Set from address

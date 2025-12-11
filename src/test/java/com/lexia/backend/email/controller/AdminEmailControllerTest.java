@@ -255,7 +255,7 @@ class AdminEmailControllerTest {
             // Given
             Object[] stats = new Object[] { 10L, 5L, 100L, 95L, 5L, 2L }; // pending, processing, sent, delivered,
                                                                           // failed, bounced
-            when(emailQueueRepository.getQueueStatistics()).thenReturn(stats);
+            when(emailQueueRepository.getQueueStatistics()).thenReturn(Collections.singletonList(stats));
 
             // When
             ResponseEntity<EmailStatsDTO> response = controller.getEmailStats(EmailStatsDTO.StatsPeriod.LAST_7_DAYS);
@@ -275,7 +275,7 @@ class AdminEmailControllerTest {
         void shouldHandleNullStatisticsValues() {
             // Given
             Object[] stats = new Object[] { null, null, null, null, null, null };
-            when(emailQueueRepository.getQueueStatistics()).thenReturn(stats);
+            when(emailQueueRepository.getQueueStatistics()).thenReturn(Collections.singletonList(stats));
 
             // When
             ResponseEntity<EmailStatsDTO> response = controller.getEmailStats(EmailStatsDTO.StatsPeriod.LAST_24_HOURS);

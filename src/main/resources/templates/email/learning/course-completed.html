@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Course Completed - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <div style="text-align: center;">
         <span style="font-size: 64px;">🎉</span>
       </div>
@@ -103,6 +103,6 @@
       <p class="small-text muted" style="text-align: center;">
         Keep up the amazing work! Every lesson brings you closer to fluency. 🌟
       </p>
-    </th:block>
+    </div>
   </body>
 </html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="en" th:fragment="layout (content)">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -221,7 +221,7 @@
         </div>
 
         <!-- Content Block (replaced by child templates) -->
-        <div class="content" th:insert="${content}">
+        <div class="content" th:replace="${content}">
           <!-- Child template content will be inserted here -->
         </div>
 

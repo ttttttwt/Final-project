@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Important Announcement - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <div style="text-align: center;">
         <span style="font-size: 64px;">📢</span>
       </div>
@@ -41,10 +41,10 @@
       </div>
 
       <!-- Important Dates -->
-      <div th:if="${importantDates and !importantDates.empty}" class="card">
+      <div th:if="${importantDates != null and !importantDates.empty}" class="card">
         <h3 style="margin: 0 0 12px 0; font-size: 16px;">📅 Important Dates</h3>
         <table style="width: 100%; font-size: 14px;">
-          <tr th:each="dateItem : ${importantDates}">
+          <tr th:each="dateItem : ${importantDates}" th:if="${dateItem != null}">
             <td style="padding: 8px 0; color: #6b7280;" th:text="${dateItem.label}">Date Label</td>
             <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${dateItem.value}">
               Date Value
@@ -71,6 +71,6 @@
           This is an important system announcement from LEXIA.
         </span>
       </p>
-    </th:block>
+    </div>
   </body>
 </html>

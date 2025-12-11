@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Security Alert - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <div style="text-align: center;">
         <span style="font-size: 64px;">⚠️</span>
       </div>
@@ -110,6 +110,6 @@
           If you need help, contact our support team immediately at security@lexia.app
         </span>
       </p>
-    </th:block>
+    </div>
   </body>
 </html>

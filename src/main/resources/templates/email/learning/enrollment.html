@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html
   xmlns:th="http://www.thymeleaf.org"
-  th:replace="~{email/base/layout :: *}"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
   lang="en"
 >
   <head>
     <title>Enrollment Confirmed - LEXIA</title>
   </head>
   <body>
-    <th:block th:fragment="content">
+    <div th:fragment="content">
       <h1 th:text="#{email.enrollment.title}">Enrollment Confirmed! 📚</h1>
 
       <p>
@@ -75,6 +75,6 @@
       <p class="small-text muted" style="text-align: center;">
         Happy learning! Your journey to better English starts now. 🚀
       </p>
-    </th:block>
+    </div>
   </body>
 </html>
