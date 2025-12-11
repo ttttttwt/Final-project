@@ -2,8 +2,6 @@ package com.lexia.backend.email.service;
 
 import com.lexia.backend.email.dto.EmailQueueDTO;
 import com.lexia.backend.email.dto.EmailRequest;
-import com.lexia.backend.email.enums.EmailStatus;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

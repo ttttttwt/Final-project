@@ -25,16 +25,16 @@ import java.util.Map;
 public class BroadcastNotificationRequest {
 
     @NotNull(message = "Notification type is required")
-    @Schema(description = "Type of notification", example = "SYSTEM_ANNOUNCEMENT", required = true)
+    @Schema(description = "Type of notification", example = "SYSTEM_ANNOUNCEMENT", requiredMode = Schema.RequiredMode.REQUIRED)
     private NotificationType type;
 
     @NotBlank(message = "Title is required")
     @Size(max = 255, message = "Title must not exceed 255 characters")
-    @Schema(description = "Notification title", example = "Platform Update", required = true)
+    @Schema(description = "Notification title", example = "Platform Update", requiredMode = Schema.RequiredMode.REQUIRED)
     private String title;
 
     @NotBlank(message = "Message is required")
-    @Schema(description = "Notification message", example = "We've released new features!", required = true)
+    @Schema(description = "Notification message", example = "We've released new features!", requiredMode = Schema.RequiredMode.REQUIRED)
     private String message;
 
     @Schema(description = "Additional data payload")

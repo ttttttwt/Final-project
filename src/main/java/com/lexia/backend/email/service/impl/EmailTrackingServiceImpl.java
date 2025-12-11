@@ -1,7 +1,6 @@
 package com.lexia.backend.email.service.impl;
 
 import com.lexia.backend.email.config.EmailConfig;
-import com.lexia.backend.email.entity.EmailLog;
 import com.lexia.backend.email.repository.EmailLogRepository;
 import com.lexia.backend.email.service.EmailTrackingService;
 import lombok.RequiredArgsConstructor;
