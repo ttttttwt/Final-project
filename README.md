@@ -33,24 +33,42 @@ Create a PostgreSQL database named `lexia`:
 CREATE DATABASE lexia;
 ```
 
-### 2. Application Configuration
+### 2. Environment Variables (Recommended)
 
-Update `src/main/resources/application.properties` with your database credentials:
+Copy `.env.example` to `.env` and configure your environment variables:
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/lexia
-spring.datasource.username=your_username
-spring.datasource.password=your_password
+```bash
+cp .env.example .env
 ```
 
-### 3. JWT Secret Configuration
-
-Set your JWT secret key in `application.properties`:
+Edit `.env` with your actual values:
 
 ```properties
-jwt.secret=your-secure-secret-key-here
-jwt.expiration=900000
-jwt.refresh-expiration=604800000
+# Database
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
+
+# JWT
+JWT_SECRET=your_jwt_secret_minimum_32_characters
+
+# Email (optional for basic features)
+SMTP_USERNAME=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+
+# Google Gemini AI (Sprint 5 - required for AI features)
+GEMINI_API_KEY=your_google_gemini_api_key
+```
+
+**Get Gemini API Key**: Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+### 3. Application Configuration (Alternative)
+
+Or manually update `src/main/resources/application.properties`:
+
+```properties
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+gemini.api.key=your_gemini_api_key
 ```
 
 ### 4. Build and Run

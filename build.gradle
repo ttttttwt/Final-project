@@ -64,6 +64,17 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.jsoup:jsoup:1.17.2'
 	
+	// Google Gemini AI SDK (Official)
+	implementation 'com.google.genai:google-genai:1.30.0'
+	
+	// Resilience4j for circuit breaker, retry, rate limiter
+	implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
+	implementation 'io.github.resilience4j:resilience4j-retry:2.2.0'
+	implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.2.0'
+	implementation 'io.github.resilience4j:resilience4j-timelimiter:2.2.0'
+	
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.h2database:h2'
