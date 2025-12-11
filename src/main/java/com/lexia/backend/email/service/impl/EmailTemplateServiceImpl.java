@@ -67,9 +67,19 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
         try {
             Context context = new Context(locale);
             context.setVariables(variables);
+            // Check if template exists before processing to avoid exception noise
+            // Note: Thymeleaf doesn't have a simple "exists" check without trying to resolve,
+            // but we can catch the specific TemplateInputException which indicates missing template
             return templateEngine.process("email/" + textTemplateName, context);
+        } catch (org.thymeleaf.exceptions.TemplateInputException e) {
+            // Template not found, fall back to HTML-to-text conversion
+            // This is expected behavior for templates that don't have a dedicated text version
+            log.debug("No text template found for {}, falling back to HTML conversion", templateName);
+            String html = renderTemplate(templateName, variables, locale);
+            return convertHtmlToPlainText(html);
         } catch (Exception e) {
-            // If no text template exists, convert HTML to plain text
+            // Other errors (e.g. parsing error in existing template)
+            log.warn("Error rendering text template {}: {}", textTemplateName, e.getMessage());
             String html = renderTemplate(templateName, variables, locale);
             return convertHtmlToPlainText(html);
         }

@@ -3,17 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title th:text="${emailSubject ?: 'LEXIA'}">LEXIA</title>
+    <!--[if mso]>
+    <noscript>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
+    </noscript>
+    <![endif]-->
     <style th:inline="text">
-      /* Reset and base styles */
+      /* Reset and base styles - Matching Admin UI */
       body {
-        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial,
-          sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         margin: 0;
         padding: 0;
         background-color: #f4f4f5;
         line-height: 1.6;
         color: #1f2937;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       .wrapper {
         width: 100%;
@@ -24,128 +35,162 @@
         max-width: 600px;
         margin: 0 auto;
         background: #ffffff;
-        border-radius: 8px;
+        border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 2px dashed #e2e8f0;
       }
 
-      /* Header styles */
+      /* Header styles - Matching Admin EmailPreview */
       .header {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        background: #ffffff;
         padding: 24px;
-        text-align: center;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .header-inner {
+        display: flex;
+        align-items: center;
+      }
+      .header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(37, 99, 235, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+      }
+      .header-icon svg {
+        width: 20px;
+        height: 20px;
+        color: #2563eb;
       }
       .header img {
         height: 40px;
         max-width: 150px;
       }
       .header-text {
-        color: #ffffff;
-        font-size: 24px;
-        font-weight: 700;
+        color: #111827;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+      }
+      .header-subtext {
+        color: #6b7280;
+        font-size: 14px;
         margin: 0;
       }
 
-      /* Content styles */
+      /* Content styles - Matching Admin preview typography */
       .content {
-        padding: 32px 24px;
+        padding: 24px;
       }
       .content h1 {
         font-size: 24px;
         font-weight: 700;
-        color: #1f2937;
+        color: #111827;
         margin: 0 0 16px 0;
+        line-height: 1.3;
       }
       .content h2 {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 600;
         color: #374151;
-        margin: 24px 0 12px 0;
+        margin: 20px 0 12px 0;
+      }
+      .content h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #374151;
+        margin: 16px 0 8px 0;
       }
       .content p {
-        font-size: 16px;
+        font-size: 15px;
         color: #4b5563;
         margin: 0 0 16px 0;
+        line-height: 1.6;
       }
 
-      /* Button styles */
+      /* Button styles - Matching Admin primary button */
       .btn-container {
         text-align: center;
-        margin: 32px 0;
+        margin: 24px 0;
       }
       .btn {
         display: inline-block;
-        padding: 14px 28px;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        padding: 12px 24px;
+        background-color: #2563eb;
         color: #ffffff !important;
         text-decoration: none;
         border-radius: 8px;
-        font-weight: 600;
-        font-size: 16px;
-        transition: all 0.2s ease;
+        font-weight: 500;
+        font-size: 15px;
+        mso-padding-alt: 0;
       }
       .btn:hover {
-        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        background-color: #1d4ed8;
       }
       .btn-secondary {
-        background: #f3f4f6;
+        background-color: #f3f4f6;
         color: #374151 !important;
       }
       .btn-secondary:hover {
-        background: #e5e7eb;
+        background-color: #e5e7eb;
       }
 
-      /* Card styles */
+      /* Card styles - Consistent with Admin UI */
       .card {
-        background: #f8fafc;
+        background: #f9fafb;
         border-radius: 8px;
-        padding: 20px;
-        margin: 24px 0;
-        border: 1px solid #e2e8f0;
+        padding: 16px;
+        margin: 16px 0;
+        border: 1px solid #e5e7eb;
       }
       .card-highlight {
-        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        background: #eff6ff;
         border-color: #bfdbfe;
       }
       .card-success {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        background: #f0fdf4;
         border-color: #bbf7d0;
       }
       .card-warning {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        background: #fffbeb;
         border-color: #fde68a;
       }
 
-      /* Stats grid */
+      /* Stats grid - For weekly progress and similar */
       .stats-grid {
         display: flex;
         justify-content: space-around;
-        gap: 16px;
-        margin: 24px 0;
+        gap: 12px;
+        margin: 16px 0;
       }
       .stat-item {
         text-align: center;
         flex: 1;
-        padding: 16px;
-        background: #f8fafc;
+        padding: 12px;
+        background: #f9fafb;
         border-radius: 8px;
+        border: 1px solid #e5e7eb;
       }
       .stat-value {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: 700;
         color: #2563eb;
       }
       .stat-label {
-        font-size: 12px;
+        font-size: 11px;
         color: #6b7280;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-top: 4px;
       }
 
-      /* Footer styles */
+      /* Footer styles - Matching Admin preview footer */
       .footer {
-        background: #f8fafc;
-        padding: 24px;
+        background: #ffffff;
+        padding: 16px 24px;
         text-align: center;
         border-top: 1px solid #e2e8f0;
       }
@@ -162,14 +207,14 @@
         text-decoration: underline;
       }
       .footer-links {
-        margin: 16px 0;
+        margin: 12px 0;
       }
       .footer-links a {
         margin: 0 8px;
-        font-size: 13px;
+        font-size: 12px;
       }
       .social-links {
-        margin: 16px 0;
+        margin: 12px 0;
       }
       .social-links a {
         display: inline-block;
@@ -190,11 +235,11 @@
         color: #6b7280;
       }
 
-      /* Divider */
+      /* Divider - Matching Admin Separator */
       .divider {
         border: none;
-        border-top: 1px solid #e2e8f0;
-        margin: 24px 0;
+        border-top: 1px solid #e5e7eb;
+        margin: 20px 0;
       }
 
       /* Responsive */
@@ -214,10 +259,34 @@
   <body>
     <div class="wrapper">
       <div class="container">
-        <!-- Header -->
+        <!-- Header - Matching Admin EmailPreview -->
         <div class="header">
-          <img th:if="${logoUrl}" th:src="${logoUrl}" alt="LEXIA" />
-          <h1 th:unless="${logoUrl}" class="header-text">LEXIA</h1>
+          <!--[if mso]>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="width: 52px; vertical-align: middle;">
+          <![endif]-->
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="display: inline-block; vertical-align: middle;">
+            <tr>
+              <td style="width: 40px; height: 40px; border-radius: 50%; background-color: rgba(37, 99, 235, 0.1); text-align: center; vertical-align: middle;">
+                <img th:if="${logoUrl}" th:src="${logoUrl}" alt="LEXIA" style="height: 24px; width: auto;" />
+                <span th:unless="${logoUrl}" style="font-size: 18px;">📧</span>
+              </td>
+            </tr>
+          </table>
+          <!--[if mso]>
+              </td>
+              <td style="vertical-align: middle; padding-left: 12px;">
+          <![endif]-->
+          <span style="display: inline-block; vertical-align: middle; margin-left: 12px;">
+            <p class="header-text">LEXIA Platform</p>
+            <p class="header-subtext">noreply@lexia-platform.com</p>
+          </span>
+          <!--[if mso]>
+              </td>
+            </tr>
+          </table>
+          <![endif]-->
         </div>
 
         <!-- Content Block (replaced by child templates) -->
@@ -225,33 +294,23 @@
           <!-- Child template content will be inserted here -->
         </div>
 
-        <!-- Footer -->
+        <!-- Footer - Matching Admin EmailPreview footer -->
         <div class="footer">
-          <div class="footer-links">
-            <a th:href="${dashboardUrl}" th:text="#{email.footer.dashboard}"
-              >Dashboard</a
-            >
-            <a th:href="${preferencesUrl}" th:text="#{email.footer.preferences}"
-              >Preferences</a
-            >
+          <p style="margin-bottom: 8px;">
+            You're receiving this email because you have an account on LEXIA Platform.
+          </p>
+          <p>
+            <span th:text="#{email.footer.company(${currentYear})}">© 2025 LEXIA Platform. All rights reserved.</span>
+          </p>
+          
+          <div class="footer-links" th:if="${dashboardUrl != null or preferencesUrl != null}">
+            <a th:if="${dashboardUrl}" th:href="${dashboardUrl}" th:text="#{email.footer.dashboard}">Dashboard</a>
+            <a th:if="${preferencesUrl}" th:href="${preferencesUrl}" th:text="#{email.footer.preferences}">Preferences</a>
           </div>
 
-          <p th:text="#{email.footer.company(${currentYear})}">
-            © 2025 LEXIA. All rights reserved.
-          </p>
-          <p class="muted" th:text="#{email.footer.address}">
-            LEXIA Learning Platform
-          </p>
-
           <p class="small-text" th:if="${unsubscribeUrl}">
-            <span th:text="#{email.footer.unsubscribe.text}"
-              >Don't want these emails?</span
-            >
-            <a
-              th:href="${unsubscribeUrl}"
-              th:text="#{email.footer.unsubscribe.link}"
-              >Unsubscribe</a
-            >
+            <span th:text="#{email.footer.unsubscribe.text}">Don't want these emails?</span>
+            <a th:href="${unsubscribeUrl}" th:text="#{email.footer.unsubscribe.link}">Unsubscribe</a>
           </p>
         </div>
       </div>
