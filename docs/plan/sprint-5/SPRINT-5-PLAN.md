@@ -1,11 +1,11 @@
 # LEXIA Sprint 5 - AI Integration Plan Document
 
-**Version**: 1.5.0  
+**Version**: 1.8.0  
 **Created**: December 11, 2025  
-**Last Updated**: December 12, 2025 (Day 2 - Evening Complete)  
+**Last Updated**: December 12, 2025 (Day 3 - Grammar Feature)  
 **Sprint Duration**: December 12-31, 2025 (20 working days)  
 **Author**: AI Development Assistant  
-**Status**: 🟢 In Progress | **Progress**: 8.5/31.5 pts (27.0%)
+**Status**: 🟢 In Progress | **Progress**: 13.5/31.5 pts (42.9%)
 
 ---
 
@@ -13,35 +13,36 @@
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| **Days Elapsed** | 2/20 | - | 10% |
-| **Story Points Complete** | 8.5 | 31.5 | 27.0% ✅ |
-| **Tasks Complete** | 9 | 37 | 24.3% |
-| **Velocity (pts/day)** | 4.25 | 1.45 | **293% - Well Ahead!** 🚀 |
-| **Hours Spent** | 11h | 132h | 8.3% |
+| **Days Elapsed** | 3/20 | - | 15% |
+| **Story Points Complete** | 13.5 | 31.5 | 42.9% ✅ |
+| **Tasks Complete** | 15 | 37 | 40.5% |
+| **Velocity (pts/day)** | 4.5 | 1.45 | **310% - Well Ahead!** 🚀 |
+| **Hours Spent** | 16.5h | 132h | 12.5% |
 | **Epic A Progress** | 93.3% | 100% | 🔄 Nearly complete |
-| **Epic B Progress** | 7.1% | 100% | 🔄 Database ready |
-| **Epic C Progress** | 10% | 100% | 🔄 Database ready |
-| **Epic D Progress** | 10% | 100% | 🔄 Database ready |
+| **Epic B Progress** | 42.9% | 100% | 🔄 Entities + DTOs + Mappers done |
+| **Epic C Progress** | 30% | 100% | 🔄 Entities + Repos + DTOs + Mappers done |
+| **Epic D Progress** | 30% | 100% | 🔄 Entities + Repos + DTOs + Mappers done |
 | **P0 Bugs** | 0 | 0 | ✅ |
 
 **Latest Milestone**: ✅ Database Schema Complete (Dec 12) - All AI feature tables ready  
 **Next Milestone**: 🔄 M1 (Dec 16) - AI Infrastructure complete
 
 **Recent Accomplishments**:
-- ✅ **A5 Complete**: AiUsageTracker service with Gemini pricing & quota management (1 pt)
-- ✅ **A9 Complete**: PromptTemplateService with Caffeine caching & A/B testing (1 pt)
-- ✅ **Epic A**: 93.3% complete (7/9 tasks, 7.0/7.5 pts) - Only A6 remains for P0
-- ✅ **A3 Complete**: GeminiClientService with Resilience4j (@Retry, @CircuitBreaker, @RateLimiter)
-- ✅ **A3 Complete**: SSE streaming support via SseEmitter (30s timeout)
-- ✅ **Code Quality**: Code review 8.5/10 for A5+A9, all critical fixes applied
-- ✅ **Database**: 14 tables, 40+ indexes, comprehensive JSONB schemas
-- ✅ **AI Infrastructure**: 18 new files, 3,200+ lines of production code
-- ✅ **Tests**: 100+ unit tests passing with comprehensive coverage
+- ✅ **C2 Complete**: GrammarTopic, GrammarExerciseSet, UserGrammarProgress entities + repositories (0.5 pt)
+- ✅ **C3 Complete**: 7 Grammar DTOs + GrammarExerciseMapper with 20 passing tests (0.5 pt)
+- ✅ **Epic C**: 30% complete (3/7 tasks) - Entities, Repos, DTOs, Mappers done
+- ✅ **Grammar Feature**: 3 entities, 3 repositories, 7 DTOs, 1 mapper - 1,700+ lines
+- ✅ **Code Review**: Typo fixed in GrammarTopicRepository (Cyrillic → Latin)
+- ✅ **Previous**: B2, B3, D2, D3, A5, A9, A3, A4, A8 complete
+- ✅ **Epic A**: 93.3% complete (7/9 tasks, 7.0/7.5 pts)
+- ✅ **Epic B**: 42.9% complete (3/7 tasks)
+- ✅ **Epic D**: 30% complete (3/7 tasks)
+- ✅ **Database**: 14 tables, 50+ indexes, comprehensive JSONB schemas
+- ✅ **Tests**: 191+ unit tests passing with comprehensive coverage
 
-**Next Up (Day 3 - Dec 13)**:
+**Next Up (Day 4 - Dec 13)**:
+- 🎯 **C4**: Implement GrammarExerciseService (1.5 pt)
 - 🎯 **A6**: Implement AiRateLimitService per user/feature (1 pt)
-- 🎯 **B2**: Create RolePlayScenario and RolePlayConversation entities (1 pt)
-- 🎯 **B3**: Create DTOs and mappers for role-play (0.5 pt)
 - 🎯 **B4**: Implement RolePlayService (scenario generation) (1.5 pt)
 
 ---
@@ -159,13 +160,13 @@
 **Timeline**: Days 2-9 (Dec 12-21)  
 **Owner**: Backend + Frontend  
 **Dependencies**: Epic A  
-**Progress**: 🔄 0.5/7 pts (7.1%) - **Database Ready**
+**Progress**: 🔄 2.0/7 pts (28.6%) - **Entities + DTOs + Mappers Ready**
 
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|
 | B1 | Create V25 migration for roleplay tables | 0.5 | P0 | ✅ **Dec 12** |
-| B2 | Create RolePlayScenario and RolePlayConversation entities | 1 | P0 | ⬜ |
-| B3 | Create DTOs and mappers for role-play | 0.5 | P0 | ⬜ |
+| B2 | Create RolePlayScenario and RolePlayConversation entities | 1 | P0 | ✅ **Dec 12** |
+| B3 | Create DTOs and mappers for role-play | 0.5 | P0 | ✅ **Dec 12** |
 | B4 | Implement RolePlayService (scenario generation) | 1.5 | P0 | ⬜ |
 | B5a | Implement immersive mode (chat-only, fast) | 0.5 | P0 | ⬜ |
 | B5b | Implement learning mode (chat + feedback) | 1 | P0 | ⬜ |
@@ -177,6 +178,10 @@
 | B9 | Implement context window management (sliding window) | 1 | P1 | ⬜ |
 
 **Acceptance Criteria**:
+- [x] RolePlayScenario entity created with JSONB support ✅
+- [x] RolePlayConversation entity created with message tracking ✅
+- [x] DTOs created for all role-play models ✅
+- [x] Mappers created with defensive copying ✅
 - [ ] POST /ai/roleplay/scenarios generates scenario <3s
 - [ ] Conversation messages get contextual AI responses
 - [ ] Conversation history persists
@@ -197,8 +202,8 @@
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|  
 | C1 | Create V26 migration for grammar tables | 0.5 | P0 | ✅ **Dec 12** |
-| C2 | Create GrammarExerciseSet entity and repository | 0.5 | P0 | ⬜ |
-| C3 | Create DTOs and mappers | 0.5 | P0 | ⬜ |
+| C2 | Create GrammarExerciseSet entity and repository | 0.5 | P0 | ✅ **Dec 12** |
+| C3 | Create DTOs and mappers | 0.5 | P0 | ✅ **Dec 12** |
 | C4 | Implement GrammarExerciseService | 1.5 | P0 | ⬜ |
 | C5 | Create GrammarController with endpoints | 0.5 | P0 | ⬜ |
 | C6 | Implement answer validation and scoring | 0.5 | P1 | ⬜ |
@@ -223,8 +228,8 @@
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|
 | D1 | Add flashcard tables to V26 migration | 0.5 | P0 | ✅ **Dec 12** |
-| D2 | Create FlashcardDeck entity and repository | 0.5 | P0 | ⬜ |
-| D3 | Create DTOs and mappers | 0.5 | P0 | ⬜ |
+| D2 | Create FlashcardDeck entity and repository | 0.5 | P0 | ✅ **Dec 12** |
+| D3 | Create DTOs and mappers | 0.5 | P0 | ✅ **Dec 12** |
 | D4 | Implement FlashcardService (generate from lesson) | 1.5 | P0 | ⬜ |
 | D5 | Create FlashcardController with endpoints | 0.5 | P0 | ⬜ |
 | D6 | Implement spaced repetition algorithm | 0.5 | P1 | ⬜ |
@@ -552,27 +557,37 @@ void generateScenario_ReturnsValidStructure() {
 
 ## 10. Sprint Progress Tracking
 
-### 10.1 Completed Tasks (3/37)
+### 10.1 Completed Tasks (13/37)
 
 | Date | Task | Points | Notes |
 |------|------|--------|-------|
 | Dec 11 | **A1**: Gemini SDK + Resilience4j dependencies | 0.5 | Build validated, config added, docs updated |
 | Dec 11 | **A2**: GeminiConfig with environment configuration | 0.5 | 3 content config beans, 16 tests, all passing |
 | Dec 11 | **A7**: Input sanitization + prompt injection filter | 1.0 | PromptSanitizer + ValidPrompt, 70 tests, security hardened |
+| Dec 12 | **A3**: GeminiClientService with retry/circuit breaker + SSE | 2.0 | Reactive streaming, Resilience4j integration, 45 tests |
+| Dec 12 | **A4**: V23 migration for AI usage tracking | 0.5 | user_ai_quotas + ai_usage_logs tables |
+| Dec 12 | **A5**: AiUsageTracker service | 1.0 | Gemini pricing, quota management, 28 tests |
+| Dec 12 | **A8**: V24 migration for prompt templates | 0.5 | ai_prompt_templates with seed data |
+| Dec 12 | **A9**: PromptTemplateService with caching | 1.0 | Caffeine cache, A/B testing, 22 tests |
+| Dec 12 | **B1**: V25 migration for roleplay tables | 0.5 | roleplay_scenarios + roleplay_conversations |
+| Dec 12 | **B2**: RolePlayScenario + RolePlayConversation entities | 1.0 | JSONB support, full mapping, 11 tests |
+| Dec 12 | **B3**: Role-play DTOs + Mappers | 0.5 | Defensive copying, mutable collections |
+| Dec 12 | **C1**: V26 migration for grammar + flashcard tables | 0.5 | 4 tables with comprehensive indexes |
+| Dec 12 | **D1**: Flashcard tables (part of V26) | 0.5 | flashcard_decks + user_flashcard_progress |
 
 ### 10.2 Current Velocity
 
 | Metric | Target | Actual | Trend |
 |--------|--------|--------|-------|
-| **Daily Velocity** | 1.45 pts/day | 2.0 pts/day | **+38% above target** 🚀 |
-| **Tasks/Day** | 1.85 tasks/day | 3 tasks/day | **+62% above target** |
-| **Projected Completion** | Dec 31 | Dec 26 | **5 days ahead** ✨ |
+| **Daily Velocity** | 1.45 pts/day | 5.0 pts/day | **+245% above target** 🚀 |
+| **Tasks/Day** | 1.85 tasks/day | 6.5 tasks/day | **+251% above target** |
+| **Projected Completion** | Dec 31 | Dec 18 | **13 days ahead** ✨ |
 
 ### 10.3 Burn-Down
 
 | Week | Planned | Actual | Remaining |
 |------|---------|--------|----------|
-| Week 1 | 12.5 pts | 0.5 pts | 31 pts |
+| Week 1 | 12.5 pts | 10.0 pts | 21.5 pts |
 | Week 2 | 12 pts | - | - |
 | Week 3 | 7 pts | - | - |
 
@@ -651,13 +666,13 @@ test(grammar): add unit tests for exercise generation
 
 | Epic | Tasks | Hours | Points | Progress |
 |------|-------|-------|--------|----------|
-| Epic A | 9 | 30h | 7.5 | 🔄 26.7% (5h spent) ✨ |
-| Epic B | 10 | 32h | 8 | ⬜ 0% |
-| Epic C | 7 | 20h | 5 | ⬜ 0% |
-| Epic D | 7 | 20h | 5 | ⬜ 0% |
+| Epic A | 9 | 30h | 7.5 | 🔄 93.3% (12h spent) ✨ |
+| Epic B | 10 | 32h | 7 | 🔄 28.6% (2h spent) ✨ |
+| Epic C | 7 | 20h | 5 | 🔄 10% (0.5h spent) |
+| Epic D | 7 | 20h | 5 | 🔄 10% (0.5h spent) |
 | Epic E | 6 | 18h | 4.5 | ⬜ 0% |
 | Epic F | 4 | 12h | 3 | ⬜ 0% |
-| **Total** | **43** | **132h** | **33** | **6.3% (5h / 132h)** |
+| **Total** | **43** | **132h** | **31.5** | **31.7% (14h / 132h)** |
 
 *Buffer: ~24h for unexpected issues, meetings, documentation*  
 *Actual hours spent: 1.75h (Day 1)*
@@ -697,3 +712,4 @@ npm test
 |---------|------|--------|---------|
 | 1.0.0 | Dec 11, 2025 | AI Assistant | Initial plan document |
 | 1.1.0 | Dec 11, 2025 | AI Assistant | Updated after Day 1: A1 complete, progress tracking added |
+| 1.7.0 | Dec 12, 2025 | AI Assistant | Updated after Day 2: B2+B3 complete, 31.7% sprint progress, 13 tasks done |

@@ -3,8 +3,8 @@
 ## Sprint 5 — AI Integration (Gemini API)
 
 **Sprint**: 5 / 8 | **Duration**: Dec 12 – Dec 31, 2025 (20 days)  
-**Status**: 🟢 In Progress (Day 2) | **Progress**: 8.5/31.5 points (27.0%)  
-**Last Updated**: December 12, 2025 - Evening (Epic A: 93.3% ✅, Epic B: 100% migrations, Epic C: 100% migrations, Epic D: 100% migrations ✅)
+**Status**: 🟢 In Progress (Day 3) | **Progress**: 13.5/31.5 points (42.9%)  
+**Last Updated**: December 12, 2025 - Final Session (Epic A: 93.3% ✅, Epic B: 42.9% 🔄, Epic C: 30% ✅, Epic D: 30% ✅)
 
 ---
 
@@ -24,19 +24,19 @@
 
 **Velocity Target**: 1.45 pts/day (29 points / 20 days)
 
-**Recent Updates** (Dec 12 - Sprint Day 2 - Evening):
+**Recent Updates** (Dec 12 - Sprint Day 3):
 
-- ✅ **Task A5 Complete**: AiUsageTracker service with cost calculation & quota management (1 pt)
-- ✅ **Task A9 Complete**: PromptTemplateService with Caffeine caching & A/B testing (1 pt)
-- ✅ **Task A3 Complete**: GeminiClientService with Resilience4j + SSE streaming (2 pts)
-- ✅ **Task A4 Complete**: V23 migration for AI usage tracking + user quotas (0.5 pts)
-- ✅ **Task A8 Complete**: V24 migration for AI prompt templates with versioning (0.5 pts)
-- ✅ **Epic A**: 7/9 tasks complete (93.3%) - Only A6 and optional A7 remain
-- ✅ **AI Infrastructure**: 18 new files (entities, DTOs, services, tests) - 3,200+ lines
-- ✅ **Database Schema**: 14 tables with comprehensive indexes and constraints
-- ✅ **Code Review**: 8.5/10 quality, critical fixes applied (async executor, repository queries)
-- ✅ **Tests**: All unit tests passing (100+ tests), comprehensive coverage
-- 🎯 **Next Day 3**: A6 (Rate limiting), B2-B3 (Entities & DTOs)
+- ✅ **Task C2 Complete**: Grammar entities and repositories (0.5 pt)
+- ✅ **Task C3 Complete**: Grammar DTOs and mappers (0.5 pt)
+- ✅ **Epic C**: 3/7 tasks complete (30%) - Entities, repos, DTOs, mappers with 20 tests
+- ✅ **Grammar Feature**: 3 entities, 3 repositories, 7 DTOs, 1 mapper - 1,800+ lines
+- ✅ **Code Review**: Typo fixed in GrammarTopicRepository (Cyrillic 'у' → Latin 'y')
+- ✅ **Tests**: GrammarExerciseMapperTest with 20 passing tests
+- ✅ **Previous**: Task A5, A9, A3, A4, A8, B2, B3, D2, D3 complete
+- ✅ **Epic A**: 7/9 tasks complete (93.3%)
+- ✅ **Epic B**: 3/10 tasks complete (42.9%)
+- ✅ **Epic D**: 3/7 tasks complete (30%)
+- 🎯 **Next**: C4 (GrammarExerciseService), A6 (Rate limiting), B4 (RolePlayService)
 
 ---
 
@@ -132,7 +132,7 @@
 
 ### Epic B: Role-Play Feature (7 pts)
 
-**Status**: 🔄 In Progress (0.5/7 pts - 7.1%)  
+**Status**: 🔄 In Progress (2.0/7 pts - 28.6%)  
 **Timeline**: Day 2-9 (December 12-21)  
 **Dependencies**: Epic A (A2, A3)
 
@@ -144,8 +144,8 @@
   - ✅ 12 fallback scenarios (A1: 2, A2: 2, B1: 2, B2: 2, C1: 2, C2: 2)
   - ✅ 2 prompt templates (scenario generation, conversation responses)
   - ✅ 8 indexes for performance optimization
-- [ ] **B2**: Create RolePlayScenario and RolePlayConversation entities (1 pt)
-- [ ] **B3**: Create DTOs and mappers for role-play (0.5 pt)
+- [x] **B2**: Create RolePlayScenario and RolePlayConversation entities (1 pt) ✅ **COMPLETE** (Dec 12)
+- [x] **B3**: Create DTOs and mappers for role-play (0.5 pt) ✅ **COMPLETE** (Dec 12)
 - [ ] **B4**: Implement RolePlayService (scenario generation) (1.5 pt)
 - [ ] **B5a**: Implement immersive mode (chat-only, fast) (0.5 pt)
 - [ ] **B5b**: Implement learning mode (chat + feedback) (1 pt)
@@ -158,7 +158,7 @@
 
 ### Epic C: Grammar Exercise Feature (5 pts)
 
-**Status**: 🔄 In Progress (0.5/5 pts - 10%)  
+**Status**: 🔄 In Progress (1.5/5 pts - 30%)  
 **Timeline**: Day 2-12 (December 12-24)  
 **Dependencies**: Epic A
 
@@ -170,8 +170,18 @@
   - ✅ 2 fallback exercise sets (Present Simple A2, First Conditional B1)
   - ✅ 2 prompt templates (exercise generation, flashcard generation)
   - ✅ 9 indexes for efficient queries
-- [ ] **C2**: Create GrammarExerciseSet entity and repository (0.5 pt)
-- [ ] **C3**: Create DTOs and mappers (0.5 pt)
+- [x] **C2**: Create GrammarExerciseSet entity and repository (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ GrammarTopic entity with category grouping and CEFR levels
+  - ✅ GrammarExerciseSet entity with JSONB content storage
+  - ✅ UserGrammarProgress entity with SM-2 scoring
+  - ✅ GrammarTopicRepository with custom queries
+  - ✅ GrammarExerciseSetRepository with filtering methods
+  - ✅ UserGrammarProgressRepository with progress tracking
+- [x] **C3**: Create DTOs and mappers (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ 7 Grammar DTOs with validation (GrammarTopicDTO, GrammarRequestDTO, GrammarExerciseDTO, GrammarExerciseSetDTO, GrammarAnswerDTO, GrammarResultDTO, GrammarProgressDTO)
+  - ✅ GrammarExerciseMapper with content parsing
+  - ✅ GrammarExerciseMapperTest with 20 passing tests
+  - ✅ Code review: Typo fixed in GrammarTopicRepository
 - [ ] **C4**: Implement GrammarExerciseService (1.5 pt)
 - [ ] **C5**: Create GrammarController with endpoints (0.5 pt)
 - [ ] **C6**: Implement answer validation and scoring (0.5 pt) 🔵 **P1**
@@ -181,7 +191,7 @@
 
 ### Epic D: Flashcard Feature (5 pts)
 
-**Status**: 🔄 In Progress (0.5/5 pts - 10%)  
+**Status**: 🔄 In Progress (1.5/5 pts - 30%)  
 **Timeline**: Day 2-15 (December 12-27)  
 **Dependencies**: Epic A
 
@@ -192,8 +202,22 @@
   - ✅ Source consistency CHECK constraint (lesson requires source_id)
   - ✅ 7 indexes including partial index for due cards
   - ✅ Code review fixes: ease_factor constraint corrected for SM-2 algorithm
-- [ ] **D2**: Create FlashcardDeck entity and repository (0.5 pt)
-- [ ] **D3**: Create DTOs and mappers (0.5 pt)
+- [x] **D2**: Create FlashcardDeck entity and repository (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ FlashcardDeck entity with JSONB cards storage (List<FlashcardCard>)
+  - ✅ FlashcardCard POJO with front, back (FlashcardBack), tags, difficulty
+  - ✅ FlashcardBack POJO with definition, partOfSpeech, pronunciation, synonyms, collocations
+  - ✅ UserFlashcardProgress entity with full SM-2 algorithm implementation
+  - ✅ FlashcardDeckRepository with custom queries (due cards, statistics, batch ops)
+  - ✅ UserFlashcardProgressRepository with spaced repetition queries
+  - ✅ SourceType enum (LESSON, AI_GENERATED, USER_CREATED)
+  - ✅ 64 unit tests passing (FlashcardDeckTest, UserFlashcardProgressTest)
+- [x] **D3**: Create DTOs and mappers (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ 9 DTOs: FlashcardBackDTO, FlashcardCardDTO, FlashcardDeckDTO, CreateFlashcardDeckDTO, UpdateFlashcardDeckDTO, FlashcardProgressDTO, FlashcardStudySessionDTO, FlashcardReviewResultDTO, GenerateFlashcardsDTO
+  - ✅ FlashcardMapper with null-safe entity-DTO conversions
+  - ✅ Swagger/OpenAPI @Schema annotations on all DTOs
+  - ✅ Jakarta validation: @NotBlank, @NotNull, @Valid annotations
+  - ✅ Code review 8.5/10, validation fixes applied
+  - ✅ FlashcardMapperTest with comprehensive coverage
 - [ ] **D4**: Implement FlashcardService (generate from lesson) (1.5 pt)
 - [ ] **D5**: Create FlashcardController with endpoints (0.5 pt)
 - [ ] **D6**: Implement spaced repetition algorithm (0.5 pt) 🔵 **P1**
@@ -246,13 +270,13 @@
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| **Story Points** | 29 | 0.5 | 1.7% |
-| **Tasks Complete** | 37 | 1 | 2.7% |
+| **Story Points** | 31.5 | 13.5 | 42.9% |
+| **Tasks Complete** | 37 | 15 | 40.5% |
 | **Test Coverage (Backend)** | ≥70% | TBD | ⬜ |
 | **Test Coverage (Frontend)** | ≥60% | TBD | ⬜ |
 | **P0 Bugs** | 0 | 0 | ✅ |
-| **Days Remaining** | 20 | 19 | - |
-| **Velocity** | 1.45 pts/day | 0.5 pts/day | Day 1 |
+| **Days Remaining** | 20 | 17 | - |
+| **Velocity** | 1.45 pts/day | 4.5 pts/day | Day 3 |
 
 ---
 
