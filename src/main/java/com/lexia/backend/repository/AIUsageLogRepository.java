@@ -49,7 +49,7 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
     /**
      * Calculate total cost since a date
      */
-    @Query("SELECT COALESCE(SUM(a.cost), 0) FROM AIUsageLog a WHERE a.createdAt >= :startDate")
+    @Query("SELECT COALESCE(SUM(a.estimatedCostUsd), 0) FROM AIUsageLog a WHERE a.createdAt >= :startDate")
     java.math.BigDecimal sumCostSince(@Param("startDate") Instant startDate);
 
     /**
@@ -62,4 +62,62 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
      * Count total logs since a date
      */
     long countByCreatedAtGreaterThanEqual(Instant startDate);
+
+    // ========== New methods for Sprint 5 (AiUsageTracker) ==========
+
+    /**
+     * Count logs by user, content type, and created after a date.
+     * Used for daily/monthly quota checks.
+     */
+    long countByUserIdAndContentTypeAndCreatedAtGreaterThanEqual(
+            UUID userId, String contentType, Instant startDate);
+
+    /**
+     * Count logs grouped by content type for a specific user and date range.
+     */
+    @Query("SELECT a.contentType, COUNT(a) FROM AIUsageLog a " +
+           "WHERE a.userId = :userId AND a.createdAt >= :startDate AND a.createdAt <= :endDate " +
+           "GROUP BY a.contentType")
+    List<Object[]> countByContentTypeSince(
+            @Param("userId") UUID userId,
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate);
+
+    /**
+     * Find logs by content type with pagination.
+     */
+    Page<AIUsageLog> findByContentType(String contentType, Pageable pageable);
+
+    /**
+     * Find logs by user and content type with pagination.
+     */
+    Page<AIUsageLog> findByUserIdAndContentType(UUID userId, String contentType, Pageable pageable);
+
+    /**
+     * Find successful logs for a user since a date.
+     */
+    List<AIUsageLog> findByUserIdAndSuccessTrueAndCreatedAtGreaterThanEqual(
+            UUID userId, Instant startDate);
+
+    /**
+     * Count failed requests for monitoring.
+     */
+    @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.success = false AND a.createdAt >= :startDate")
+    long countFailedSince(@Param("startDate") Instant startDate);
+
+    /**
+     * Get average response time by model since a date.
+     */
+    @Query("SELECT a.modelId, AVG(a.responseTimeMs) FROM AIUsageLog a " +
+           "WHERE a.createdAt >= :startDate AND a.responseTimeMs IS NOT NULL " +
+           "GROUP BY a.modelId")
+    List<Object[]> avgResponseTimeByModelSince(@Param("startDate") Instant startDate);
+
+    /**
+     * Get total cost by content type since a date.
+     */
+    @Query("SELECT a.contentType, COALESCE(SUM(a.estimatedCostUsd), 0) FROM AIUsageLog a " +
+           "WHERE a.createdAt >= :startDate " +
+           "GROUP BY a.contentType")
+    List<Object[]> sumCostByContentTypeSince(@Param("startDate") Instant startDate);
 }

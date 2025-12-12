@@ -66,7 +66,7 @@ class AIUsageLogServiceTest {
                 .featureName("MAGIC_FLASHCARD")
                 .inputTokens(100)
                 .outputTokens(50)
-                .cost(new BigDecimal("0.000250"))
+                .estimatedCostUsd(new BigDecimal("0.000250"))
                 .createdAt(Instant.now())
                 .build();
     }
@@ -128,7 +128,7 @@ class AIUsageLogServiceTest {
                 .featureName("ROLEPLAY")
                 .inputTokens(200)
                 .outputTokens(100)
-                .cost(new BigDecimal("0.000500"))
+                .estimatedCostUsd(new BigDecimal("0.000500"))
                 .createdAt(Instant.now())
                 .build();
 

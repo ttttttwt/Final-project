@@ -1,11 +1,11 @@
 # LEXIA Sprint 5 - AI Integration Plan Document
 
-**Version**: 1.4.0  
+**Version**: 1.5.0  
 **Created**: December 11, 2025  
-**Last Updated**: December 12, 2025 (Day 2 - Complete)  
+**Last Updated**: December 12, 2025 (Day 2 - Evening Complete)  
 **Sprint Duration**: December 12-31, 2025 (20 working days)  
 **Author**: AI Development Assistant  
-**Status**: 🟢 In Progress | **Progress**: 3.5/31.5 pts (11.1%)
+**Status**: 🟢 In Progress | **Progress**: 8.5/31.5 pts (27.0%)
 
 ---
 
@@ -14,11 +14,11 @@
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
 | **Days Elapsed** | 2/20 | - | 10% |
-| **Story Points Complete** | 5.5 | 31.5 | 17.5% ✅ |
-| **Tasks Complete** | 7 | 37 | 18.9% |
-| **Velocity (pts/day)** | 2.75 | 1.45 | **190% - Ahead!** 🚀 |
-| **Hours Spent** | 10h | 132h | 7.6% |
-| **Epic A Progress** | 53.3% | 100% | 🔄 On track |
+| **Story Points Complete** | 8.5 | 31.5 | 27.0% ✅ |
+| **Tasks Complete** | 9 | 37 | 24.3% |
+| **Velocity (pts/day)** | 4.25 | 1.45 | **293% - Well Ahead!** 🚀 |
+| **Hours Spent** | 11h | 132h | 8.3% |
+| **Epic A Progress** | 93.3% | 100% | 🔄 Nearly complete |
 | **Epic B Progress** | 7.1% | 100% | 🔄 Database ready |
 | **Epic C Progress** | 10% | 100% | 🔄 Database ready |
 | **Epic D Progress** | 10% | 100% | 🔄 Database ready |
@@ -28,21 +28,21 @@
 **Next Milestone**: 🔄 M1 (Dec 16) - AI Infrastructure complete
 
 **Recent Accomplishments**:
+- ✅ **A5 Complete**: AiUsageTracker service with Gemini pricing & quota management (1 pt)
+- ✅ **A9 Complete**: PromptTemplateService with Caffeine caching & A/B testing (1 pt)
+- ✅ **Epic A**: 93.3% complete (7/9 tasks, 7.0/7.5 pts) - Only A6 remains for P0
 - ✅ **A3 Complete**: GeminiClientService with Resilience4j (@Retry, @CircuitBreaker, @RateLimiter)
 - ✅ **A3 Complete**: SSE streaming support via SseEmitter (30s timeout)
-- ✅ **A3 Complete**: 4 AI exception classes + 3 response DTOs + 46 unit tests
-- ✅ **A3 Complete**: Code review 8.7/10, ExecutorService lifecycle + logging fixes applied
-- ✅ **B1 Complete**: V25 migration - roleplay_scenarios, roleplay_conversations, user_ai_quotas, ai_prompt_templates
-- ✅ **C1 Complete**: V26 migration - grammar_topics (40+), grammar_exercise_sets, user_grammar_progress
-- ✅ **D1 Complete**: V26 migration - flashcard_decks, user_flashcard_progress (SM-2 algorithm)
-- ✅ **Database**: 9 new tables, 30+ indexes, comprehensive JSONB schemas
-- ✅ **Seed Data**: 12 roleplay scenarios, 40+ grammar topics, 2 exercise sets, 4 prompt templates
+- ✅ **Code Quality**: Code review 8.5/10 for A5+A9, all critical fixes applied
+- ✅ **Database**: 14 tables, 40+ indexes, comprehensive JSONB schemas
+- ✅ **AI Infrastructure**: 18 new files, 3,200+ lines of production code
+- ✅ **Tests**: 100+ unit tests passing with comprehensive coverage
 
 **Next Up (Day 3 - Dec 13)**:
-- 🎯 **A4**: Create V20 migration for AI usage tracking tables
-- 🎯 **A5**: Implement AiUsageTracker service
-- 🎯 **B2**: Create RolePlayScenario and RolePlayConversation entities
-- 🎯 **B3**: Create DTOs and mappers for role-play
+- 🎯 **A6**: Implement AiRateLimitService per user/feature (1 pt)
+- 🎯 **B2**: Create RolePlayScenario and RolePlayConversation entities (1 pt)
+- 🎯 **B3**: Create DTOs and mappers for role-play (0.5 pt)
+- 🎯 **B4**: Implement RolePlayService (scenario generation) (1.5 pt)
 
 ---
 
@@ -71,13 +71,13 @@
 
 | Epic | Points | Percentage | Status |
 |------|--------|------------|--------|
-| Epic A: AI Infrastructure | 7.5 pts | 24% | 🔄 26.7% (2.0/7.5) |
+| Epic A: AI Infrastructure | 7.5 pts | 24% | 🔄 93.3% (7.0/7.5) |
 | Epic B: Role-Play Feature | 7 pts | 22% | 🔄 7.1% (0.5/7) |
 | Epic C: Grammar Feature | 5 pts | 16% | 🔄 10% (0.5/5) |
 | Epic D: Flashcard Feature | 5 pts | 16% | 🔄 10% (0.5/5) |
 | Epic E: Web UI | 4 pts | 13% | ⬜ 0% |
 | Epic F: Mobile UI | 3 pts | 9% | ⬜ 0% |
-| **Total** | **31.5 pts** | **100%** | **11.1%** |
+| **Total** | **31.5 pts** | **100%** | **27.0%** |
 ### 1.4 User Stories
 
 #### Epic B: Role-Play Feature

@@ -248,19 +248,78 @@
 - `roleplay_scenario_v1`: Scenario generation
 - `roleplay_conversation_v1`: AI responses in conversations
 
+### 📋 Tasks Completed (Evening Session)
+- [x] **A5**: Implement AiUsageTracker service (1 pt)
+  - Created `AiUsageTracker.java` interface with 7 methods
+  - Created `AiUsageTrackerImpl.java` with cost calculation using Gemini pricing
+  - Enhanced `AIUsageLog.java` entity with V23 columns (contentType, modelId, estimatedCostUsd, etc.)
+  - Created `UserAiQuota.java` entity with daily/monthly limits, feature-specific JSONB
+  - Created `UserAiQuotaRepository.java` with atomic increment operations
+  - Created `AiUsageTrackingRequest.java` DTO with success/failure factory methods
+  - Updated `AIUsageLogRepository.java` with new query methods
+  - Fixed compilation errors in existing code (cost → estimatedCostUsd)
+  - 100+ lines of unit tests in `AiUsageTrackerImplTest.java`
+  
+- [x] **A9**: Implement PromptTemplateService with caching (1 pt)
+  - Created `PromptTemplateService.java` interface with 8 methods
+  - Created `PromptTemplateServiceImpl.java` with @Cacheable annotations
+  - Created `PromptTemplate.java` entity with versioning and A/B testing
+  - Created `PromptTemplateRepository.java` with metrics queries
+  - Created `CacheConfig.java` with Caffeine cache (5-min TTL, 100 max entries)
+  - Added Caffeine dependency to build.gradle (v3.1.8)
+  - Mustache-style variable substitution: {{variable}}
+  - A/B testing via weighted random selection (traffic percentage)
+  - 120+ lines of unit tests in `PromptTemplateServiceImplTest.java`
+
+### ✅ Code Review & Fixes
+- **Review Score**: 8.5/10 (CONDITIONAL PASS)
+- **Issues Fixed**:
+  1. ✅ Repository query: Changed `a.cost` → `a.estimatedCostUsd` in `sumCostSince()`
+  2. ✅ Added dedicated `aiUsageExecutor` to `AsyncConfig.java` (2-5 threads, CallerRunsPolicy)
+  3. ✅ Updated `trackUsageAsync()` to use `@Async("aiUsageExecutor")` with error handling
+  4. ✅ Fixed `AIUsageLogServiceImpl.java`: `.cost()` → `.estimatedCostUsd()`
+  5. ✅ Fixed `AIUsageLogServiceTest.java`: Updated test builders
+
+### 📦 Files Created/Modified (Evening Session)
+
+| File | Type | Changes | Lines |
+|------|------|---------|-------|
+| **AiUsageTracker.java** | **New** | **Service interface** | **+78** |
+| **AiUsageTrackerImpl.java** | **New** | **Implementation** | **+283** |
+| **AiUsageTrackingRequest.java** | **New** | **DTO** | **+142** |
+| **UserAiQuota.java** | **New** | **Entity** | **+156** |
+| **UserAiQuotaRepository.java** | **New** | **Repository** | **+87** |
+| **AIUsageLog.java** | Modified | Enhanced with V23 columns | ~50 |
+| **AIUsageLogRepository.java** | Modified | New query methods + fix | +15 |
+| **PromptTemplate.java** | **New** | **Entity** | **+198** |
+| **PromptTemplateRepository.java** | **New** | **Repository** | **+121** |
+| **PromptTemplateService.java** | **New** | **Service interface** | **+85** |
+| **PromptTemplateServiceImpl.java** | **New** | **Implementation** | **+264** |
+| **CacheConfig.java** | **New** | **Caffeine config** | **+68** |
+| **AsyncConfig.java** | Modified | Added aiUsageExecutor | +18 |
+| **build.gradle** | Modified | Added Caffeine cache | +2 |
+| **AiUsageTrackerImplTest.java** | **New** | **Unit tests** | **+187** |
+| **PromptTemplateServiceImplTest.java** | **New** | **Unit tests** | **+205** |
+| **AIUsageLogServiceImpl.java** | Modified | Field name fixes | ~5 |
+| **AIUsageLogServiceTest.java** | Modified | Field name fixes | ~5 |
+| **Total New Code** | | | **+1,954 lines** |
+
 ### 🎯 Next Steps (Day 3 - Dec 13)
-- [ ] **A4**: Create V20 migration for AI usage tracking tables
-- [ ] **A5**: Implement AiUsageTracker service
+- [ ] **A6**: Implement AiRateLimitService per user/feature
 - [ ] **B2**: Create RolePlayScenario and RolePlayConversation entities
 - [ ] **B3**: Create DTOs and mappers for role-play
+- [ ] **B4**: Implement RolePlayService (scenario generation)
 
 ### ⏱️ Time Spent (Day 2)
 - Planning: 30 minutes (reviewed Sprint 5 plan, used subagent for A3 planning)
 - Implementation (A3): 4 hours (exceptions, DTOs, service, tests)
-- Testing & debugging: 1 hour (Mockito lenient, Gemini SDK Optional types)
-- Code review: 30 minutes (subagent review + fixes)
+- Testing & debugging (A3): 1 hour (Mockito lenient, Gemini SDK Optional types)
+- Code review (A3): 30 minutes (subagent review + fixes)
+- **Implementation (A5 + A9)**: 3.5 hours (entities, services, DTOs, repositories, tests)
+- **Code review (A5 + A9)**: 45 minutes (subagent review + fixes)
+- **Testing & validation**: 30 minutes (compilation, unit tests, documentation)
 - Validation & documentation: 30 minutes
-- **Total**: ~6.5 hours
+- **Total**: ~11 hours
 
 ---
 

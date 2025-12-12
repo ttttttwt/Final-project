@@ -75,6 +75,10 @@ dependencies {
 	implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.2.0'
 	implementation 'io.github.resilience4j:resilience4j-timelimiter:2.2.0'
 	
+	// Spring Cache with Caffeine (for prompt template caching)
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+	
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.h2database:h2'

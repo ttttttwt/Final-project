@@ -144,7 +144,7 @@ public class AIUsageLogServiceImpl implements AIUsageLogService {
                 .featureName(featureName)
                 .inputTokens(inputTokens)
                 .outputTokens(outputTokens)
-                .cost(totalCost)
+                .estimatedCostUsd(totalCost)
                 .build();
 
         AIUsageLog saved = aiUsageLogRepository.save(log);
@@ -169,7 +169,7 @@ public class AIUsageLogServiceImpl implements AIUsageLogService {
                 .featureName(entity.getFeatureName())
                 .inputTokens(entity.getInputTokens())
                 .outputTokens(entity.getOutputTokens())
-                .cost(entity.getCost())
+                .cost(entity.getEstimatedCostUsd())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

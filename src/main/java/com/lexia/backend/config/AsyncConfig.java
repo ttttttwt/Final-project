@@ -51,4 +51,25 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * Dedicated executor for AI usage tracking.
+     * Separate from main task executor to prevent resource contention
+     * with other async operations.
+     * Uses CallerRunsPolicy to ensure tracking is completed even under high load.
+     *
+     * @since Sprint 5
+     */
+    @Bean(name = "aiUsageExecutor")
+    public Executor aiUsageExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("ai-usage-");
+        // Use CallerRunsPolicy to ensure tracking completes even if queue is full
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

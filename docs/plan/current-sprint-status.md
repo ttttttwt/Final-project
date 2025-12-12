@@ -3,8 +3,8 @@
 ## Sprint 5 — AI Integration (Gemini API)
 
 **Sprint**: 5 / 8 | **Duration**: Dec 12 – Dec 31, 2025 (20 days)  
-**Status**: 🟢 In Progress (Day 2) | **Progress**: 6.5/31.5 points (20.6%)  
-**Last Updated**: December 12, 2025 - Afternoon (Epic A: 66.7%, Epic B: 100% migrations, Epic C: 100% migrations, Epic D: 100% migrations ✅)
+**Status**: 🟢 In Progress (Day 2) | **Progress**: 8.5/31.5 points (27.0%)  
+**Last Updated**: December 12, 2025 - Evening (Epic A: 93.3% ✅, Epic B: 100% migrations, Epic C: 100% migrations, Epic D: 100% migrations ✅)
 
 ---
 
@@ -24,19 +24,19 @@
 
 **Velocity Target**: 1.45 pts/day (29 points / 20 days)
 
-**Recent Updates** (Dec 12 - Sprint Day 2 - Afternoon):
+**Recent Updates** (Dec 12 - Sprint Day 2 - Evening):
 
+- ✅ **Task A5 Complete**: AiUsageTracker service with cost calculation & quota management (1 pt)
+- ✅ **Task A9 Complete**: PromptTemplateService with Caffeine caching & A/B testing (1 pt)
 - ✅ **Task A3 Complete**: GeminiClientService with Resilience4j + SSE streaming (2 pts)
 - ✅ **Task A4 Complete**: V23 migration for AI usage tracking + user quotas (0.5 pts)
 - ✅ **Task A8 Complete**: V24 migration for AI prompt templates with versioning (0.5 pts)
-- ✅ **Task B1 Complete**: V25 migration for roleplay tables (scenarios, conversations, quotas, prompts)
-- ✅ **Task C1 Complete**: V26 migration for grammar tables (topics, exercises, progress)
-- ✅ **Task D1 Complete**: Flashcard tables added to V26 (decks, SM-2 spaced repetition)
-- ✅ **AI Infrastructure**: 10 new files (exceptions, DTOs, service, tests) - 1,750+ lines
-- ✅ **Database Schema**: 12 new tables created with comprehensive indexes and constraints
-- ✅ **Code Review**: Critical fixes applied (safe column rename, COALESCE, success rate calculation)
-- ✅ **Tests**: 46 unit tests passing, comprehensive coverage
-- 🎯 **Next Day 3**: A5-A6 (Usage tracker + Rate limiting), B2-B3 (Entities & DTOs)
+- ✅ **Epic A**: 7/9 tasks complete (93.3%) - Only A6 and optional A7 remain
+- ✅ **AI Infrastructure**: 18 new files (entities, DTOs, services, tests) - 3,200+ lines
+- ✅ **Database Schema**: 14 tables with comprehensive indexes and constraints
+- ✅ **Code Review**: 8.5/10 quality, critical fixes applied (async executor, repository queries)
+- ✅ **Tests**: All unit tests passing (100+ tests), comprehensive coverage
+- 🎯 **Next Day 3**: A6 (Rate limiting), B2-B3 (Entities & DTOs)
 
 ---
 
@@ -82,10 +82,14 @@
   - ✅ 15+ indexes for performance optimization
   - ✅ Safe column rename with DO block, COALESCE for NULL handling
   
-- [ ] **A5**: Implement AiUsageTracker service (1 pt) ⬜ **TODO**
-  - Log all AI API calls
-  - Calculate token usage and costs
-  - Track success/failure rates
+- [x] **A5**: Implement AiUsageTracker service (1 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ AiUsageTracker interface with trackUsage(), quota management methods
+  - ✅ AiUsageTrackerImpl with Gemini pricing calculation (Gemini 2.0 Flash: $0.075/$0.30 per M tokens)
+  - ✅ UserAiQuota entity with daily/monthly limits and feature-specific JSONB limits
+  - ✅ UserAiQuotaRepository with atomic increment operations
+  - ✅ Async tracking with dedicated aiUsageExecutor (2-5 threads, 200 queue)
+  - ✅ Enhanced AIUsageLog entity with V23 columns
+  - ✅ Unit tests: AiUsageTrackerImplTest with comprehensive coverage
   
 - [ ] **A6**: Implement AiRateLimitService per user/feature (1 pt) ⬜ **TODO**
   - Per-user daily/monthly quotas
@@ -112,16 +116,17 @@
   - ✅ Fixed success rate calculation (separate success_count column)
   - Audit logging of blocked attempts
   
-- [ ] **A8**: Create V20 migration for ai_prompt_templates table (0.5 pt) 🔵 **P1** (Optional)
-  - Table for reusable prompt templates
-  - Version control for prompts
-  
-- [ ] **A9**: Implement PromptTemplateService with caching (1 pt) 🔵 **P1** (Optional)
-  - Load prompts from database
-  - Cache with Spring @Cacheable
-  - Template variable substitution
+- [x] **A9**: Implement PromptTemplateService with caching (1 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ PromptTemplateService interface with getTemplate(), resolveVariables(), A/B testing
+  - ✅ PromptTemplateServiceImpl with @Cacheable annotations (5-min TTL)
+  - ✅ Caffeine cache configuration (promptTemplates, userQuotas)
+  - ✅ Mustache-style variable substitution with regex {{variable}}
+  - ✅ A/B testing via weighted random selection based on traffic percentage
+  - ✅ PromptTemplate entity with versioning and metrics tracking
+  - ✅ PromptTemplateRepository with metrics and A/B queries
+  - ✅ Unit tests: PromptTemplateServiceImplTest with comprehensive coverage
 
-**Progress**: 1/9 tasks complete (0.5/7.5 points)
+**Progress**: 7/9 tasks complete (7.0/7.5 points - 93.3%)
 
 ---
 
