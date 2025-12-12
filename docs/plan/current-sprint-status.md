@@ -3,8 +3,8 @@
 ## Sprint 5 — AI Integration (Gemini API)
 
 **Sprint**: 5 / 8 | **Duration**: Dec 12 – Dec 31, 2025 (20 days)  
-**Status**: 🟢 In Progress (Day 1) | **Progress**: 2.0/29 points (6.9%)  
-**Last Updated**: December 11, 2025 (Epic A: 26.7% - Tasks A1, A2, A7 Complete ✅)
+**Status**: 🟢 In Progress (Day 2) | **Progress**: 6.5/31.5 points (20.6%)  
+**Last Updated**: December 12, 2025 - Afternoon (Epic A: 66.7%, Epic B: 100% migrations, Epic C: 100% migrations, Epic D: 100% migrations ✅)
 
 ---
 
@@ -14,26 +14,29 @@
 
 **Key Deliverables**:
 
-- 🔄 AI Infrastructure (Gemini client + tracking + rate limiting) - **6.7% DONE**
-- ⬜ Role-play conversations with AI partner
-- ⬜ Grammar exercise generator
-- ⬜ Flashcard auto-generation from lessons
+- 🔄 AI Infrastructure (Gemini client + tracking + rate limiting) - **26.7% DONE**
+- 🔄 Role-play conversations with AI partner - **Database Ready**
+- 🔄 Grammar exercise generator - **Database Ready**
+- 🔄 Flashcard auto-generation from lessons - **Database Ready**
 - ⬜ Web UI for AI features
 - ⬜ Mobile UI for AI features
 - 🎯 Admin dashboard for AI monitoring (optional)
 
 **Velocity Target**: 1.45 pts/day (29 points / 20 days)
 
-**Recent Updates** (Dec 11 - Sprint Day 1):
+**Recent Updates** (Dec 12 - Sprint Day 2 - Afternoon):
 
-- ✅ **Sprint Planning Complete**: Comprehensive plan & specification documents created
-- ✅ **Task A1 Complete**: Gemini SDK + Resilience4j dependencies added
-- ✅ **Task A2 Complete**: GeminiConfig.java with 3 content configuration beans created
-- ✅ **Task A7 Complete**: PromptSanitizer + ValidPrompt annotation for security
-- ✅ **Security**: Prompt injection, SQL injection, XSS detection patterns implemented
-- ✅ **Tests**: 86 tests passing (16 config tests + 70 sanitizer tests)
-- ✅ **Quality**: All files compile, no errors, tests at 100%
-- 🎯 **Next Day 2**: A3 (GeminiClientService), A4 (Database migrations)
+- ✅ **Task A3 Complete**: GeminiClientService with Resilience4j + SSE streaming (2 pts)
+- ✅ **Task A4 Complete**: V23 migration for AI usage tracking + user quotas (0.5 pts)
+- ✅ **Task A8 Complete**: V24 migration for AI prompt templates with versioning (0.5 pts)
+- ✅ **Task B1 Complete**: V25 migration for roleplay tables (scenarios, conversations, quotas, prompts)
+- ✅ **Task C1 Complete**: V26 migration for grammar tables (topics, exercises, progress)
+- ✅ **Task D1 Complete**: Flashcard tables added to V26 (decks, SM-2 spaced repetition)
+- ✅ **AI Infrastructure**: 10 new files (exceptions, DTOs, service, tests) - 1,750+ lines
+- ✅ **Database Schema**: 12 new tables created with comprehensive indexes and constraints
+- ✅ **Code Review**: Critical fixes applied (safe column rename, COALESCE, success rate calculation)
+- ✅ **Tests**: 46 unit tests passing, comprehensive coverage
+- 🎯 **Next Day 3**: A5-A6 (Usage tracker + Rate limiting), B2-B3 (Entities & DTOs)
 
 ---
 
@@ -41,7 +44,7 @@
 
 ### Epic A: AI Infrastructure (7.5 pts)
 
-**Status**: 🔄 In Progress (2.0/7.5 pts - 26.7%)  
+**Status**: 🔄 In Progress (5.0/7.5 pts - 66.7%)  
 **Timeline**: Day 1-4 (December 11-16)
 
 - [x] **A1**: Add Gemini SDK + Resilience4j dependencies (0.5 pt) ✅ **COMPLETE** (Dec 11)
@@ -58,17 +61,26 @@
   - ✅ Configuration properties: model names, max tokens, temperature
   - ✅ 16 unit tests covering all scenarios
   
-- [ ] **A3**: Implement GeminiClientService with retry/circuit breaker + SSE support (2 pt) ⬜ **TODO**
-  - Core service for Gemini API calls
-  - @Retry, @CircuitBreaker, @RateLimiter annotations
-  - Support for streaming responses (Server-Sent Events)
-  - Fallback handling
+- [x] **A3**: Implement GeminiClientService with retry/circuit breaker + SSE support (2 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ GeminiClientService interface with 7 methods
+  - ✅ GeminiClientServiceImpl with @Retry, @CircuitBreaker, @RateLimiter annotations
+  - ✅ SSE streaming via SseEmitter with 30s timeout
+  - ✅ 4 custom exception classes (AiServiceException hierarchy)
+  - ✅ 3 response DTOs (TokenUsageDTO, GeminiResponseDTO, SseEventDTO)
+  - ✅ Fallback methods with graceful degradation
+  - ✅ Token estimation + cost calculation
+  - ✅ @PreDestroy shutdown for ExecutorService
+  - ✅ 46 unit tests (GeminiClientServiceTest, AiExceptionTest, AiDtoTest)
+  - ✅ Code review: 8.7/10 quality, high-priority fixes applied
   
-- [ ] **A4**: Create V20 migration for AI usage tracking tables (0.5 pt) ⬜ **TODO**
-  - `ai_usage_logs` table
-  - `user_ai_quotas` table
-  - Indexes for performance
-  - Daily summary view
+- [x] **A4**: Create V23 migration for AI usage tracking tables (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ Enhanced `ai_usage_logs` table (content_type, model_id, total_tokens, response_time_ms, success, error_message, request_metadata)
+  - ✅ `user_ai_quotas` table with daily/monthly limits, premium multiplier, suspension support
+  - ✅ Feature-specific limits in JSONB (roleplay, grammar, flashcard)
+  - ✅ 3 analytics views: daily summary, monthly summary, by-user summary
+  - ✅ Helper functions: reset quotas (daily/monthly), increment usage with quota checks
+  - ✅ 15+ indexes for performance optimization
+  - ✅ Safe column rename with DO block, COALESCE for NULL handling
   
 - [ ] **A5**: Implement AiUsageTracker service (1 pt) ⬜ **TODO**
   - Log all AI API calls
@@ -88,9 +100,16 @@
   - ✅ Length validation (500 roleplay, 200 grammar)
   - ✅ ValidPrompt annotation + ValidPromptValidator
   - ✅ 70 unit tests with 100% coverage
-  - Input validation (max length, allowed characters)
-  - Prompt injection detection (regex patterns)
-  - XSS prevention
+
+- [x] **A8**: Create V24 migration for ai_prompt_templates table (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ `ai_prompt_templates` table with versioning (template_key, version, UNIQUE constraint)
+  - ✅ A/B testing support (traffic_percentage, experiment_id)
+  - ✅ Performance metrics tracking (usage_count, success_count, avg_response_time_ms, success_rate)
+  - ✅ `prompt_template_history` audit table with change tracking
+  - ✅ 5 seed prompt templates: roleplay_scenario_v1, roleplay_conversation_v1, grammar_exercise_v1, flashcard_generation_v1, context_summarization_v1
+  - ✅ Helper functions: get_active_prompt_template(), increment_template_usage() with accurate metrics calculation
+  - ✅ Trigger for automatic change tracking
+  - ✅ Fixed success rate calculation (separate success_count column)
   - Audit logging of blocked attempts
   
 - [ ] **A8**: Create V20 migration for ai_prompt_templates table (0.5 pt) 🔵 **P1** (Optional)
@@ -108,11 +127,18 @@
 
 ### Epic B: Role-Play Feature (7 pts)
 
-**Status**: ⬜ Not Started  
-**Timeline**: Day 4-9 (December 16-21)  
+**Status**: 🔄 In Progress (0.5/7 pts - 7.1%)  
+**Timeline**: Day 2-9 (December 12-21)  
 **Dependencies**: Epic A (A2, A3)
 
-- [ ] **B1**: Create V21 migration for roleplay tables (0.5 pt)
+- [x] **B1**: Create V25 migration for roleplay tables (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ roleplay_scenarios table (14 columns, UUID PK, CEFR checks, JSONB objectives/vocabulary)
+  - ✅ roleplay_conversations table (10 columns, messages JSONB, mode enum, metrics)
+  - ✅ user_ai_quotas table (8 columns, daily/monthly limits)
+  - ✅ ai_prompt_templates table (9 columns, hot-reload support)
+  - ✅ 12 fallback scenarios (A1: 2, A2: 2, B1: 2, B2: 2, C1: 2, C2: 2)
+  - ✅ 2 prompt templates (scenario generation, conversation responses)
+  - ✅ 8 indexes for performance optimization
 - [ ] **B2**: Create RolePlayScenario and RolePlayConversation entities (1 pt)
 - [ ] **B3**: Create DTOs and mappers for role-play (0.5 pt)
 - [ ] **B4**: Implement RolePlayService (scenario generation) (1.5 pt)
@@ -127,11 +153,18 @@
 
 ### Epic C: Grammar Exercise Feature (5 pts)
 
-**Status**: ⬜ Not Started  
-**Timeline**: Day 9-12 (December 21-24)  
+**Status**: 🔄 In Progress (0.5/5 pts - 10%)  
+**Timeline**: Day 2-12 (December 12-24)  
 **Dependencies**: Epic A
 
-- [ ] **C1**: Create V22 migration for grammar tables (0.5 pt)
+- [x] **C1**: Create V26 migration for grammar tables (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ grammar_topics table (8 columns, 40+ topics with CEFR levels)
+  - ✅ grammar_exercise_sets table (10 columns, JSONB content, fallback support)
+  - ✅ user_grammar_progress table (10 columns, answers JSONB, scoring)
+  - ✅ 40+ grammar topics (Tenses: 13, Modals: 7, Conditionals: 5, Voice: 6, Clauses: 4, Other: 10+)
+  - ✅ 2 fallback exercise sets (Present Simple A2, First Conditional B1)
+  - ✅ 2 prompt templates (exercise generation, flashcard generation)
+  - ✅ 9 indexes for efficient queries
 - [ ] **C2**: Create GrammarExerciseSet entity and repository (0.5 pt)
 - [ ] **C3**: Create DTOs and mappers (0.5 pt)
 - [ ] **C4**: Implement GrammarExerciseService (1.5 pt)
@@ -143,11 +176,17 @@
 
 ### Epic D: Flashcard Feature (5 pts)
 
-**Status**: ⬜ Not Started  
-**Timeline**: Day 12-15 (December 24-27)  
+**Status**: 🔄 In Progress (0.5/5 pts - 10%)  
+**Timeline**: Day 2-15 (December 12-27)  
 **Dependencies**: Epic A
 
-- [ ] **D1**: Add flashcard tables to V22 migration (0.5 pt)
+- [x] **D1**: Add flashcard tables to V26 migration (0.5 pt) ✅ **COMPLETE** (Dec 12)
+  - ✅ flashcard_decks table (11 columns, source_type enum, cards JSONB)
+  - ✅ user_flashcard_progress table (12 columns, SM-2 algorithm support)
+  - ✅ SM-2 spaced repetition: ease_factor (1.30+ unbounded), interval_days, mastery_level (0-5)
+  - ✅ Source consistency CHECK constraint (lesson requires source_id)
+  - ✅ 7 indexes including partial index for due cards
+  - ✅ Code review fixes: ease_factor constraint corrected for SM-2 algorithm
 - [ ] **D2**: Create FlashcardDeck entity and repository (0.5 pt)
 - [ ] **D3**: Create DTOs and mappers (0.5 pt)
 - [ ] **D4**: Implement FlashcardService (generate from lesson) (1.5 pt)

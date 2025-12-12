@@ -1,0 +1,497 @@
+package com.lexia.backend.service.ai;
+
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentConfig;
+import com.lexia.backend.config.GeminiConfig;
+import com.lexia.backend.dto.ai.GeminiResponseDTO;
+import com.lexia.backend.dto.ai.TokenUsageDTO;
+import com.lexia.backend.exception.ai.AiConfigurationException;
+import com.lexia.backend.exception.ai.AiServiceException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * Unit tests for GeminiClientServiceImpl.
+ * Tests resilience patterns, error handling, and response processing.
+ * 
+ * Note: Due to the complexity of mocking the Gemini SDK, these tests focus on:
+ * - Configuration validation
+ * - Token estimation
+ * - Health checking
+ * - Exception handling
+ * - Input validation
+ * 
+ * Integration tests with a real/mock API should be done separately.
+ */
+@ExtendWith(MockitoExtension.class)
+@DisplayName("GeminiClientService Tests")
+class GeminiClientServiceTest {
+
+    @Mock(lenient = true)
+    private Client geminiClient;
+
+    @Mock(lenient = true)
+    private GeminiConfig geminiConfig;
+
+    @Mock(lenient = true)
+    private GenerateContentConfig defaultContentConfig;
+
+    @Mock(lenient = true)
+    private GenerateContentConfig structuredContentConfig;
+
+    @Mock(lenient = true)
+    private GenerateContentConfig creativeContentConfig;
+
+    @Mock(lenient = true)
+    private CircuitBreakerRegistry circuitBreakerRegistry;
+
+    @Mock(lenient = true)
+    private CircuitBreaker circuitBreaker;
+
+    private GeminiClientServiceImpl service;
+
+    @BeforeEach
+    void setUp() {
+        // Set up common mocks
+        when(geminiConfig.getDefaultModel()).thenReturn("gemini-2.0-flash-exp");
+        when(geminiConfig.getPremiumModel()).thenReturn("gemini-1.5-pro");
+        when(geminiConfig.getTemperature()).thenReturn(0.7f);
+        when(geminiConfig.getMaxOutputTokens()).thenReturn(2000);
+        when(geminiConfig.isConfigured()).thenReturn(true);
+        
+        when(circuitBreakerRegistry.circuitBreaker(anyString())).thenReturn(circuitBreaker);
+        when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.CLOSED);
+
+        service = new GeminiClientServiceImpl(
+                geminiClient,
+                geminiConfig,
+                defaultContentConfig,
+                structuredContentConfig,
+                creativeContentConfig,
+                circuitBreakerRegistry
+        );
+    }
+
+    @Nested
+    @DisplayName("Configuration Tests")
+    class ConfigurationTests {
+
+        @Test
+        @DisplayName("Should return true when properly configured")
+        void shouldReturnTrueWhenConfigured() {
+            assertThat(service.isConfigured()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should return false when API key not configured")
+        void shouldReturnFalseWhenNotConfigured() {
+            when(geminiConfig.isConfigured()).thenReturn(false);
+            
+            GeminiClientServiceImpl unconfiguredService = new GeminiClientServiceImpl(
+                    geminiClient,
+                    geminiConfig,
+                    defaultContentConfig,
+                    structuredContentConfig,
+                    creativeContentConfig,
+                    circuitBreakerRegistry
+            );
+
+            assertThat(unconfiguredService.isConfigured()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should return false when client is null")
+        void shouldReturnFalseWhenClientNull() {
+            GeminiClientServiceImpl nullClientService = new GeminiClientServiceImpl(
+                    null,
+                    geminiConfig,
+                    defaultContentConfig,
+                    structuredContentConfig,
+                    creativeContentConfig,
+                    circuitBreakerRegistry
+            );
+
+            assertThat(nullClientService.isConfigured()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Health Check Tests")
+    class HealthCheckTests {
+
+        @Test
+        @DisplayName("Should be healthy when circuit breaker is closed")
+        void shouldBeHealthyWhenCircuitBreakerClosed() {
+            when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.CLOSED);
+            
+            assertThat(service.isHealthy()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should be unhealthy when circuit breaker is open")
+        void shouldBeUnhealthyWhenCircuitBreakerOpen() {
+            when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.OPEN);
+            
+            assertThat(service.isHealthy()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should be healthy when circuit breaker is half-open")
+        void shouldBeHealthyWhenCircuitBreakerHalfOpen() {
+            when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.HALF_OPEN);
+            
+            assertThat(service.isHealthy()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should return circuit breaker state")
+        void shouldReturnCircuitBreakerState() {
+            when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.OPEN);
+            
+            assertThat(service.getCircuitBreakerState()).isEqualTo("OPEN");
+        }
+
+        @Test
+        @DisplayName("Should return CLOSED state for healthy service")
+        void shouldReturnClosedState() {
+            when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.CLOSED);
+            
+            assertThat(service.getCircuitBreakerState()).isEqualTo("CLOSED");
+        }
+
+        @Test
+        @DisplayName("Should return HALF_OPEN state during recovery")
+        void shouldReturnHalfOpenState() {
+            when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.HALF_OPEN);
+            
+            assertThat(service.getCircuitBreakerState()).isEqualTo("HALF_OPEN");
+        }
+
+        @Test
+        @DisplayName("Should be unhealthy when not configured")
+        void shouldBeUnhealthyWhenNotConfigured() {
+            when(geminiConfig.isConfigured()).thenReturn(false);
+            
+            GeminiClientServiceImpl unconfiguredService = new GeminiClientServiceImpl(
+                    null,
+                    geminiConfig,
+                    defaultContentConfig,
+                    structuredContentConfig,
+                    creativeContentConfig,
+                    circuitBreakerRegistry
+            );
+
+            assertThat(unconfiguredService.isHealthy()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Token Estimation Tests")
+    class TokenEstimationTests {
+
+        @Test
+        @DisplayName("Should estimate tokens correctly for English text")
+        void shouldEstimateTokensCorrectly() {
+            // ~4 characters per token
+            String text = "This is a test message with exactly forty characters.";
+            
+            int estimated = service.estimateTokens(text);
+            
+            // 53 chars / 4 = ~13 tokens (ceiling)
+            assertThat(estimated).isBetween(10, 20);
+        }
+
+        @Test
+        @DisplayName("Should return 0 for null input")
+        void shouldReturnZeroForNull() {
+            assertThat(service.estimateTokens(null)).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("Should return 0 for empty string")
+        void shouldReturnZeroForEmpty() {
+            assertThat(service.estimateTokens("")).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("Should handle long text")
+        void shouldHandleLongText() {
+            StringBuilder longText = new StringBuilder();
+            for (int i = 0; i < 1000; i++) {
+                longText.append("test ");
+            }
+            
+            int estimated = service.estimateTokens(longText.toString());
+            
+            // 5000 chars / 4 = ~1250 tokens
+            assertThat(estimated).isBetween(1000, 1500);
+        }
+
+        @Test
+        @DisplayName("Should handle short text")
+        void shouldHandleShortText() {
+            int estimated = service.estimateTokens("Hi");
+            
+            // 2 chars / 4 = 0.5, ceiling = 1
+            assertThat(estimated).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Should handle text with special characters")
+        void shouldHandleSpecialCharacters() {
+            String text = "Hello! How are you? 😀 #test @user";
+            
+            int estimated = service.estimateTokens(text);
+            
+            assertThat(estimated).isGreaterThan(0);
+        }
+
+        @Test
+        @DisplayName("Should handle whitespace-only text")
+        void shouldHandleWhitespaceOnlyText() {
+            int estimated = service.estimateTokens("     ");
+            
+            // 5 chars / 4 = 1.25, ceiling = 2
+            assertThat(estimated).isEqualTo(2);
+        }
+    }
+
+    @Nested
+    @DisplayName("Input Validation Tests")
+    class InputValidationTests {
+
+        @Test
+        @DisplayName("Should throw exception when not configured")
+        void shouldThrowWhenNotConfigured() {
+            when(geminiConfig.isConfigured()).thenReturn(false);
+            
+            GeminiClientServiceImpl unconfiguredService = new GeminiClientServiceImpl(
+                    geminiClient,
+                    geminiConfig,
+                    defaultContentConfig,
+                    structuredContentConfig,
+                    creativeContentConfig,
+                    circuitBreakerRegistry
+            );
+
+            assertThatThrownBy(() -> unconfiguredService.generateContent("test"))
+                    .isInstanceOf(AiConfigurationException.class)
+                    .hasMessageContaining("not configured");
+        }
+
+        @Test
+        @DisplayName("Should throw exception for null prompt")
+        void shouldThrowForNullPrompt() {
+            assertThatThrownBy(() -> service.generateContent(null))
+                    .isInstanceOf(AiServiceException.class)
+                    .hasMessageContaining("cannot be null or empty");
+        }
+
+        @Test
+        @DisplayName("Should throw exception for blank prompt")
+        void shouldThrowForBlankPrompt() {
+            assertThatThrownBy(() -> service.generateContent("   "))
+                    .isInstanceOf(AiServiceException.class)
+                    .hasMessageContaining("cannot be null or empty");
+        }
+
+        @Test
+        @DisplayName("Should throw exception for empty prompt")
+        void shouldThrowForEmptyPrompt() {
+            assertThatThrownBy(() -> service.generateContent(""))
+                    .isInstanceOf(AiServiceException.class)
+                    .hasMessageContaining("cannot be null or empty");
+        }
+
+        @Test
+        @DisplayName("Should throw when client is null")
+        void shouldThrowWhenClientIsNull() {
+            GeminiClientServiceImpl nullClientService = new GeminiClientServiceImpl(
+                    null,
+                    geminiConfig,
+                    defaultContentConfig,
+                    structuredContentConfig,
+                    creativeContentConfig,
+                    circuitBreakerRegistry
+            );
+
+            assertThatThrownBy(() -> nullClientService.generateContent("test"))
+                    .isInstanceOf(AiConfigurationException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Async Content Generation Tests")
+    class AsyncGenerateContentTests {
+
+        @Test
+        @DisplayName("Should return CompletableFuture")
+        void shouldReturnCompletableFuture() {
+            CompletableFuture<GeminiResponseDTO> future = service.generateContentAsync("Test");
+
+            assertThat(future).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should propagate exceptions in async call")
+        void shouldPropagateExceptionsAsync() {
+            when(geminiConfig.isConfigured()).thenReturn(false);
+            
+            GeminiClientServiceImpl unconfiguredService = new GeminiClientServiceImpl(
+                    geminiClient,
+                    geminiConfig,
+                    defaultContentConfig,
+                    structuredContentConfig,
+                    creativeContentConfig,
+                    circuitBreakerRegistry
+            );
+
+            CompletableFuture<GeminiResponseDTO> future = unconfiguredService.generateContentAsync("Test");
+
+            assertThatThrownBy(() -> future.get(5, TimeUnit.SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(AiConfigurationException.class);
+        }
+
+        @Test
+        @DisplayName("Should propagate validation errors in async call")
+        void shouldPropagateValidationErrorsAsync() {
+            CompletableFuture<GeminiResponseDTO> future = service.generateContentAsync(null);
+
+            assertThatThrownBy(() -> future.get(5, TimeUnit.SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(AiServiceException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("SSE Streaming Tests")
+    class SseStreamingTests {
+
+        @Test
+        @DisplayName("Should return SseEmitter")
+        void shouldReturnSseEmitter() {
+            SseEmitter emitter = service.streamContent("Test prompt");
+
+            assertThat(emitter).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should throw for null prompt in streaming")
+        void shouldThrowForNullPromptInStreaming() {
+            assertThatThrownBy(() -> service.streamContent(null))
+                    .isInstanceOf(AiServiceException.class);
+        }
+
+        @Test
+        @DisplayName("Should throw for blank prompt in streaming")
+        void shouldThrowForBlankPromptInStreaming() {
+            assertThatThrownBy(() -> service.streamContent("   "))
+                    .isInstanceOf(AiServiceException.class);
+        }
+
+        @Test
+        @DisplayName("Should throw when not configured for streaming")
+        void shouldThrowWhenNotConfiguredForStreaming() {
+            when(geminiConfig.isConfigured()).thenReturn(false);
+            
+            GeminiClientServiceImpl unconfiguredService = new GeminiClientServiceImpl(
+                    geminiClient,
+                    geminiConfig,
+                    defaultContentConfig,
+                    structuredContentConfig,
+                    creativeContentConfig,
+                    circuitBreakerRegistry
+            );
+
+            assertThatThrownBy(() -> unconfiguredService.streamContent("Test"))
+                    .isInstanceOf(AiConfigurationException.class);
+        }
+
+        @Test
+        @DisplayName("Should accept model parameter for streaming")
+        void shouldAcceptModelForStreaming() {
+            SseEmitter emitter = service.streamContent("Test prompt", "gemini-1.5-pro");
+
+            assertThat(emitter).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("DTO Factory Method Tests")
+    class DtoFactoryTests {
+
+        @Test
+        @DisplayName("TokenUsageDTO.of should calculate total")
+        void tokenUsageOfShouldCalculateTotal() {
+            TokenUsageDTO dto = TokenUsageDTO.of(100, 50, 0.001);
+
+            assertThat(dto.inputTokens()).isEqualTo(100);
+            assertThat(dto.outputTokens()).isEqualTo(50);
+            assertThat(dto.totalTokens()).isEqualTo(150);
+            assertThat(dto.estimatedCostUsd()).isEqualTo(0.001);
+        }
+
+        @Test
+        @DisplayName("TokenUsageDTO.empty should return zeros")
+        void tokenUsageEmptyShouldReturnZeros() {
+            TokenUsageDTO dto = TokenUsageDTO.empty();
+
+            assertThat(dto.inputTokens()).isEqualTo(0);
+            assertThat(dto.outputTokens()).isEqualTo(0);
+            assertThat(dto.totalTokens()).isEqualTo(0);
+            assertThat(dto.estimatedCostUsd()).isEqualTo(0.0);
+        }
+
+        @Test
+        @DisplayName("GeminiResponseDTO.fallback should mark as fallback")
+        void geminiResponseFallbackShouldMarkAsFallback() {
+            GeminiResponseDTO dto = GeminiResponseDTO.fallback("Content", "model");
+
+            assertThat(dto.isFallback()).isTrue();
+            assertThat(dto.finishReason()).isEqualTo("FALLBACK");
+            assertThat(dto.content()).isEqualTo("Content");
+        }
+
+        @Test
+        @DisplayName("GeminiResponseDTO.empty should have error finish reason")
+        void geminiResponseEmptyShouldHaveErrorReason() {
+            GeminiResponseDTO dto = GeminiResponseDTO.empty("model");
+
+            assertThat(dto.content()).isEmpty();
+            assertThat(dto.finishReason()).isEqualTo("ERROR");
+            assertThat(dto.isFallback()).isFalse();
+        }
+
+        @Test
+        @DisplayName("GeminiResponseDTO.success should populate all fields")
+        void geminiResponseSuccessShouldPopulateFields() {
+            TokenUsageDTO usage = TokenUsageDTO.of(50, 100, 0.002);
+            GeminiResponseDTO dto = GeminiResponseDTO.success("Text", "model", usage, 150L, "STOP");
+
+            assertThat(dto.content()).isEqualTo("Text");
+            assertThat(dto.model()).isEqualTo("model");
+            assertThat(dto.tokenUsage()).isEqualTo(usage);
+            assertThat(dto.responseTimeMs()).isEqualTo(150L);
+            assertThat(dto.finishReason()).isEqualTo("STOP");
+            assertThat(dto.isFallback()).isFalse();
+            assertThat(dto.timestamp()).isNotNull();
+        }
+    }
+}

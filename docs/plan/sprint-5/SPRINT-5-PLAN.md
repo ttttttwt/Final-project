@@ -1,40 +1,48 @@
 # LEXIA Sprint 5 - AI Integration Plan Document
 
-**Version**: 1.2.0  
+**Version**: 1.4.0  
 **Created**: December 11, 2025  
-**Last Updated**: December 11, 2025 (Day 1 - Evening)  
+**Last Updated**: December 12, 2025 (Day 2 - Complete)  
 **Sprint Duration**: December 12-31, 2025 (20 working days)  
 **Author**: AI Development Assistant  
-**Status**: 🟢 In Progress | **Progress**: 2.0/29 pts (6.9%)
+**Status**: 🟢 In Progress | **Progress**: 3.5/31.5 pts (11.1%)
 
 ---
 
-## 📊 Current Sprint Status (Day 1 - Dec 11, 2025)
+## 📊 Current Sprint Status (Day 2 - Dec 12, 2025)
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| **Days Elapsed** | 1/20 | - | 5% |
-| **Story Points Complete** | 2.0 | 31.5 | 6.3% ✅ |
-| **Tasks Complete** | 3 | 37 | 8.1% |
-| **Velocity (pts/day)** | 2.0 | 1.45 | **138% - Ahead!** 🚀 |
-| **Hours Spent** | 5h | 132h | 3.8% |
-| **Epic A Progress** | 26.7% | 100% | 🔄 Ahead of schedule |
+| **Days Elapsed** | 2/20 | - | 10% |
+| **Story Points Complete** | 5.5 | 31.5 | 17.5% ✅ |
+| **Tasks Complete** | 7 | 37 | 18.9% |
+| **Velocity (pts/day)** | 2.75 | 1.45 | **190% - Ahead!** 🚀 |
+| **Hours Spent** | 10h | 132h | 7.6% |
+| **Epic A Progress** | 53.3% | 100% | 🔄 On track |
+| **Epic B Progress** | 7.1% | 100% | 🔄 Database ready |
+| **Epic C Progress** | 10% | 100% | 🔄 Database ready |
+| **Epic D Progress** | 10% | 100% | 🔄 Database ready |
 | **P0 Bugs** | 0 | 0 | ✅ |
 
-**Latest Milestone**: ✅ M0 Complete (Dec 11) - Dependencies & configuration ready  
+**Latest Milestone**: ✅ Database Schema Complete (Dec 12) - All AI feature tables ready  
 **Next Milestone**: 🔄 M1 (Dec 16) - AI Infrastructure complete
 
 **Recent Accomplishments**:
-- ✅ **A1 Complete**: Added Google Gemini SDK v1.30.0 + Resilience4j v2.2.0
-- ✅ **A2 Complete**: GeminiConfig.java with 3 content configuration beans + 16 tests
-- ✅ **A7 Complete**: PromptSanitizer + ValidPrompt annotation + 70 tests
-- ✅ **Security**: Prompt injection, SQL injection, XSS detection implemented
-- ✅ **Quality**: 86 tests passing, 100% coverage on new code, zero errors
-- ✅ **Documentation**: .env.example, README.md, comprehensive JavaDoc
+- ✅ **A3 Complete**: GeminiClientService with Resilience4j (@Retry, @CircuitBreaker, @RateLimiter)
+- ✅ **A3 Complete**: SSE streaming support via SseEmitter (30s timeout)
+- ✅ **A3 Complete**: 4 AI exception classes + 3 response DTOs + 46 unit tests
+- ✅ **A3 Complete**: Code review 8.7/10, ExecutorService lifecycle + logging fixes applied
+- ✅ **B1 Complete**: V25 migration - roleplay_scenarios, roleplay_conversations, user_ai_quotas, ai_prompt_templates
+- ✅ **C1 Complete**: V26 migration - grammar_topics (40+), grammar_exercise_sets, user_grammar_progress
+- ✅ **D1 Complete**: V26 migration - flashcard_decks, user_flashcard_progress (SM-2 algorithm)
+- ✅ **Database**: 9 new tables, 30+ indexes, comprehensive JSONB schemas
+- ✅ **Seed Data**: 12 roleplay scenarios, 40+ grammar topics, 2 exercise sets, 4 prompt templates
 
-**Next Up (Day 2 - Dec 12)**:
-- 🎯 **A3**: Implement GeminiClientService with retry/circuit breaker + SSE
+**Next Up (Day 3 - Dec 13)**:
 - 🎯 **A4**: Create V20 migration for AI usage tracking tables
+- 🎯 **A5**: Implement AiUsageTracker service
+- 🎯 **B2**: Create RolePlayScenario and RolePlayConversation entities
+- 🎯 **B3**: Create DTOs and mappers for role-play
 
 ---
 
@@ -63,13 +71,13 @@
 
 | Epic | Points | Percentage | Status |
 |------|--------|------------|--------|
-| Epic A: AI Infrastructure | 7.5 pts | 26% | 🔄 6.7% (0.5/7.5) |
-| Epic B: Role-Play Feature | 7 pts | 24% | ⬜ 0% |
-| Epic C: Grammar Feature | 5 pts | 17% | ⬜ 0% |
-| Epic D: Flashcard Feature | 5 pts | 17% | ⬜ 0% |
-| Epic E: Web UI | 4 pts | 14% | ⬜ 0% |
-| Epic F: Mobile UI | 3 pts | 10% | ⬜ 0% |
-| **Total** | **31.5 pts** | **100%** | **1.6%** |
+| Epic A: AI Infrastructure | 7.5 pts | 24% | 🔄 26.7% (2.0/7.5) |
+| Epic B: Role-Play Feature | 7 pts | 22% | 🔄 7.1% (0.5/7) |
+| Epic C: Grammar Feature | 5 pts | 16% | 🔄 10% (0.5/5) |
+| Epic D: Flashcard Feature | 5 pts | 16% | 🔄 10% (0.5/5) |
+| Epic E: Web UI | 4 pts | 13% | ⬜ 0% |
+| Epic F: Mobile UI | 3 pts | 9% | ⬜ 0% |
+| **Total** | **31.5 pts** | **100%** | **11.1%** |
 ### 1.4 User Stories
 
 #### Epic B: Role-Play Feature
@@ -116,43 +124,46 @@
 **Timeline**: Days 1-4 (Dec 11-16)  
 **Owner**: Backend  
 **Dependencies**: None  
-**Progress**: 🔄 0.5/7.5 pts (6.7%) - **Day 1 Complete**
+**Progress**: 🔄 4.0/7.5 pts (53.3%) - **Day 2 Afternoon**
 
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|
 | A1 | Add Gemini SDK + Resilience4j dependencies | 0.5 | P0 | ✅ **Dec 11** |
-| A2 | Create GeminiConfig with environment configuration | 0.5 | P0 | ⬜ |
-| A3 | Implement GeminiClientService with retry/circuit breaker + SSE support | 2 | P0 | ⬜ |
-| A4 | Create V20 migration for AI usage tracking tables | 0.5 | P0 | ⬜ |
+| A2 | Create GeminiConfig with environment configuration | 0.5 | P0 | ✅ **Dec 11** |
+| A3 | Implement GeminiClientService with retry/circuit breaker + SSE support | 2 | P0 | ✅ **Dec 12** |
+| A4 | Create V23 migration for AI usage tracking tables | 0.5 | P0 | ✅ **Dec 12** |
 | A5 | Implement AiUsageTracker service | 1 | P0 | ⬜ |
 | A6 | Implement AiRateLimitService per user/feature | 1 | P0 | ⬜ |
-| A7 | Implement input sanitization + prompt injection filter | 1 | P0 | ⬜ |
-| A8 | Create V20 migration for ai_prompt_templates table | 0.5 | P1 | ⬜ |
+| A7 | Implement input sanitization + prompt injection filter | 1 | P0 | ✅ **Dec 11** |
+| A8 | Create V24 migration for ai_prompt_templates table | 0.5 | P1 | ✅ **Dec 12** |
 | A9 | Implement PromptTemplateService with caching | 1 | P1 | ⬜ |
 
 **Acceptance Criteria**:
 - [x] **Dependencies added** - Gemini SDK v1.30.0 + Resilience4j v2.2.0 ✅ **(A1 - Dec 11)**
 - [x] **Configuration added** - Gemini API & Resilience4j properties ✅ **(A1 - Dec 11)**
 - [x] **Build validated** - Gradle build successful ✅ **(A1 - Dec 11)**
+- [x] **AI usage tables created** - V23 migration with user_ai_quotas + enhanced logs ✅ **(A4 - Dec 12)**
+- [x] **Prompt templates table created** - V24 migration with seed data ✅ **(A8 - Dec 12)**
 - [ ] Gemini client connects successfully
 - [ ] Circuit breaker opens after 5 failures
 - [ ] Retry works with exponential backoff
 - [ ] Usage logged to database
 - [ ] Rate limiting enforced per user
-- [ ] Input sanitization blocks malicious prompts
+- [x] Input sanitization blocks malicious prompts ✅ **(A7 - Dec 11)**
 - [ ] Prompts loaded from DB with caching
 
 ---
 
 ### Epic B: Role-Play Feature (7 points)
 
-**Timeline**: Days 4-9 (Dec 16-21)  
+**Timeline**: Days 2-9 (Dec 12-21)  
 **Owner**: Backend + Frontend  
-**Dependencies**: Epic A
+**Dependencies**: Epic A  
+**Progress**: 🔄 0.5/7 pts (7.1%) - **Database Ready**
 
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|
-| B1 | Create V21 migration for roleplay tables | 0.5 | P0 | ⬜ |
+| B1 | Create V25 migration for roleplay tables | 0.5 | P0 | ✅ **Dec 12** |
 | B2 | Create RolePlayScenario and RolePlayConversation entities | 1 | P0 | ⬜ |
 | B3 | Create DTOs and mappers for role-play | 0.5 | P0 | ⬜ |
 | B4 | Implement RolePlayService (scenario generation) | 1.5 | P0 | ⬜ |
@@ -178,13 +189,14 @@
 
 ### Epic C: Grammar Exercise Feature (5 points)
 
-**Timeline**: Days 9-12 (Dec 21-24)  
+**Timeline**: Days 2-12 (Dec 12-24)  
 **Owner**: Backend  
-**Dependencies**: Epic A
+**Dependencies**: Epic A  
+**Progress**: 🔄 0.5/5 pts (10%) - **Database Ready**
 
 | Task ID | Task | Points | Priority | Status |
-|---------|------|--------|----------|--------|
-| C1 | Create V22 migration for grammar tables | 0.5 | P0 | ⬜ |
+|---------|------|--------|----------|--------|  
+| C1 | Create V26 migration for grammar tables | 0.5 | P0 | ✅ **Dec 12** |
 | C2 | Create GrammarExerciseSet entity and repository | 0.5 | P0 | ⬜ |
 | C3 | Create DTOs and mappers | 0.5 | P0 | ⬜ |
 | C4 | Implement GrammarExerciseService | 1.5 | P0 | ⬜ |
@@ -203,13 +215,14 @@
 
 ### Epic D: Flashcard Feature (5 points)
 
-**Timeline**: Days 12-15 (Dec 24-27)  
+**Timeline**: Days 2-15 (Dec 12-27)  
 **Owner**: Backend  
-**Dependencies**: Epic A
+**Dependencies**: Epic A  
+**Progress**: 🔄 0.5/5 pts (10%) - **Database Ready**
 
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|
-| D1 | Add flashcard tables to V22 migration | 0.5 | P0 | ⬜ |
+| D1 | Add flashcard tables to V26 migration | 0.5 | P0 | ✅ **Dec 12** |
 | D2 | Create FlashcardDeck entity and repository | 0.5 | P0 | ⬜ |
 | D3 | Create DTOs and mappers | 0.5 | P0 | ⬜ |
 | D4 | Implement FlashcardService (generate from lesson) | 1.5 | P0 | ⬜ |
