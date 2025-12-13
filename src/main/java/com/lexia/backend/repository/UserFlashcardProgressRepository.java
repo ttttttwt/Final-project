@@ -283,6 +283,31 @@ public interface UserFlashcardProgressRepository extends JpaRepository<UserFlash
     @Query("DELETE FROM UserFlashcardProgress p WHERE p.userId = :userId")
     int deleteAllByUserId(@Param("userId") UUID userId);
 
+    /**
+     * Deletes progress records for a user and deck.
+     * @param userId the user ID
+     * @param deckId the deck ID
+     * @return number of records deleted
+     */
+    @Modifying
+    @Query("DELETE FROM UserFlashcardProgress p WHERE p.userId = :userId AND p.deckId = :deckId")
+    int deleteByUserIdAndDeckId(@Param("userId") UUID userId, @Param("deckId") UUID deckId);
+
+    /**
+     * Deletes a specific progress record.
+     * @param userId the user ID
+     * @param deckId the deck ID
+     * @param cardIndex the card index
+     * @return number of records deleted
+     */
+    @Modifying
+    @Query("DELETE FROM UserFlashcardProgress p WHERE p.userId = :userId AND p.deckId = :deckId AND p.cardIndex = :cardIndex")
+    int deleteByUserIdAndDeckIdAndCardIndex(
+            @Param("userId") UUID userId, 
+            @Param("deckId") UUID deckId, 
+            @Param("cardIndex") Integer cardIndex);
+
+
     // ========== Recent Activity Queries ==========
 
     /**

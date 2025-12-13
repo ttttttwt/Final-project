@@ -194,6 +194,17 @@ public interface GrammarExerciseSetRepository extends JpaRepository<GrammarExerc
     Optional<GrammarExerciseSet> findRandomFallbackByCefrLevelAndGrammarPoint(
             @Param("level") String cefrLevel, @Param("point") String grammarPoint);
 
+    /**
+     * Find all fallback exercise sets for a CEFR level and grammar point.
+     * 
+     * @param cefrLevel CEFR level
+     * @param grammarPoint grammar topic name
+     * @return list of fallback exercise sets
+     */
+    @Query("SELECT e FROM GrammarExerciseSet e WHERE e.isFallback = true AND e.cefrLevel = :level AND LOWER(e.grammarPoint) = LOWER(:point)")
+    List<GrammarExerciseSet> findFallbackByCefrLevelAndGrammarPoint(
+            @Param("level") String cefrLevel, @Param("point") String grammarPoint);
+
     // ========== Find by User ==========
 
     /**

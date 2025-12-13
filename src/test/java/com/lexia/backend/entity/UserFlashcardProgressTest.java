@@ -28,6 +28,7 @@ class UserFlashcardProgressTest {
                 .masteryLevel(UserFlashcardProgress.MASTERY_NEW)
                 .reviewCount(0)
                 .correctCount(0)
+                .consecutiveCorrect(0)
                 .easeFactor(UserFlashcardProgress.DEFAULT_EASE_FACTOR)
                 .intervalDays(1)
                 .build();
@@ -52,44 +53,78 @@ class UserFlashcardProgressTest {
         }
 
         @Test
-        @DisplayName("recordReview increases interval on second review")
+        @DisplayName("recordReview increases interval on second consecutive correct")
         void recordReview_secondReview_increasesInterval() {
             UserFlashcardProgress progress = createNewProgress();
-            progress.setReviewCount(1); // Simulate first review done
+            progress.recordReview(4); // First correct - consecutiveCorrect = 1, interval = 1
 
-            progress.recordReview(4);
+            progress.recordReview(4); // Second correct - consecutiveCorrect = 2, interval = 6
 
             assertThat(progress.getReviewCount()).isEqualTo(2);
-            assertThat(progress.getIntervalDays()).isEqualTo(6); // SM-2: second review = 6 days
+            assertThat(progress.getConsecutiveCorrect()).isEqualTo(2);
+            assertThat(progress.getIntervalDays()).isEqualTo(6); // SM-2: second consecutive correct = 6 days
         }
 
         @Test
-        @DisplayName("recordReview applies ease factor on third+ review")
+        @DisplayName("recordReview applies ease factor on third+ consecutive correct")
         void recordReview_thirdReview_appliesEaseFactor() {
             UserFlashcardProgress progress = createNewProgress();
-            progress.setReviewCount(2);
-            progress.setIntervalDays(6);
-            progress.setEaseFactor(new BigDecimal("2.50"));
+            progress.recordReview(4); // 1st correct
+            progress.recordReview(4); // 2nd correct - interval = 6
+            
+            // Before 3rd review, interval is 6 and EF has been updated twice
+            int intervalBefore = progress.getIntervalDays();
+            BigDecimal efBefore = progress.getEaseFactor();
 
-            progress.recordReview(4);
+            progress.recordReview(4); // 3rd correct
 
             assertThat(progress.getReviewCount()).isEqualTo(3);
-            // Interval = 6 * 2.50 = 15
-            assertThat(progress.getIntervalDays()).isEqualTo(15);
+            assertThat(progress.getConsecutiveCorrect()).isEqualTo(3);
+            // Interval = 6 * EF (EF is around 2.36 after two quality-4 reviews)
+            assertThat(progress.getIntervalDays()).isGreaterThan(intervalBefore);
         }
 
         @Test
-        @DisplayName("recordReview resets interval for quality < 3 (fail)")
+        @DisplayName("recordReview resets interval and consecutiveCorrect for quality < 3 (fail)")
         void recordReview_fail_resetsInterval() {
             UserFlashcardProgress progress = createNewProgress();
-            progress.setReviewCount(5);
-            progress.setIntervalDays(30);
+            progress.recordReview(5); // 1st correct
+            progress.recordReview(5); // 2nd correct - interval = 6
+            progress.recordReview(5); // 3rd correct - interval > 6
+
+            assertThat(progress.getConsecutiveCorrect()).isEqualTo(3);
+            assertThat(progress.getIntervalDays()).isGreaterThan(6);
 
             progress.recordReview(2); // Fail
 
-            assertThat(progress.getReviewCount()).isEqualTo(6);
-            assertThat(progress.getCorrectCount()).isEqualTo(0); // Not incremented
+            assertThat(progress.getReviewCount()).isEqualTo(4);
+            assertThat(progress.getCorrectCount()).isEqualTo(3); // Not incremented
+            assertThat(progress.getConsecutiveCorrect()).isEqualTo(0); // Reset!
             assertThat(progress.getIntervalDays()).isEqualTo(1); // Reset
+        }
+
+        @Test
+        @DisplayName("recovery after failure should restart interval progression from 1 day")
+        void recordReview_recoveryAfterFailure_restartsProgression() {
+            UserFlashcardProgress progress = createNewProgress();
+            // Build up progress
+            progress.recordReview(5); // 1st - interval 1
+            progress.recordReview(5); // 2nd - interval 6
+            
+            // Fail
+            progress.recordReview(2); // Fail - interval 1, consecutiveCorrect 0
+            
+            assertThat(progress.getConsecutiveCorrect()).isEqualTo(0);
+            assertThat(progress.getIntervalDays()).isEqualTo(1);
+            
+            // Recover
+            progress.recordReview(4); // 1st correct after fail
+            assertThat(progress.getConsecutiveCorrect()).isEqualTo(1);
+            assertThat(progress.getIntervalDays()).isEqualTo(1); // 1st correct = 1 day
+            
+            progress.recordReview(4); // 2nd correct after fail
+            assertThat(progress.getConsecutiveCorrect()).isEqualTo(2);
+            assertThat(progress.getIntervalDays()).isEqualTo(6); // 2nd correct = 6 days
         }
 
         @Test

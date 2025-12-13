@@ -137,6 +137,15 @@ public class UserFlashcardProgress {
     private Integer correctCount = 0;
 
     /**
+     * Number of consecutive correct responses.
+     * Used for SM-2 interval calculation.
+     * Resets to 0 on incorrect answer, increments on correct answer.
+     */
+    @Column(name = "consecutive_correct", nullable = false)
+    @Builder.Default
+    private Integer consecutiveCorrect = 0;
+
+    /**
      * SM-2 ease factor (EF).
      * Minimum 1.30, default 2.50.
      * Higher values mean the card is easier for the user.
@@ -193,6 +202,10 @@ public class UserFlashcardProgress {
         reviewCount++;
         if (quality >= 3) {
             correctCount++;
+            consecutiveCorrect++;
+        } else {
+            // Reset consecutive correct on failure
+            consecutiveCorrect = 0;
         }
 
         // Update ease factor: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
@@ -204,16 +217,18 @@ public class UserFlashcardProgress {
             easeFactor = MIN_EASE_FACTOR;
         }
 
-        // Calculate new interval
+        // Calculate new interval based on consecutive correct answers (SM-2 standard)
         if (quality < 3) {
             // Failed: reset to 1 day
             intervalDays = 1;
         } else {
-            if (reviewCount == 1) {
+            // Correct: use consecutiveCorrect for interval progression
+            if (consecutiveCorrect == 1) {
                 intervalDays = 1;
-            } else if (reviewCount == 2) {
+            } else if (consecutiveCorrect == 2) {
                 intervalDays = 6;
             } else {
+                // consecutiveCorrect >= 3: interval = previousInterval * EF
                 intervalDays = (int) Math.round(intervalDays * easeFactor.doubleValue());
             }
         }
@@ -301,6 +316,7 @@ public class UserFlashcardProgress {
                 .masteryLevel(MASTERY_NEW)
                 .reviewCount(0)
                 .correctCount(0)
+                .consecutiveCorrect(0)
                 .easeFactor(DEFAULT_EASE_FACTOR)
                 .intervalDays(1)
                 .build();
