@@ -1,11 +1,11 @@
 # LEXIA Sprint 5 - AI Integration Plan Document
 
-**Version**: 1.13.0  
+**Version**: 1.14.0  
 **Created**: December 11, 2025  
-**Last Updated**: December 13, 2025 (Day 5 - GrammarController Complete)  
+**Last Updated**: December 13, 2025 (Day 5 - Role-Play Feature Complete)  
 **Sprint Duration**: December 12-31, 2025 (20 working days)  
 **Author**: AI Development Assistant  
-**Status**: 🟢 In Progress | **Progress**: 20.0/31.5 pts (63.5%)
+**Status**: 🟢 In Progress | **Progress**: 22.5/31.5 pts (71.4%)
 
 ---
 
@@ -14,25 +14,26 @@
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
 | **Days Elapsed** | 5/20 | - | 25% |
-| **Story Points Complete** | 20.0 | 31.5 | 63.5% ✅ |
-| **Tasks Complete** | 21 | 37 | 56.8% |
-| **Velocity (pts/day)** | 4.00 | 1.45 | **276% - Well Ahead!** 🚀 |
-| **Hours Spent** | 24h | 132h | 18.2% |
+| **Story Points Complete** | 22.5 | 31.5 | 71.4% ✅ |
+| **Tasks Complete** | 23 | 37 | 62.2% |
+| **Velocity (pts/day)** | 4.50 | 1.45 | **310% - Well Ahead!** 🚀 |
+| **Hours Spent** | 30h | 132h | 22.7% |
 | **Epic A Progress** | 93.3% | 100% | 🔄 Nearly complete |
-| **Epic B Progress** | 50.0% | 100% | 🔄 Service layer done ✅ |
+| **Epic B Progress** | 85.7% | 100% | 🔄 Nearly complete ✅ |
 | **Epic C Progress** | 80% | 100% | 🔄 Controller complete ✅ |
 | **Epic D Progress** | 70% | 100% | 🔄 Controller + SM-2 complete ✅ |
 | **P0 Bugs** | 0 | 0 | ✅ |
 
-**Latest Milestone**: ✅ GrammarController Complete (Dec 13) - 13 REST endpoints + 41 unit tests  
+**Latest Milestone**: ✅ Role-Play Feature Complete (Dec 13) - All conversation modes + controller ✅  
 **Next Milestone**: 🔄 M1 (Dec 16) - AI Infrastructure complete
 
 **Recent Accomplishments**:
+- ✅ **B5 Complete**: Implement conversation modes (immersive, learning, SSE, fallback) (2.5 pt)
+- ✅ **B6 Complete**: RolePlayController with 10 REST endpoints (1 pt)
+- ✅ **Bug Fixes**: Fixed critical sanitizeContent, streamMessage, status filter issues
+- ✅ **Epic B**: 85.7% complete - Role-play feature nearly complete ✅
 - ✅ **C5 Complete**: GrammarController with 13 REST endpoints (0.5 pt)
 - ✅ **C6 Complete**: Answer validation & scoring - already in service layer (0.5 pt)
-- ✅ **D5 Complete**: FlashcardController with 8 REST endpoints (0.5 pt)
-- ✅ **D6 Complete**: SM-2 spaced repetition algorithm (0.5 pt)
-- ✅ **C4 Complete**: GrammarExerciseService with AI generation + fallback (1.5 pt)
 - ✅ **Epic C**: 60% complete (4/7 tasks) - Service layer done, controller next
 - ✅ **Epic D**: 70% complete (6/7 tasks) - Controller done, tests remaining
 - ✅ **Grammar Feature**: Interface (14 methods), Impl (600 lines), 28 tests, Stats DTO
@@ -46,9 +47,10 @@
 - ✅ **Tests**: 271+ unit tests passing with comprehensive coverage
 
 **Next Up (Day 6 - Dec 14)**:
-- 🎯 **C7**: Write unit + integration tests (≥70%) (1 pt)
 - 🎯 **A6**: Implement AiRateLimitService per user/feature (1 pt)
-- 🎯 **B5**: Implement RolePlayController REST endpoints (1 pt)
+- 🎯 **B7**: Implement FallbackContentService for scenarios (0.5 pt)
+- 🎯 **C7**: Write grammar unit + integration tests (≥70%) (1 pt)
+- 🎯 **D7**: Write flashcard unit + integration tests (≥70%) (1 pt)
 
 ---
 
@@ -78,12 +80,12 @@
 | Epic | Points | Percentage | Status |
 |------|--------|------------|--------|
 | Epic A: AI Infrastructure | 7.5 pts | 24% | 🔄 93.3% (7.0/7.5) |
-| Epic B: Role-Play Feature | 7 pts | 22% | 🔄 50.0% (3.5/7) |
-| Epic C: Grammar Feature | 5 pts | 16% | 🔄 30% (1.5/5) |
-| Epic D: Flashcard Feature | 5 pts | 16% | 🔄 30% (1.5/5) |
+| Epic B: Role-Play Feature | 7 pts | 22% | 🔄 85.7% (6.0/7) |
+| Epic C: Grammar Feature | 5 pts | 16% | 🔄 80% (4.0/5) |
+| Epic D: Flashcard Feature | 5 pts | 16% | 🔄 70% (3.5/5) |
 | Epic E: Web UI | 4 pts | 13% | ⬜ 0% |
 | Epic F: Mobile UI | 3 pts | 9% | ⬜ 0% |
-| **Total** | **31.5 pts** | **100%** | **47.6%** |
+| **Total** | **31.5 pts** | **100%** | **71.4%** |
 ### 1.4 User Stories
 
 #### Epic B: Role-Play Feature

@@ -20,5 +20,7 @@ public interface RolePlayConversationRepository extends JpaRepository<RolePlayCo
     
     Page<RolePlayConversation> findByUserId(UUID userId, Pageable pageable);
     
+    Page<RolePlayConversation> findByUserIdAndStatus(UUID userId, String status, Pageable pageable);
+    
     List<RolePlayConversation> findByUserIdAndStatus(UUID userId, String status);
 }
