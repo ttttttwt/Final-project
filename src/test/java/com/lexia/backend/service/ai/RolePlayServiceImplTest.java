@@ -41,6 +41,12 @@ class RolePlayServiceImplTest {
     private AiUsageTracker aiUsageTracker;
 
     @Mock
+    private FallbackContentService fallbackContentService;
+
+    @Mock
+    private ContextWindowManager contextWindowManager;
+
+    @Mock
     private ObjectMapper objectMapper;
 
     @InjectMocks
@@ -107,6 +113,7 @@ class RolePlayServiceImplTest {
     @Test
     void sendMessage_Success() {
         when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(contextWindowManager.buildContextWindow(any(RolePlayConversation.class))).thenReturn("Previous context");
         
         GeminiResponseDTO geminiResponse = new GeminiResponseDTO("AI Response", "model", null, Instant.now(), 100, false, "STOP");
         when(geminiClientService.generateContent(anyString())).thenReturn(geminiResponse);

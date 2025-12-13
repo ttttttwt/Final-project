@@ -1957,6 +1957,102 @@ GrammarControllerTest > GetFallbackExercisesTests > getFallback_noFallback_retur
 
 ---
 
+### 🌙 Session 4 - Late Evening (10:30 PM - 1:00 AM) - B7 & B9 Implementation
+
+#### Tasks Completed
+- [x] **B7**: Implement FallbackContentService for scenarios (0.5 pt) ✅
+- [x] **B9**: Implement context window management (1 pt) ✅
+
+#### Three-Step Workflow
+
+**Step 1: Planning** ✅
+- Used Plan subagent to research B7 and B9 requirements
+- Created detailed implementation plan with 9 tasks
+- Analyzed existing patterns: GeminiClientService, AiUsageTracker
+
+**Step 2: Implementation** ✅
+
+**B7: FallbackContentService** (2 files, ~350 lines):
+- Created `FallbackContentService.java` interface (11 methods)
+- Created `FallbackContentServiceImpl.java` (~220 lines)
+- Added 10+ repository methods to `RolePlayScenarioRepository.java`
+- Flexible matching strategy: exact → CEFR → domain → any
+- Pre-defined responses by CEFR level
+- 44 unit tests (FallbackContentServiceImplTest)
+
+**B9: ContextWindowManager** (2 files, ~365 lines):
+- Created `ContextWindowManager.java` interface (10 methods)
+- Created `ContextWindowManagerImpl.java` (~265 lines)
+- Sliding window: Last 10 messages (configurable 5-20)
+- Token estimation: ~4 chars/token heuristic
+- Summarization trigger: 3000 tokens
+- Gemini-based summarization
+- Message preservation: Only updates contextSummary
+- 35 unit tests (ContextWindowManagerImplTest)
+
+**Integration**:
+- Updated `RolePlayServiceImpl.java` with both services
+- Added fallback to generateScenario(), sendImmersiveMessage(), sendLearningMessage()
+- Replaced inline context window logic with ContextWindowManager
+- Added summarization checks after message processing
+
+**Step 3: Code Review** ✅
+
+**Subagent**: code-review-specialist
+**Quality Score**: 7.5/10 → 9/10 after fixes
+
+**Critical Issues Fixed**:
+1. ✅ **Data loss in summarizeOldMessages()**: Removed message deletion, now only updates contextSummary
+2. ✅ **Missing fallback in generateScenario()**: Added try-catch with flexible fallback matching
+3. ✅ **No auto-fallback in sendImmersiveMessage/sendLearningMessage()**: Added try-catch with fallback responses
+
+**Test Results**:
+- ✅ FallbackContentService: 44/44 tests PASS
+- ✅ ContextWindowManager: 35/35 tests PASS
+- ✅ RolePlayService: 82/82 tests PASS
+- ✅ All service layer tests: 100% PASS
+
+#### Files Created/Modified
+
+| File | Type | Changes | Lines |
+|------|------|---------|-------|
+| **FallbackContentService.java** | **New** | **Interface** | **~130** |
+| **FallbackContentServiceImpl.java** | **New** | **Implementation** | **~220** |
+| **ContextWindowManager.java** | **New** | **Interface** | **~100** |
+| **ContextWindowManagerImpl.java** | **New** | **Implementation** | **~265** |
+| **RolePlayScenarioRepository.java** | Modified | +10 repository methods | +60 |
+| **RolePlayServiceImpl.java** | Modified | Integrated services + fallbacks | ~920 |
+| **RolePlayServiceImplTest.java** | Modified | Added mocks | +6 |
+| **FallbackContentServiceImplTest.java** | **New** | **44 unit tests** | **~650** |
+| **ContextWindowManagerImplTest.java** | **New** | **35 unit tests** | **~650** |
+| **Total New Code** | | | **~3,001 lines** |
+
+#### Quality Metrics
+- Test Coverage: 79 new unit tests (100% passing)
+- Code Quality: 9/10 after critical fixes
+- Security: Input sanitization, ownership checks preserved
+- Performance: Token estimation optimized, sliding window efficient
+
+#### Time Spent
+- Planning (subagent): 10 minutes
+- Implementation (B7 + B9 + integration): 1.5 hours
+- Testing & debugging: 20 minutes
+- Code review (subagent + fixes): 30 minutes
+- Validation & documentation: 15 minutes
+- **Session Total**: ~2.7 hours
+- **Day 5 Total**: ~12.5 hours
+
+### 📊 Sprint Progress Update (End of Day 5 - FINAL)
+- **Story Points**: 24.0/31.5 (76.2%) ⬆️
+- **Epic A**: 7.0/7.5 pts (93.3%)
+- **Epic B**: 7.0/7.0 pts (100%) ⬆️ **EPIC COMPLETE!** ✅
+- **Epic C**: 4.0/5.0 pts (80.0%)
+- **Epic D**: 3.5/5.0 pts (70.0%)
+- **Velocity**: 4.80 pts/day (Target: 1.45 pts/day) - **331% of target** 🚀
+- **Tasks Complete**: 25/37 (67.6%)
+
+---
+
 ## Blockers
 - None
 
@@ -1966,8 +2062,14 @@ GrammarControllerTest > GetFallbackExercisesTests > getFallback_noFallback_retur
 ---
 
 **Status**: ✅ Day 5 COMPLETE - Significantly Ahead of Schedule 🚀  
-**Final Day 5 Progress**: 17/37 tasks (45.9%)  
-**Final Day 5 Story Points**: 16.5/31.5 (52.4%)  
+**Final Day 5 Progress**: 25/37 tasks (67.6%)  
+**Final Day 5 Story Points**: 24.0/31.5 (76.2%)
+**Day 5 Highlights**:
+- 🏆 **Epic B COMPLETE** (100%) - Role-play feature fully implemented!
+- 🏆 B7 + B9 implemented with 79 new unit tests
+- 🏆 Fixed critical data loss bug in context window
+- 🏆 Added automatic fallback for all conversation modes
+- 🏆 331% of target velocity  
 **Velocity**: 3.30 pts/day (Target: 1.45 pts/day) - **228% of target** ✨
 
 **Day 5 Highlights**:

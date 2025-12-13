@@ -12,6 +12,8 @@ import com.lexia.backend.mapper.RolePlayScenarioMapper;
 import com.lexia.backend.repository.RolePlayConversationRepository;
 import com.lexia.backend.repository.RolePlayScenarioRepository;
 import com.lexia.backend.service.ai.AiUsageTracker;
+import com.lexia.backend.service.ai.ContextWindowManager;
+import com.lexia.backend.service.ai.FallbackContentService;
 import com.lexia.backend.service.ai.GeminiClientService;
 import com.lexia.backend.service.ai.RolePlayService;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +63,8 @@ public class RolePlayServiceImpl implements RolePlayService {
     private final RolePlayConversationRepository conversationRepository;
     private final GeminiClientService geminiClientService;
     private final AiUsageTracker aiUsageTracker;
+    private final FallbackContentService fallbackContentService;
+    private final ContextWindowManager contextWindowManager;
     private final ObjectMapper objectMapper;
 
     private static final int CONTEXT_WINDOW_SIZE = 10;
@@ -98,9 +102,9 @@ public class RolePlayServiceImpl implements RolePlayService {
                 request.getIndustry() != null ? request.getIndustry() : "General",
                 request.getUserContext() != null ? request.getUserContext() : "None");
 
-        GeminiResponseDTO response = geminiClientService.generateContent(prompt);
-        
         try {
+            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            
             String jsonContent = cleanJson(response.content());
             RolePlayScenarioDTO generatedDto = objectMapper.readValue(jsonContent, RolePlayScenarioDTO.class);
             
@@ -114,9 +118,38 @@ public class RolePlayServiceImpl implements RolePlayService {
             
             return RolePlayScenarioMapper.toDTO(entity);
         } catch (JsonProcessingException e) {
-            log.error("Failed to parse AI generated scenario", e);
-            throw new AiServiceException("Failed to parse AI-generated scenario", e);
+            log.error("Failed to parse AI generated scenario, falling back to pre-defined scenario", e);
+            return getFallbackScenarioForRequest(request, "Failed to parse AI-generated scenario");
+        } catch (AiServiceException e) {
+            log.error("AI service failed during scenario generation, falling back to pre-defined scenario", e);
+            return getFallbackScenarioForRequest(request, "AI service unavailable");
+        } catch (Exception e) {
+            log.error("Unexpected error during scenario generation, falling back to pre-defined scenario", e);
+            return getFallbackScenarioForRequest(request, "Unexpected error occurred");
         }
+    }
+
+    /**
+     * Retrieves a fallback scenario matching the request criteria.
+     * Uses flexible matching: exact match → CEFR only → domain only → any fallback.
+     */
+    private RolePlayScenarioDTO getFallbackScenarioForRequest(RolePlayRequestDTO request, String reason) {
+        log.info("Retrieving fallback scenario for CEFR={}, domain={}, reason: {}", 
+                request.getCefrLevel(), request.getDomain(), reason);
+        
+        Optional<RolePlayScenarioDTO> fallback = fallbackContentService.getRandomFallbackScenarioFlexible(
+                request.getCefrLevel(), 
+                request.getDomain()
+        );
+        
+        if (fallback.isPresent()) {
+            log.info("Using fallback scenario: {}", fallback.get().getTitle());
+            return fallback.get();
+        }
+        
+        // If no fallback scenarios exist at all, throw exception
+        log.error("No fallback scenarios available in database");
+        throw new AiServiceException("AI service unavailable and no fallback scenarios available. " + reason);
     }
 
     @Override
@@ -181,20 +214,17 @@ public class RolePlayServiceImpl implements RolePlayService {
         userMsgMap.put("timestamp", Instant.now().toString());
         conversation.getMessages().add(userMsgMap);
 
-        // Construct prompt with context window (last 10 messages)
+        // Construct prompt using ContextWindowManager
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("You are ").append(conversation.getScenario().getAiRole())
                 .append(". The user is ").append(conversation.getScenario().getYourRole())
                 .append(". Context: ").append(conversation.getScenario().getContext())
-                .append("\n\nConversation History:\n");
-
-        List<Map<String, Object>> messages = conversation.getMessages();
-        int start = Math.max(0, messages.size() - 10);
-        for (int i = start; i < messages.size(); i++) {
-            Map<String, Object> msg = messages.get(i);
-            promptBuilder.append(msg.get("role")).append(": ").append(msg.get("content")).append("\n");
-        }
-        promptBuilder.append("ai: ");
+                .append("\n\n");
+        
+        // Use ContextWindowManager for context window
+        String contextWindow = contextWindowManager.buildContextWindow(conversation);
+        promptBuilder.append(contextWindow);
+        promptBuilder.append("\nai: ");
 
         // Get AI response
         GeminiResponseDTO response = geminiClientService.generateContent(promptBuilder.toString());
@@ -205,7 +235,7 @@ public class RolePlayServiceImpl implements RolePlayService {
                 .userId(userId)
                 .contentType(AiUsageTracker.CONTENT_TYPE_ROLEPLAY)
                 .modelId(response.model())
-                .inputTokens(0) 
+                .inputTokens(response.tokenUsage() != null ? response.tokenUsage().inputTokens() : 0)
                 .outputTokens(response.tokenUsage() != null ? response.tokenUsage().outputTokens() : 0)
                 .responseTimeMs((int) response.responseTimeMs())
                 .success(true)
@@ -218,6 +248,12 @@ public class RolePlayServiceImpl implements RolePlayService {
         aiMsgMap.put("content", aiContent);
         aiMsgMap.put("timestamp", Instant.now().toString());
         conversation.getMessages().add(aiMsgMap);
+
+        // Check if summarization is needed (B9: context window management)
+        if (contextWindowManager.shouldSummarize(conversation)) {
+            log.info("Conversation {} needs summarization, triggering...", conversationId);
+            contextWindowManager.summarizeOldMessages(conversation);
+        }
 
         conversationRepository.save(conversation);
 
@@ -259,25 +295,46 @@ public class RolePlayServiceImpl implements RolePlayService {
         // Add user message
         addUserMessage(conversation, sanitizedMessage);
         
-        // Build immersive prompt (concise, no feedback)
-        String prompt = buildImmersivePrompt(conversation, sanitizedMessage);
+        String aiContent;
+        boolean usedFallback = false;
+        long responseTime = 0;
         
-        long startTime = System.currentTimeMillis();
-        GeminiResponseDTO response = geminiClientService.generateContent(prompt);
-        long responseTime = System.currentTimeMillis() - startTime;
-        
-        String aiContent = response.content();
-        
-        // Track usage
-        trackUsage(userId, response, responseTime);
+        try {
+            // Build immersive prompt (concise, no feedback)
+            String prompt = buildImmersivePrompt(conversation, sanitizedMessage);
+            
+            long startTime = System.currentTimeMillis();
+            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            responseTime = System.currentTimeMillis() - startTime;
+            
+            aiContent = response.content();
+            
+            // Track usage
+            trackUsage(userId, response, responseTime);
+        } catch (Exception e) {
+            log.warn("AI failed during immersive message, using fallback for conversation {}: {}", 
+                    conversationId, e.getMessage());
+            aiContent = generateFallbackResponseWithService(conversation, sanitizedMessage);
+            usedFallback = true;
+        }
         
         // Add AI message (no feedback for immersive mode)
         Map<String, Object> aiMsgMap = createAiMessage(aiContent, null);
+        if (usedFallback) {
+            aiMsgMap.put("isFallback", true);
+        }
         conversation.getMessages().add(aiMsgMap);
+        
+        // Check if summarization is needed (B9: context window management)
+        if (contextWindowManager.shouldSummarize(conversation)) {
+            log.info("Conversation {} needs summarization after immersive message", conversationId);
+            contextWindowManager.summarizeOldMessages(conversation);
+        }
         
         conversationRepository.save(conversation);
         
-        log.info("Immersive message sent in {}ms for conversation {}", responseTime, conversationId);
+        log.info("Immersive message sent{} in {}ms for conversation {}", 
+                usedFallback ? " (fallback)" : "", responseTime, conversationId);
         
         return RolePlayMessageDTO.builder()
                 .role("ai")
@@ -299,32 +356,58 @@ public class RolePlayServiceImpl implements RolePlayService {
         // Add user message
         addUserMessage(conversation, sanitizedMessage);
         
-        // Build learning prompt (includes feedback request)
-        String prompt = buildLearningPrompt(conversation, sanitizedMessage);
+        String aiContent;
+        Map<String, Object> feedback = null;
+        boolean usedFallback = false;
+        long responseTime = 0;
         
-        long startTime = System.currentTimeMillis();
-        GeminiResponseDTO response = geminiClientService.generateContent(prompt);
-        long responseTime = System.currentTimeMillis() - startTime;
-        
-        // Parse learning mode response (AI message + feedback)
-        LearningModeResponse parsedResponse = parseLearningResponse(response.content());
-        
-        // Track usage
-        trackUsage(userId, response, responseTime);
+        try {
+            // Build learning prompt (includes feedback request)
+            String prompt = buildLearningPrompt(conversation, sanitizedMessage);
+            
+            long startTime = System.currentTimeMillis();
+            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            responseTime = System.currentTimeMillis() - startTime;
+            
+            // Parse learning mode response (AI message + feedback)
+            LearningModeResponse parsedResponse = parseLearningResponse(response.content());
+            aiContent = parsedResponse.aiMessage;
+            feedback = parsedResponse.feedback;
+            
+            // Track usage
+            trackUsage(userId, response, responseTime);
+        } catch (Exception e) {
+            log.warn("AI failed during learning message, using fallback for conversation {}: {}", 
+                    conversationId, e.getMessage());
+            aiContent = generateFallbackLearningResponse(conversation, sanitizedMessage);
+            // Generate basic fallback feedback
+            feedback = createFallbackFeedback(conversation.getScenario().getCefrLevel());
+            usedFallback = true;
+        }
         
         // Add AI message with feedback
-        Map<String, Object> aiMsgMap = createAiMessage(parsedResponse.aiMessage, parsedResponse.feedback);
+        Map<String, Object> aiMsgMap = createAiMessage(aiContent, feedback);
+        if (usedFallback) {
+            aiMsgMap.put("isFallback", true);
+        }
         conversation.getMessages().add(aiMsgMap);
+        
+        // Check if summarization is needed (B9: context window management)
+        if (contextWindowManager.shouldSummarize(conversation)) {
+            log.info("Conversation {} needs summarization after learning message", conversationId);
+            contextWindowManager.summarizeOldMessages(conversation);
+        }
         
         conversationRepository.save(conversation);
         
-        log.info("Learning message sent in {}ms for conversation {}", responseTime, conversationId);
+        log.info("Learning message sent{} in {}ms for conversation {}", 
+                usedFallback ? " (fallback)" : "", responseTime, conversationId);
         
         return RolePlayMessageDTO.builder()
                 .role("ai")
-                .content(parsedResponse.aiMessage)
+                .content(aiContent)
                 .timestamp(Instant.now())
-                .feedback(parsedResponse.feedback)
+                .feedback(feedback)
                 .build();
     }
 
@@ -464,6 +547,12 @@ public class RolePlayServiceImpl implements RolePlayService {
         }
         conversation.getMessages().add(aiMsgMap);
         
+        // Check if summarization is needed (B9: context window management)
+        if (contextWindowManager.shouldSummarize(conversation)) {
+            log.info("Conversation {} needs summarization after fallback message", conversationId);
+            contextWindowManager.summarizeOldMessages(conversation);
+        }
+        
         conversationRepository.save(conversation);
         
         return RolePlayMessageDTO.builder()
@@ -571,15 +660,11 @@ public class RolePlayServiceImpl implements RolePlayService {
         
         promptBuilder.append("INSTRUCTIONS: Respond naturally in your role. Keep response concise (2-4 sentences). ")
                 .append("Match the CEFR level: ").append(conversation.getScenario().getCefrLevel())
-                .append("\n\nConversation History:\n");
+                .append("\n\n");
         
-        // Context window: last N messages
-        List<Map<String, Object>> messages = conversation.getMessages();
-        int start = Math.max(0, messages.size() - CONTEXT_WINDOW_SIZE);
-        for (int i = start; i < messages.size(); i++) {
-            Map<String, Object> msg = messages.get(i);
-            promptBuilder.append(msg.get("role")).append(": ").append(msg.get("content")).append("\n");
-        }
+        // Use ContextWindowManager for context window management
+        String contextWindow = contextWindowManager.buildContextWindow(conversation);
+        promptBuilder.append(contextWindow);
         
         return promptBuilder.toString();
     }
@@ -608,16 +693,11 @@ public class RolePlayServiceImpl implements RolePlayService {
                   }
                 }
                 
-                Conversation History:
                 """);
         
-        // Context window: last N messages
-        List<Map<String, Object>> messages = conversation.getMessages();
-        int start = Math.max(0, messages.size() - CONTEXT_WINDOW_SIZE);
-        for (int i = start; i < messages.size(); i++) {
-            Map<String, Object> msg = messages.get(i);
-            promptBuilder.append(msg.get("role")).append(": ").append(msg.get("content")).append("\n");
-        }
+        // Use ContextWindowManager for context window management
+        String contextWindow = contextWindowManager.buildContextWindow(conversation);
+        promptBuilder.append(contextWindow);
         
         return promptBuilder.toString();
     }
@@ -686,33 +766,63 @@ public class RolePlayServiceImpl implements RolePlayService {
     }
     
     private String generateFallbackResponse(RolePlayConversation conversation, String userMessage) {
-        // Generate a context-aware fallback response
-        String aiRole = conversation.getScenario().getAiRole();
+        // Use FallbackContentService for context-aware fallback responses
         String cefrLevel = conversation.getScenario().getCefrLevel();
+        String aiRole = conversation.getScenario().getAiRole();
         
-        // Simple fallback responses based on CEFR level
-        List<String> fallbacks = switch (cefrLevel) {
-            case "A1", "A2" -> List.of(
-                "I understand. Can you tell me more?",
-                "That's interesting. What do you think?",
-                "I see. Please continue.",
-                "Good point. Let me think about that."
-            );
-            case "B1", "B2" -> List.of(
-                "That's a great observation. Could you elaborate on that?",
-                "I appreciate your input. How would you suggest we proceed?",
-                "Interesting perspective. What are the key factors here?",
-                "Thank you for sharing that. What's your recommendation?"
-            );
-            default -> List.of(
-                "That's an insightful point. I'd like to explore this further with you.",
-                "Your analysis raises some important considerations. What alternatives do you see?",
-                "I value your perspective on this matter. How would you prioritize these factors?",
-                "That's a nuanced observation. Could you walk me through your reasoning?"
-            );
-        };
+        log.debug("Using FallbackContentService for CEFR={}, role={}", cefrLevel, aiRole);
+        return fallbackContentService.generateFallbackResponse(cefrLevel, aiRole, userMessage);
+    }
+    
+    /**
+     * Generates a fallback response for immersive mode using FallbackContentService.
+     * Alias for generateFallbackResponse to maintain clear naming convention.
+     */
+    private String generateFallbackResponseWithService(RolePlayConversation conversation, String userMessage) {
+        return generateFallbackResponse(conversation, userMessage);
+    }
+    
+    /**
+     * Generates a fallback response for learning mode using FallbackContentService.
+     * Learning mode fallback includes more educational context.
+     */
+    private String generateFallbackLearningResponse(RolePlayConversation conversation, String userMessage) {
+        String cefrLevel = conversation.getScenario().getCefrLevel();
+        String aiRole = conversation.getScenario().getAiRole();
         
-        return fallbacks.get(new Random().nextInt(fallbacks.size()));
+        log.debug("Using FallbackContentService for learning mode CEFR={}, role={}", cefrLevel, aiRole);
+        return fallbackContentService.generateFallbackLearningResponse(cefrLevel, aiRole, userMessage);
+    }
+    
+    /**
+     * Creates a basic fallback feedback map when AI is unavailable.
+     * Provides generic but helpful feedback based on CEFR level.
+     */
+    private Map<String, Object> createFallbackFeedback(String cefrLevel) {
+        String suggestion;
+        int score = 70; // Default moderate score for fallback
+        
+        switch (cefrLevel != null ? cefrLevel.toUpperCase() : "B1") {
+            case "A1", "A2":
+                suggestion = "Keep practicing with simple sentences. Focus on using basic vocabulary correctly.";
+                break;
+            case "B1", "B2":
+                suggestion = "Good effort! Try to use more varied vocabulary and complex sentence structures.";
+                break;
+            case "C1", "C2":
+                suggestion = "Continue developing your fluency. Consider using more idiomatic expressions.";
+                break;
+            default:
+                suggestion = "Keep practicing! Regular conversation practice helps improve fluency.";
+        }
+        
+        Map<String, Object> feedback = new HashMap<>();
+        feedback.put("score", score);
+        feedback.put("grammarNotes", List.of("Unable to analyze grammar - AI service temporarily unavailable"));
+        feedback.put("vocabularySuggestions", List.of());
+        feedback.put("fluencyTips", List.of(suggestion));
+        feedback.put("isFallback", true);
+        return feedback;
     }
     
     private Map<String, Object> calculateConversationMetrics(RolePlayConversation conversation) {
