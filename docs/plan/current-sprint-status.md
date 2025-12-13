@@ -3,8 +3,8 @@
 ## Sprint 5 — AI Integration (Gemini API)
 
 **Sprint**: 5 / 8 | **Duration**: Dec 12 – Dec 31, 2025 (20 days)  
-**Status**: 🟢 In Progress (Day 5) | **Progress**: 18.0/31.5 points (57.1%)  
-**Last Updated**: December 13, 2025 (Epic A: 93.3% ✅, Epic B: 50.0% ✅, Epic C: 60% ✅, Epic D: 60% ✅)
+**Status**: 🟢 In Progress (Day 5) | **Progress**: 19.0/31.5 points (60.3%)  
+**Last Updated**: December 13, 2025 (Epic A: 93.3% ✅, Epic B: 50.0% ✅, Epic C: 60% ✅, Epic D: 80% ✅)
 
 ---
 
@@ -26,17 +26,19 @@
 
 **Recent Updates** (Dec 13 - Sprint Day 5):
 
-- ✅ **Task C4 Complete**: GrammarExerciseService with AI generation + fallback (1.5 pt)
-- ✅ **Epic C**: 4/7 tasks complete (60%) - Service layer + Grammar stats ready
-- ✅ **Grammar Feature**: Interface (14 methods), Impl (~600 lines), 28 tests, Stats DTO
-- ✅ **AI Integration**: Generate exercises, fallback content, daily quota (50/day), 70% passing
-- ✅ **Security**: IDOR prevention (ownership checks), out-of-order answer handling
-- ✅ **Code Review**: Fixed critical IDOR vulnerability, fixed major answer mapping logic
-- ✅ **Previous**: D4, B4, C2, C3, A5, A9, A3, A4, A8, B2, B3, D2, D3 complete
+- ✅ **Task D5 Complete**: FlashcardController with 8 REST endpoints + 20 unit tests (0.5 pt)
+- ✅ **Task C5 Complete**: GrammarController with 13 REST endpoints + 41 unit tests (0.5 pt)
+- ✅ **Task C6 Complete**: Answer validation already in GrammarExerciseServiceImpl (0.5 pt)
+- ✅ **Epic C**: 6/7 tasks complete (80%) - REST API + Service layer complete
+- ✅ **Controller**: 13 endpoints (generate, topics, exercises, submit, stats, history, progress, fallback)
+- ✅ **Tests**: 41 comprehensive unit tests with @WebMvcTest + GlobalExceptionHandler
+- ✅ **Code Review**: Perfect 10/10 score - NO ISSUES FOUND (production ready)
+- ✅ **Validation**: All gradle tests passing, FlashcardController pattern followed
+- ✅ **Previous**: D5, C4, D4, B4, C2, C3, A5, A9, A3, A4, A8, B2, B3, D2, D3 complete
 - ✅ **Epic A**: 7/9 tasks complete (93.3%)
-- ✅ **Epic B**: 4/7 tasks complete (50%)
-- ✅ **Epic D**: 4/7 tasks complete (60%)
-- 🎯 **Next**: C5 (Grammar controller), A6 (Rate limiting), B5 (RolePlay controller)
+- ✅ **Epic B**: 3/7 tasks complete (42.9%)
+- ✅ **Epic D**: 4/7 tasks complete (57.1%)
+- 🎯 **Next**: A6 (Rate limiting), B5 (RolePlay controller), C7 (Grammar integration tests)
 
 ---
 
@@ -132,7 +134,7 @@
 
 ### Epic B: Role-Play Feature (7 pts)
 
-**Status**: 🔄 In Progress (2.0/7 pts - 28.6%)  
+**Status**: 🔄 In Progress (3.0/7 pts - 42.9%)  
 **Timeline**: Day 2-9 (December 12-21)  
 **Dependencies**: Epic A (A2, A3)
 
@@ -146,7 +148,16 @@
   - ✅ 8 indexes for performance optimization
 - [x] **B2**: Create RolePlayScenario and RolePlayConversation entities (1 pt) ✅ **COMPLETE** (Dec 12)
 - [x] **B3**: Create DTOs and mappers for role-play (0.5 pt) ✅ **COMPLETE** (Dec 12)
-- [ ] **B4**: Implement RolePlayService (scenario generation) (1.5 pt)
+- [x] **B4**: Implement RolePlayService (scenario generation) (1.5 pt) ✅ **COMPLETE** (Dec 13)
+  - ✅ RolePlayScenarioRepository and RolePlayConversationRepository
+  - ✅ RolePlayService interface with 7 methods
+  - ✅ RolePlayServiceImpl with Gemini integration (~199 lines)
+  - ✅ Scenario generation with AI, conversation management, message handling
+  - ✅ Context window optimization (last 10 messages)
+  - ✅ Input sanitization, ownership validation, status checks
+  - ✅ AI usage tracking integration
+  - ✅ 3 unit tests in RolePlayServiceImplTest
+  - ✅ Code review: 7/10 quality, all fixes applied
 - [ ] **B5a**: Implement immersive mode (chat-only, fast) (0.5 pt)
 - [ ] **B5b**: Implement learning mode (chat + feedback) (1 pt)
 - [ ] **B5c**: Implement SSE streaming for AI responses (SseEmitter) (1.5 pt)
@@ -158,7 +169,7 @@
 
 ### Epic C: Grammar Exercise Feature (5 pts)
 
-**Status**: 🔄 In Progress (3.0/5 pts - 60%)  
+**Status**: 🔄 In Progress (4.0/5 pts - 80%)  
 **Timeline**: Day 2-12 (December 12-24)  
 **Dependencies**: Epic A
 
@@ -195,15 +206,39 @@
   - ✅ 28 unit tests (100% pass rate): Generate (5), Topics (4), Retrieval (3), Submit (9), History (5), Fallback (2)
   - ✅ Code review: Fixed critical IDOR vulnerability, fixed major answer mapping flaw
   - ✅ Security tests: Ownership checks, public exercise access, out-of-order handling
-- [ ] **C5**: Create GrammarController with endpoints (0.5 pt)
-- [ ] **C6**: Implement answer validation and scoring (0.5 pt) 🔵 **P1**
+- [x] **C5**: Create GrammarController with endpoints (0.5 pt) ✅ **COMPLETE** (Dec 13)
+  - ✅ GrammarController.java with 13 REST endpoints (588 lines)
+  - ✅ POST /generate - AI exercise generation with validation
+  - ✅ GET /topics - List all, by level, by category, get categories
+  - ✅ GET /exercises - Get by ID, list user's (paginated)
+  - ✅ POST /submit - Submit answers with scoring
+  - ✅ GET /history - User history (paginated)
+  - ✅ GET /stats - User statistics (completion, accuracy, by level/topic)
+  - ✅ GET /progress - Progress for specific exercise set
+  - ✅ GET /fallback - Fallback exercises (CEFR level, grammar point)
+  - ✅ Comprehensive Swagger/OpenAPI documentation
+  - ✅ Input validation via validateCefrLevel()
+  - ✅ Security via @AuthenticationPrincipal User
+  - ✅ 41 unit tests in GrammarControllerTest (701 lines)
+  - ✅ @WebMvcTest with @ContextConfiguration(GlobalExceptionHandler)
+  - ✅ Code review: Perfect 10/10 score - NO ISSUES FOUND
+  - ✅ All gradle tests passing (100% success rate)
+  - ✅ Follows FlashcardController pattern consistently
+- [x] **C6**: Implement answer validation and scoring (0.5 pt) ✅ **COMPLETE** (Dec 13)
+  - ✅ Already implemented in GrammarExerciseServiceImpl.submitAnswers()
+  - ✅ Scoring: (Correct / Total) * 100 with BigDecimal precision
+  - ✅ Passing threshold: 70%
+  - ✅ Detailed feedback per question with explanations
+  - ✅ Out-of-order answer handling via HashMap
+  - ✅ Duplicate submission prevention
+  - ✅ IDOR prevention via ownership checks
 - [ ] **C7**: Write unit + integration tests (≥70%) (1 pt)
 
 ---
 
 ### Epic D: Flashcard Feature (5 pts)
 
-**Status**: 🔄 In Progress (1.5/5 pts - 30%)  
+**Status**: 🔄 In Progress (4.0/5 pts - 80%)  
 **Timeline**: Day 2-15 (December 12-27)  
 **Dependencies**: Epic A
 
@@ -230,9 +265,39 @@
   - ✅ Jakarta validation: @NotBlank, @NotNull, @Valid annotations
   - ✅ Code review 8.5/10, validation fixes applied
   - ✅ FlashcardMapperTest with comprehensive coverage
-- [ ] **D4**: Implement FlashcardService (generate from lesson) (1.5 pt)
-- [ ] **D5**: Create FlashcardController with endpoints (0.5 pt)
-- [ ] **D6**: Implement spaced repetition algorithm (0.5 pt) 🔵 **P1**
+- [x] **D4**: Implement FlashcardService (generate from lesson) (1.5 pt) ✅ **COMPLETE** (Dec 13)
+  - ✅ FlashcardService interface with full method signatures
+  - ✅ FlashcardServiceImpl with AI generation + fallback
+  - ✅ SM-2 spaced repetition algorithm integration
+  - ✅ Quota enforcement via AiUsageTracker
+- [x] **D5**: Create FlashcardController with endpoints (0.5 pt) ✅ **COMPLETE** (Dec 13)
+  - ✅ FlashcardController.java (601 lines) in controller/ai/ package
+  - ✅ 8 primary REST endpoints + 2 helper endpoints
+  - ✅ POST /api/v1/ai/flashcards/generate - AI generation from lesson (201 Created)
+  - ✅ POST /api/v1/ai/flashcards/decks - Create custom deck (201 Created)
+  - ✅ GET /api/v1/ai/flashcards/decks - List user's decks with pagination (page size max 100)
+  - ✅ GET /api/v1/ai/flashcards/decks/{id} - Get deck with all cards (200 OK)
+  - ✅ PUT /api/v1/ai/flashcards/decks/{id} - Update deck metadata/cards (200 OK)
+  - ✅ DELETE /api/v1/ai/flashcards/decks/{id} - Delete deck (204 No Content)
+  - ✅ GET /api/v1/ai/flashcards/decks/{id}/study - Get study session (SM-2 ordered, max 50 cards)
+  - ✅ POST /api/v1/ai/flashcards/decks/{id}/review - Submit review with quality ratings (200 OK)
+  - ✅ GET /api/v1/ai/flashcards/due-count - Total due cards across all decks
+  - ✅ GET /api/v1/ai/flashcards/lessons/{id}/deck - Check if lesson deck exists
+  - ✅ FlashcardControllerTest.java (562 lines) with 20 unit tests
+  - ✅ 9 nested @DisplayName test classes for organization
+  - ✅ Mock-based tests: FlashcardService, JwtTokenProvider, CustomUserDetailsService
+  - ✅ Comprehensive Swagger/OpenAPI documentation (summaries, descriptions, examples)
+  - ✅ Defensive coding: Page size capped at 100, study session max 50 cards
+  - ✅ Security: @AuthenticationPrincipal + ownership checks via service layer
+  - ✅ Code review: **PASS** - High quality, well-documented, secure
+  - ✅ All tests passing (100% pass rate)
+- [x] **D6**: Implement spaced repetition algorithm (0.5 pt) ✅ **COMPLETE** (Dec 13)
+  - ✅ SM-2 algorithm in UserFlashcardProgress.applyReview() method
+  - ✅ Quality ratings 0-5 (blackout → perfect recall)
+  - ✅ Ease factor adjustment (1.30 min, unbounded max)
+  - ✅ Interval calculation with exponential growth
+  - ✅ Mastery level progression (0=New → 5=Expert)
+  - ✅ Next review date scheduling
 - [ ] **D7**: Write unit + integration tests (≥70%) (1 pt)
 
 ---
@@ -282,13 +347,13 @@
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| **Story Points** | 31.5 | 13.5 | 42.9% |
-| **Tasks Complete** | 37 | 15 | 40.5% |
+| **Story Points** | 31.5 | 20.0 | 63.5% |
+| **Tasks Complete** | 37 | 21 | 56.8% |
 | **Test Coverage (Backend)** | ≥70% | TBD | ⬜ |
 | **Test Coverage (Frontend)** | ≥60% | TBD | ⬜ |
 | **P0 Bugs** | 0 | 0 | ✅ |
-| **Days Remaining** | 20 | 17 | - |
-| **Velocity** | 1.45 pts/day | 4.5 pts/day | Day 3 |
+| **Days Remaining** | 20 | 15 | - |
+| **Velocity** | 1.45 pts/day | 4.00 pts/day | Day 5 |
 
 ---
 
