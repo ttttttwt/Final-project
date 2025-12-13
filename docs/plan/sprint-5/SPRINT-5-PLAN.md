@@ -1,11 +1,11 @@
 # LEXIA Sprint 5 - AI Integration Plan Document
 
-**Version**: 1.8.0  
+**Version**: 1.11.0  
 **Created**: December 11, 2025  
-**Last Updated**: December 12, 2025 (Day 3 - Grammar Feature)  
+**Last Updated**: December 13, 2025 (Day 5 - GrammarExerciseService Complete)  
 **Sprint Duration**: December 12-31, 2025 (20 working days)  
 **Author**: AI Development Assistant  
-**Status**: 🟢 In Progress | **Progress**: 13.5/31.5 pts (42.9%)
+**Status**: 🟢 In Progress | **Progress**: 18.0/31.5 pts (57.1%)
 
 ---
 
@@ -13,37 +13,38 @@
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| **Days Elapsed** | 3/20 | - | 15% |
-| **Story Points Complete** | 13.5 | 31.5 | 42.9% ✅ |
-| **Tasks Complete** | 15 | 37 | 40.5% |
-| **Velocity (pts/day)** | 4.5 | 1.45 | **310% - Well Ahead!** 🚀 |
-| **Hours Spent** | 16.5h | 132h | 12.5% |
+| **Days Elapsed** | 5/20 | - | 25% |
+| **Story Points Complete** | 18.0 | 31.5 | 57.1% ✅ |
+| **Tasks Complete** | 18 | 37 | 48.6% |
+| **Velocity (pts/day)** | 3.60 | 1.45 | **248% - Well Ahead!** 🚀 |
+| **Hours Spent** | 22.5h | 132h | 17.0% |
 | **Epic A Progress** | 93.3% | 100% | 🔄 Nearly complete |
-| **Epic B Progress** | 42.9% | 100% | 🔄 Entities + DTOs + Mappers done |
-| **Epic C Progress** | 30% | 100% | 🔄 Entities + Repos + DTOs + Mappers done |
-| **Epic D Progress** | 30% | 100% | 🔄 Entities + Repos + DTOs + Mappers done |
+| **Epic B Progress** | 50.0% | 100% | 🔄 Service layer done ✅ |
+| **Epic C Progress** | 60% | 100% | 🔄 Service layer done ✅ |
+| **Epic D Progress** | 60% | 100% | 🔄 Service + SM-2 algorithm done ✅ |
 | **P0 Bugs** | 0 | 0 | ✅ |
 
-**Latest Milestone**: ✅ Database Schema Complete (Dec 12) - All AI feature tables ready  
+**Latest Milestone**: ✅ GrammarExerciseService Complete (Dec 13) - AI grammar exercise generation with fallback  
 **Next Milestone**: 🔄 M1 (Dec 16) - AI Infrastructure complete
 
 **Recent Accomplishments**:
-- ✅ **C2 Complete**: GrammarTopic, GrammarExerciseSet, UserGrammarProgress entities + repositories (0.5 pt)
-- ✅ **C3 Complete**: 7 Grammar DTOs + GrammarExerciseMapper with 20 passing tests (0.5 pt)
-- ✅ **Epic C**: 30% complete (3/7 tasks) - Entities, Repos, DTOs, Mappers done
-- ✅ **Grammar Feature**: 3 entities, 3 repositories, 7 DTOs, 1 mapper - 1,700+ lines
-- ✅ **Code Review**: Typo fixed in GrammarTopicRepository (Cyrillic → Latin)
-- ✅ **Previous**: B2, B3, D2, D3, A5, A9, A3, A4, A8 complete
+- ✅ **C4 Complete**: GrammarExerciseService with AI generation + fallback (1.5 pt)
+- ✅ **Epic C**: 60% complete (4/7 tasks) - Service layer done, controller next
+- ✅ **Grammar Feature**: Interface (14 methods), Impl (600 lines), 28 tests, Stats DTO
+- ✅ **AI Integration**: Generate exercises, fallback content, daily quota (50/day), 70% passing threshold
+- ✅ **Security**: IDOR prevention (ownership checks), out-of-order answer handling
+- ✅ **Code Review**: Fixed critical IDOR vulnerability, fixed major answer mapping logic
+- ✅ **Previous**: D4, B4, C2, C3, B2, B3, D2, D3, A5, A9, A3, A4, A8 complete
 - ✅ **Epic A**: 93.3% complete (7/9 tasks, 7.0/7.5 pts)
-- ✅ **Epic B**: 42.9% complete (3/7 tasks)
-- ✅ **Epic D**: 30% complete (3/7 tasks)
-- ✅ **Database**: 14 tables, 50+ indexes, comprehensive JSONB schemas
-- ✅ **Tests**: 191+ unit tests passing with comprehensive coverage
+- ✅ **Epic B**: 50% complete (4/7 tasks, 3.5/7 pts)
+- ✅ **Epic D**: 60% complete (4/7 tasks, 3.0/5 pts)
+- ✅ **Database**: 15 tables, 50+ indexes, comprehensive JSONB schemas
+- ✅ **Tests**: 251+ unit tests passing with comprehensive coverage
 
-**Next Up (Day 4 - Dec 13)**:
-- 🎯 **C4**: Implement GrammarExerciseService (1.5 pt)
+**Next Up (Day 6 - Dec 14)**:
+- 🎯 **C5**: Create GrammarController with REST endpoints (0.5 pt)
 - 🎯 **A6**: Implement AiRateLimitService per user/feature (1 pt)
-- 🎯 **B4**: Implement RolePlayService (scenario generation) (1.5 pt)
+- 🎯 **B5**: Implement RolePlayController REST endpoints (1 pt)
 
 ---
 
@@ -73,12 +74,12 @@
 | Epic | Points | Percentage | Status |
 |------|--------|------------|--------|
 | Epic A: AI Infrastructure | 7.5 pts | 24% | 🔄 93.3% (7.0/7.5) |
-| Epic B: Role-Play Feature | 7 pts | 22% | 🔄 7.1% (0.5/7) |
-| Epic C: Grammar Feature | 5 pts | 16% | 🔄 10% (0.5/5) |
-| Epic D: Flashcard Feature | 5 pts | 16% | 🔄 10% (0.5/5) |
+| Epic B: Role-Play Feature | 7 pts | 22% | 🔄 50.0% (3.5/7) |
+| Epic C: Grammar Feature | 5 pts | 16% | 🔄 30% (1.5/5) |
+| Epic D: Flashcard Feature | 5 pts | 16% | 🔄 30% (1.5/5) |
 | Epic E: Web UI | 4 pts | 13% | ⬜ 0% |
 | Epic F: Mobile UI | 3 pts | 9% | ⬜ 0% |
-| **Total** | **31.5 pts** | **100%** | **27.0%** |
+| **Total** | **31.5 pts** | **100%** | **47.6%** |
 ### 1.4 User Stories
 
 #### Epic B: Role-Play Feature
@@ -197,14 +198,14 @@
 **Timeline**: Days 2-12 (Dec 12-24)  
 **Owner**: Backend  
 **Dependencies**: Epic A  
-**Progress**: 🔄 0.5/5 pts (10%) - **Database Ready**
+**Progress**: 🔄 3.0/5 pts (60%) - **Service Layer Ready**
 
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|  
 | C1 | Create V26 migration for grammar tables | 0.5 | P0 | ✅ **Dec 12** |
 | C2 | Create GrammarExerciseSet entity and repository | 0.5 | P0 | ✅ **Dec 12** |
 | C3 | Create DTOs and mappers | 0.5 | P0 | ✅ **Dec 12** |
-| C4 | Implement GrammarExerciseService | 1.5 | P0 | ⬜ |
+| C4 | Implement GrammarExerciseService | 1.5 | P0 | ✅ **Dec 13** |
 | C5 | Create GrammarController with endpoints | 0.5 | P0 | ⬜ |
 | C6 | Implement answer validation and scoring | 0.5 | P1 | ⬜ |
 | C7 | Write unit + integration tests (≥70%) | 1 | P0 | ⬜ |
@@ -223,16 +224,16 @@
 **Timeline**: Days 2-15 (Dec 12-27)  
 **Owner**: Backend  
 **Dependencies**: Epic A  
-**Progress**: 🔄 0.5/5 pts (10%) - **Database Ready**
+**Progress**: 🔄 3.0/5 pts (60%) - **Service Layer + SM-2 Algorithm Ready**
 
 | Task ID | Task | Points | Priority | Status |
 |---------|------|--------|----------|--------|
 | D1 | Add flashcard tables to V26 migration | 0.5 | P0 | ✅ **Dec 12** |
 | D2 | Create FlashcardDeck entity and repository | 0.5 | P0 | ✅ **Dec 12** |
 | D3 | Create DTOs and mappers | 0.5 | P0 | ✅ **Dec 12** |
-| D4 | Implement FlashcardService (generate from lesson) | 1.5 | P0 | ⬜ |
+| D4 | Implement FlashcardService (generate from lesson) | 1.5 | P0 | ✅ **Dec 13** |
 | D5 | Create FlashcardController with endpoints | 0.5 | P0 | ⬜ |
-| D6 | Implement spaced repetition algorithm | 0.5 | P1 | ⬜ |
+| D6 | Implement spaced repetition algorithm | 0.5 | P1 | ✅ **Dec 13** |
 | D7 | Write unit + integration tests (≥70%) | 1 | P0 | ⬜ |
 
 **Acceptance Criteria**:

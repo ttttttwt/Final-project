@@ -3,8 +3,8 @@
 ## Sprint 5 — AI Integration (Gemini API)
 
 **Sprint**: 5 / 8 | **Duration**: Dec 12 – Dec 31, 2025 (20 days)  
-**Status**: 🟢 In Progress (Day 3) | **Progress**: 13.5/31.5 points (42.9%)  
-**Last Updated**: December 12, 2025 - Final Session (Epic A: 93.3% ✅, Epic B: 42.9% 🔄, Epic C: 30% ✅, Epic D: 30% ✅)
+**Status**: 🟢 In Progress (Day 5) | **Progress**: 18.0/31.5 points (57.1%)  
+**Last Updated**: December 13, 2025 (Epic A: 93.3% ✅, Epic B: 50.0% ✅, Epic C: 60% ✅, Epic D: 60% ✅)
 
 ---
 
@@ -24,19 +24,19 @@
 
 **Velocity Target**: 1.45 pts/day (29 points / 20 days)
 
-**Recent Updates** (Dec 12 - Sprint Day 3):
+**Recent Updates** (Dec 13 - Sprint Day 5):
 
-- ✅ **Task C2 Complete**: Grammar entities and repositories (0.5 pt)
-- ✅ **Task C3 Complete**: Grammar DTOs and mappers (0.5 pt)
-- ✅ **Epic C**: 3/7 tasks complete (30%) - Entities, repos, DTOs, mappers with 20 tests
-- ✅ **Grammar Feature**: 3 entities, 3 repositories, 7 DTOs, 1 mapper - 1,800+ lines
-- ✅ **Code Review**: Typo fixed in GrammarTopicRepository (Cyrillic 'у' → Latin 'y')
-- ✅ **Tests**: GrammarExerciseMapperTest with 20 passing tests
-- ✅ **Previous**: Task A5, A9, A3, A4, A8, B2, B3, D2, D3 complete
+- ✅ **Task C4 Complete**: GrammarExerciseService with AI generation + fallback (1.5 pt)
+- ✅ **Epic C**: 4/7 tasks complete (60%) - Service layer + Grammar stats ready
+- ✅ **Grammar Feature**: Interface (14 methods), Impl (~600 lines), 28 tests, Stats DTO
+- ✅ **AI Integration**: Generate exercises, fallback content, daily quota (50/day), 70% passing
+- ✅ **Security**: IDOR prevention (ownership checks), out-of-order answer handling
+- ✅ **Code Review**: Fixed critical IDOR vulnerability, fixed major answer mapping logic
+- ✅ **Previous**: D4, B4, C2, C3, A5, A9, A3, A4, A8, B2, B3, D2, D3 complete
 - ✅ **Epic A**: 7/9 tasks complete (93.3%)
-- ✅ **Epic B**: 3/10 tasks complete (42.9%)
-- ✅ **Epic D**: 3/7 tasks complete (30%)
-- 🎯 **Next**: C4 (GrammarExerciseService), A6 (Rate limiting), B4 (RolePlayService)
+- ✅ **Epic B**: 4/7 tasks complete (50%)
+- ✅ **Epic D**: 4/7 tasks complete (60%)
+- 🎯 **Next**: C5 (Grammar controller), A6 (Rate limiting), B5 (RolePlay controller)
 
 ---
 
@@ -44,7 +44,7 @@
 
 ### Epic A: AI Infrastructure (7.5 pts)
 
-**Status**: 🔄 In Progress (5.0/7.5 pts - 66.7%)  
+**Status**: 🔄 In Progress (7.0/7.5 pts - 93.3%)  
 **Timeline**: Day 1-4 (December 11-16)
 
 - [x] **A1**: Add Gemini SDK + Resilience4j dependencies (0.5 pt) ✅ **COMPLETE** (Dec 11)
@@ -158,7 +158,7 @@
 
 ### Epic C: Grammar Exercise Feature (5 pts)
 
-**Status**: 🔄 In Progress (1.5/5 pts - 30%)  
+**Status**: 🔄 In Progress (3.0/5 pts - 60%)  
 **Timeline**: Day 2-12 (December 12-24)  
 **Dependencies**: Epic A
 
@@ -182,7 +182,19 @@
   - ✅ GrammarExerciseMapper with content parsing
   - ✅ GrammarExerciseMapperTest with 20 passing tests
   - ✅ Code review: Typo fixed in GrammarTopicRepository
-- [ ] **C4**: Implement GrammarExerciseService (1.5 pt)
+- [x] **C4**: Implement GrammarExerciseService (1.5 pt) ✅ **COMPLETE** (Dec 13)
+  - ✅ GrammarExerciseService interface with 14 method signatures
+  - ✅ GrammarExerciseServiceImpl implementation (~600 lines)
+  - ✅ AI generation with retry + fallback mechanism
+  - ✅ Daily quota enforcement (50 requests/day via AiUsageTracker)
+  - ✅ Ownership verification (IDOR prevention)
+  - ✅ Robust answer mapping (HashMap for out-of-order submissions)
+  - ✅ Scoring logic (70% passing threshold, detailed feedback)
+  - ✅ GrammarStatsDTO with nested TopicStats and LevelStats classes
+  - ✅ GrammarExerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint() added
+  - ✅ 28 unit tests (100% pass rate): Generate (5), Topics (4), Retrieval (3), Submit (9), History (5), Fallback (2)
+  - ✅ Code review: Fixed critical IDOR vulnerability, fixed major answer mapping flaw
+  - ✅ Security tests: Ownership checks, public exercise access, out-of-order handling
 - [ ] **C5**: Create GrammarController with endpoints (0.5 pt)
 - [ ] **C6**: Implement answer validation and scoring (0.5 pt) 🔵 **P1**
 - [ ] **C7**: Write unit + integration tests (≥70%) (1 pt)
