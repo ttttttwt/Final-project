@@ -248,7 +248,7 @@ public interface GrammarExerciseSetRepository extends JpaRepository<GrammarExerc
      * @param topicId topic ID
      * @return list of exercise sets
      */
-    List<GrammarExerciseSet> findByTopicId(Integer topicId);
+    List<GrammarExerciseSet> findByTopic_Id(Integer topicId);
 
     /**
      * Find exercise sets by topic ID and CEFR level.
@@ -257,7 +257,7 @@ public interface GrammarExerciseSetRepository extends JpaRepository<GrammarExerc
      * @param cefrLevel CEFR level
      * @return list of exercise sets
      */
-    List<GrammarExerciseSet> findByTopicIdAndCefrLevel(Integer topicId, String cefrLevel);
+    List<GrammarExerciseSet> findByTopic_IdAndCefrLevel(Integer topicId, String cefrLevel);
 
     // ========== Statistics ==========
 

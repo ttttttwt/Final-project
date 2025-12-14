@@ -171,12 +171,13 @@ public interface FlashcardDeckRepository extends JpaRepository<FlashcardDeck, UU
      * Updates the card count for a deck.
      * @param deckId the deck ID
      * @param cardCount the new card count
+     * @param updatedAt the update timestamp
      * @return number of rows updated
      */
     @Modifying
-    @Query("UPDATE FlashcardDeck d SET d.cardCount = :cardCount, d.updatedAt = CURRENT_TIMESTAMP " +
+    @Query("UPDATE FlashcardDeck d SET d.cardCount = :cardCount, d.updatedAt = :updatedAt " +
            "WHERE d.id = :deckId")
-    int updateCardCount(@Param("deckId") UUID deckId, @Param("cardCount") int cardCount);
+    int updateCardCount(@Param("deckId") UUID deckId, @Param("cardCount") int cardCount, @Param("updatedAt") Instant updatedAt);
 
     // ========== Delete Queries ==========
 

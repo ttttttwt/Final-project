@@ -118,13 +118,13 @@ public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> 
      * Updates suspension status for a user.
      */
     @Modifying
-    @Query("UPDATE UserAiQuota q SET q.suspended = :suspended, q.suspensionReason = :reason, q.updatedAt = CURRENT_TIMESTAMP WHERE q.userId = :userId")
-    int updateSuspensionStatus(@Param("userId") UUID userId, @Param("suspended") boolean suspended, @Param("reason") String reason);
+    @Query("UPDATE UserAiQuota q SET q.suspended = :suspended, q.suspensionReason = :reason, q.updatedAt = :updatedAt WHERE q.userId = :userId")
+    int updateSuspensionStatus(@Param("userId") UUID userId, @Param("suspended") boolean suspended, @Param("reason") String reason, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Updates premium status for a user.
      */
     @Modifying
-    @Query("UPDATE UserAiQuota q SET q.isPremium = :isPremium, q.premiumMultiplier = :multiplier, q.updatedAt = CURRENT_TIMESTAMP WHERE q.userId = :userId")
-    int updatePremiumStatus(@Param("userId") UUID userId, @Param("isPremium") boolean isPremium, @Param("multiplier") java.math.BigDecimal multiplier);
+    @Query("UPDATE UserAiQuota q SET q.isPremium = :isPremium, q.premiumMultiplier = :multiplier, q.updatedAt = :updatedAt WHERE q.userId = :userId")
+    int updatePremiumStatus(@Param("userId") UUID userId, @Param("isPremium") boolean isPremium, @Param("multiplier") java.math.BigDecimal multiplier, @Param("updatedAt") java.time.Instant updatedAt);
 }

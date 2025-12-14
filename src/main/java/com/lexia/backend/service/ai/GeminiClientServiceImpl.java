@@ -21,6 +21,7 @@ import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -81,7 +82,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     private final ExecutorService streamExecutor;
 
     public GeminiClientServiceImpl(
-            Client geminiClient,
+            @Nullable Client geminiClient,
             GeminiConfig geminiConfig,
             GenerateContentConfig defaultContentConfig,
             GenerateContentConfig structuredContentConfig,

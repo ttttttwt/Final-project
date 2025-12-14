@@ -477,7 +477,7 @@ class PromptTemplateServiceImplTest {
             // Arrange
             when(promptTemplateRepository.findById(templateId))
                     .thenReturn(Optional.of(testTemplate));
-            when(promptTemplateRepository.setAsDefault(templateId, "roleplay_scenario_v1"))
+            when(promptTemplateRepository.setAsDefault(eq(templateId), eq("roleplay_scenario_v1"), any(java.time.Instant.class)))
                     .thenReturn(1);
 
             // Act
@@ -485,14 +485,14 @@ class PromptTemplateServiceImplTest {
 
             // Assert
             assertThat(result).isTrue();
-            verify(promptTemplateRepository).setAsDefault(templateId, "roleplay_scenario_v1");
+            verify(promptTemplateRepository).setAsDefault(eq(templateId), eq("roleplay_scenario_v1"), any(java.time.Instant.class));
         }
 
         @Test
         @DisplayName("Should activate template")
         void activate_ValidTemplate_ActivatesSuccessfully() {
             // Arrange
-            when(promptTemplateRepository.activate(templateId)).thenReturn(1);
+            when(promptTemplateRepository.activate(eq(templateId), any(java.time.Instant.class))).thenReturn(1);
             when(promptTemplateRepository.findById(templateId))
                     .thenReturn(Optional.of(testTemplate));
 
@@ -507,7 +507,7 @@ class PromptTemplateServiceImplTest {
         @DisplayName("Should deactivate template")
         void deactivate_ValidTemplate_DeactivatesSuccessfully() {
             // Arrange
-            when(promptTemplateRepository.deactivate(templateId)).thenReturn(1);
+            when(promptTemplateRepository.deactivate(eq(templateId), any(java.time.Instant.class))).thenReturn(1);
             when(promptTemplateRepository.findById(templateId))
                     .thenReturn(Optional.of(testTemplate));
 

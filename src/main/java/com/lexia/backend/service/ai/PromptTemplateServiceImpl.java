@@ -225,7 +225,7 @@ public class PromptTemplateServiceImpl implements PromptTemplateService {
     public boolean setAsDefault(UUID templateId) {
         return promptTemplateRepository.findById(templateId)
                 .map(template -> {
-                    int updated = promptTemplateRepository.setAsDefault(templateId, template.getTemplateKey());
+                    int updated = promptTemplateRepository.setAsDefault(templateId, template.getTemplateKey(), java.time.Instant.now());
                     evictCache(template.getTemplateKey());
                     return updated > 0;
                 })
@@ -235,7 +235,7 @@ public class PromptTemplateServiceImpl implements PromptTemplateService {
     @Override
     @Transactional
     public boolean activate(UUID templateId) {
-        int updated = promptTemplateRepository.activate(templateId);
+        int updated = promptTemplateRepository.activate(templateId, java.time.Instant.now());
         if (updated > 0) {
             promptTemplateRepository.findById(templateId)
                     .ifPresent(t -> evictCache(t.getTemplateKey()));
@@ -246,7 +246,7 @@ public class PromptTemplateServiceImpl implements PromptTemplateService {
     @Override
     @Transactional
     public boolean deactivate(UUID templateId) {
-        int updated = promptTemplateRepository.deactivate(templateId);
+        int updated = promptTemplateRepository.deactivate(templateId, java.time.Instant.now());
         if (updated > 0) {
             promptTemplateRepository.findById(templateId)
                     .ifPresent(t -> evictCache(t.getTemplateKey()));
@@ -260,7 +260,7 @@ public class PromptTemplateServiceImpl implements PromptTemplateService {
         if (percentage < 0 || percentage > 100) {
             throw new IllegalArgumentException("Traffic percentage must be between 0 and 100");
         }
-        int updated = promptTemplateRepository.updateTrafficPercentage(templateId, percentage);
+        int updated = promptTemplateRepository.updateTrafficPercentage(templateId, percentage, java.time.Instant.now());
         if (updated > 0) {
             promptTemplateRepository.findById(templateId)
                     .ifPresent(t -> evictCache(t.getTemplateKey()));

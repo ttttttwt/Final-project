@@ -77,16 +77,16 @@ public interface PromptTemplateRepository extends JpaRepository<PromptTemplate, 
      * Increments usage count for a template.
      */
     @Modifying
-    @Query("UPDATE PromptTemplate p SET p.usageCount = p.usageCount + 1, p.updatedAt = CURRENT_TIMESTAMP WHERE p.id = :id")
-    int incrementUsageCount(@Param("id") UUID id);
+    @Query("UPDATE PromptTemplate p SET p.usageCount = p.usageCount + 1, p.updatedAt = :updatedAt WHERE p.id = :id")
+    int incrementUsageCount(@Param("id") UUID id, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Increments both usage and success count for a template.
      */
     @Modifying
     @Query("UPDATE PromptTemplate p SET p.usageCount = p.usageCount + 1, p.successCount = p.successCount + 1, " +
-           "p.updatedAt = CURRENT_TIMESTAMP WHERE p.id = :id")
-    int incrementUsageAndSuccessCount(@Param("id") UUID id);
+           "p.updatedAt = :updatedAt WHERE p.id = :id")
+    int incrementUsageAndSuccessCount(@Param("id") UUID id, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Updates metrics for a template (usage, success, response time).
@@ -113,31 +113,31 @@ public interface PromptTemplateRepository extends JpaRepository<PromptTemplate, 
      * Sets a template as the default for its key (and unsets others).
      */
     @Modifying
-    @Query("UPDATE PromptTemplate p SET p.isDefault = (p.id = :id), p.updatedAt = CURRENT_TIMESTAMP " +
+    @Query("UPDATE PromptTemplate p SET p.isDefault = (p.id = :id), p.updatedAt = :updatedAt " +
            "WHERE p.templateKey = :templateKey")
-    int setAsDefault(@Param("id") UUID id, @Param("templateKey") String templateKey);
+    int setAsDefault(@Param("id") UUID id, @Param("templateKey") String templateKey, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Deactivates a template.
      */
     @Modifying
-    @Query("UPDATE PromptTemplate p SET p.isActive = false, p.updatedAt = CURRENT_TIMESTAMP WHERE p.id = :id")
-    int deactivate(@Param("id") UUID id);
+    @Query("UPDATE PromptTemplate p SET p.isActive = false, p.updatedAt = :updatedAt WHERE p.id = :id")
+    int deactivate(@Param("id") UUID id, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Activates a template.
      */
     @Modifying
-    @Query("UPDATE PromptTemplate p SET p.isActive = true, p.updatedAt = CURRENT_TIMESTAMP WHERE p.id = :id")
-    int activate(@Param("id") UUID id);
+    @Query("UPDATE PromptTemplate p SET p.isActive = true, p.updatedAt = :updatedAt WHERE p.id = :id")
+    int activate(@Param("id") UUID id, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Updates traffic percentage for A/B testing.
      */
     @Modifying
-    @Query("UPDATE PromptTemplate p SET p.trafficPercentage = :percentage, p.updatedAt = CURRENT_TIMESTAMP " +
+    @Query("UPDATE PromptTemplate p SET p.trafficPercentage = :percentage, p.updatedAt = :updatedAt " +
            "WHERE p.id = :id")
-    int updateTrafficPercentage(@Param("id") UUID id, @Param("percentage") int percentage);
+    int updateTrafficPercentage(@Param("id") UUID id, @Param("percentage") int percentage, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Finds templates with highest success rate for a category.
