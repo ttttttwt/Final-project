@@ -65,13 +65,13 @@ public class RolePlayScenario {
     private String context;
 
     @NotBlank
-    @Size(max = 100)
-    @Column(name = "your_role", nullable = false, length = 100)
+    @Size(max = 255)
+    @Column(name = "your_role", nullable = false, length = 255)
     private String yourRole;
 
     @NotBlank
-    @Size(max = 100)
-    @Column(name = "ai_role", nullable = false, length = 100)
+    @Size(max = 255)
+    @Column(name = "ai_role", nullable = false, length = 255)
     private String aiRole;
 
     @NotBlank

@@ -149,7 +149,7 @@ Create a set of grammar exercises tailored to a specific topic and level.
 **Request Body**:
 ```json
 {
-  "topic": "Present Perfect",
+  "grammarTopic": "Present Perfect",
   "cefrLevel": "A2",
   "count": 5
 }
@@ -159,17 +159,28 @@ Create a set of grammar exercises tailored to a specific topic and level.
 ```json
 {
   "id": "uuid",
-  "topic": "Present Perfect",
-  "explanation": "Used for actions in the past with present relevance...",
+  "grammarPoint": "Present Perfect",
+  "cefrLevel": "A2",
+  "explanation": {
+    "rule": "Used for actions in the past with present relevance...",
+    "examples": ["I have lived here for 5 years."],
+    "commonMistakes": ["Using past simple for unfinished time."],
+    "tips": ["Look for 'for' and 'since'."]
+  },
   "exercises": [
     {
-      "id": "uuid",
-      "type": "MULTIPLE_CHOICE",
+      "type": "multiple_choice",
+      "instruction": "Choose the correct form.",
       "question": "I ___ (live) here for 5 years.",
       "options": ["have lived", "lived", "living"],
-      "correctAnswer": "have lived"
+      "correctAnswer": "have lived",
+      "explanation": "Correct! 'For 5 years' indicates duration up to now."
     }
-  ]
+  ],
+  "exerciseCount": 5,
+  "timeLimitSeconds": 600,
+  "isFallback": false,
+  "createdAt": "2025-12-16T10:00:00Z"
 }
 ```
 
@@ -181,27 +192,34 @@ Submit user answers for grading.
 **Request Body**:
 ```json
 {
+  "exerciseSetId": "uuid",
   "answers": [
     {
-      "exerciseId": "uuid",
+      "questionIndex": 0,
       "userAnswer": "have lived"
     }
-  ]
+  ],
+  "totalTimeSeconds": 120
 }
 ```
 
 **Response (200 OK)**:
 ```json
 {
-  "score": 100,
+  "exerciseSetId": "uuid",
+  "grammarPoint": "Present Perfect",
+  "score": 5,
+  "maxScore": 5,
+  "percentage": 100.0,
   "passed": true,
-  "results": [
+  "feedback": [
     {
-      "exerciseId": "uuid",
+      "questionIndex": 0,
       "correct": true,
       "explanation": "Correct! 'For 5 years' indicates duration up to now."
     }
-  ]
+  ],
+  "encouragement": "Great job!"
 }
 ```
 

@@ -78,6 +78,9 @@ dependencies {
 	// Spring Cache with Caffeine (for prompt template caching)
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
 	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+	// Dotenv support for loading .env files
+	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 	
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'

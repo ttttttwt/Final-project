@@ -1,5 +1,8 @@
 package com.lexia.backend.service.ai;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.genai.Client;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
@@ -80,6 +83,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     private final GenerateContentConfig creativeContentConfig;
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final ExecutorService streamExecutor;
+    private final ObjectMapper objectMapper;
 
     public GeminiClientServiceImpl(
             @Nullable Client geminiClient,
@@ -95,6 +99,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         this.creativeContentConfig = creativeContentConfig;
         this.circuitBreakerRegistry = circuitBreakerRegistry;
         this.streamExecutor = Executors.newCachedThreadPool();
+        this.objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
         log.info("GeminiClientService initialized. API configured: {}", isConfigured());
     }
@@ -160,6 +165,9 @@ public class GeminiClientServiceImpl implements GeminiClientService {
                     .role("user")
                     .parts(Part.fromText(prompt))
                     .build();
+
+            // Log full JSON request data
+            logGeminiRequest(model, prompt, config, temperature, maxTokens);
 
             // Generate response
             GenerateContentResponse response = geminiClient.models.generateContent(model, content, config);
@@ -235,6 +243,9 @@ public class GeminiClientServiceImpl implements GeminiClientService {
                     .role("user")
                     .parts(Part.fromText(prompt))
                     .build();
+
+            // Log full JSON request data for streaming
+            logGeminiStreamRequest(model, prompt, messageId);
 
             // Use streaming API
             Iterable<GenerateContentResponse> stream = geminiClient.models.generateContentStream(model, content, config);
@@ -376,6 +387,79 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     }
 
     // ==================== Helper Methods ====================
+
+    /**
+     * Logs the full JSON request data sent to Gemini API.
+     * 
+     * @param model the model name
+     * @param prompt the prompt text
+     * @param config the generation config
+     * @param temperature the temperature setting
+     * @param maxTokens the max tokens setting
+     */
+    private void logGeminiRequest(String model, String prompt, GenerateContentConfig config, 
+                                  float temperature, int maxTokens) {
+        try {
+            var requestData = new java.util.LinkedHashMap<String, Object>();
+            requestData.put("model", model);
+            requestData.put("timestamp", java.time.Instant.now().toString());
+            
+            var contentData = new java.util.LinkedHashMap<String, Object>();
+            contentData.put("role", "user");
+            contentData.put("prompt", prompt);
+            contentData.put("promptLength", prompt.length());
+            contentData.put("estimatedTokens", estimateTokens(prompt));
+            requestData.put("content", contentData);
+            
+            var configData = new java.util.LinkedHashMap<String, Object>();
+            configData.put("temperature", temperature);
+            configData.put("maxOutputTokens", maxTokens);
+            requestData.put("generationConfig", configData);
+            
+            String jsonRequest = objectMapper.writeValueAsString(requestData);
+            log.info("[GEMINI-REQUEST] Sending request to Gemini API:\n{}", jsonRequest);
+        } catch (JsonProcessingException e) {
+            log.warn("[GEMINI-REQUEST] Failed to serialize request for logging: {}", e.getMessage());
+            log.info("[GEMINI-REQUEST] Model: {}, Prompt length: {}, Temperature: {}, MaxTokens: {}", 
+                     model, prompt.length(), temperature, maxTokens);
+        }
+    }
+
+    /**
+     * Logs the full JSON request data for streaming requests to Gemini API.
+     * 
+     * @param model the model name
+     * @param prompt the prompt text
+     * @param messageId the unique message ID for this stream
+     */
+    private void logGeminiStreamRequest(String model, String prompt, String messageId) {
+        try {
+            var requestData = new java.util.LinkedHashMap<String, Object>();
+            requestData.put("type", "STREAMING");
+            requestData.put("messageId", messageId);
+            requestData.put("model", model);
+            requestData.put("timestamp", java.time.Instant.now().toString());
+            
+            var contentData = new java.util.LinkedHashMap<String, Object>();
+            contentData.put("role", "user");
+            contentData.put("prompt", prompt);
+            contentData.put("promptLength", prompt.length());
+            contentData.put("estimatedTokens", estimateTokens(prompt));
+            requestData.put("content", contentData);
+            
+            var configData = new java.util.LinkedHashMap<String, Object>();
+            configData.put("temperature", 0.9f); // creativeContentConfig temperature
+            configData.put("maxOutputTokens", geminiConfig.getMaxOutputTokens());
+            requestData.put("generationConfig", configData);
+            
+            String jsonRequest = objectMapper.writeValueAsString(requestData);
+            log.info("[GEMINI-STREAM-REQUEST] Sending streaming request to Gemini API:\n{}", jsonRequest);
+        } catch (JsonProcessingException e) {
+            log.warn("[GEMINI-STREAM-REQUEST] Failed to serialize request for logging: {}", e.getMessage());
+            log.info("[GEMINI-STREAM-REQUEST] MessageId: {}, Model: {}, Prompt length: {}", 
+                     messageId, model, prompt.length());
+        }
+    }
 
     /**
      * Validates that the Gemini API is properly configured.

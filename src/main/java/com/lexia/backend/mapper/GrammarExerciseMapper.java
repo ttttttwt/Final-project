@@ -289,7 +289,7 @@ public class GrammarExerciseMapper {
                             GrammarExerciseSetDTO.GrammarExplanationDTO.builder()
                                     .rule((String) explanationMap.get("rule"))
                                     .examples(toStringList(explanationMap.get("examples")))
-                                    .commonMistakes(toStringList(explanationMap.get("commonMistakes")))
+                                    .commonMistakes(toMistakeList(explanationMap.get("commonMistakes")))
                                     .tips(toStringList(explanationMap.get("tips")))
                                     .build();
                     dto.setExplanation(explanation);
@@ -310,6 +310,7 @@ public class GrammarExerciseMapper {
             }
         } catch (Exception e) {
             log.warn("Failed to parse grammar exercise content: {}", e.getMessage());
+            e.printStackTrace(); // Add stack trace for debugging
         }
     }
 
@@ -323,15 +324,15 @@ public class GrammarExerciseMapper {
         }
 
         return GrammarExerciseDTO.builder()
-                .type((String) exerciseMap.get("type"))
-                .instruction((String) exerciseMap.get("instruction"))
-                .question((String) exerciseMap.get("question"))
+                .type(String.valueOf(exerciseMap.get("type")))
+                .instruction(String.valueOf(exerciseMap.get("instruction")))
+                .question(String.valueOf(exerciseMap.get("question")))
                 .options(toStringList(exerciseMap.get("options")))
                 .blanks(toStringList(exerciseMap.get("blanks")))
                 .correctAnswer(exerciseMap.get("correctAnswer"))
-                .hint((String) exerciseMap.get("hint"))
-                .explanation((String) exerciseMap.get("explanation"))
-                .difficulty((String) exerciseMap.get("difficulty"))
+                .hint(exerciseMap.get("hint") != null ? String.valueOf(exerciseMap.get("hint")) : null)
+                .explanation(exerciseMap.get("explanation") != null ? String.valueOf(exerciseMap.get("explanation")) : null)
+                .difficulty(String.valueOf(exerciseMap.get("difficulty")))
                 .build();
     }
 
@@ -345,6 +346,41 @@ public class GrammarExerciseMapper {
         }
         if (obj instanceof List) {
             return ((List<?>) obj).stream()
+                    .map(Object::toString)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * Converts common mistakes object (list of maps or strings) to List of Strings.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> toMistakeList(Object obj) {
+        if (obj == null) {
+            return Collections.emptyList();
+        }
+        if (obj instanceof List) {
+            List<?> list = (List<?>) obj;
+            if (list.isEmpty()) {
+                return Collections.emptyList();
+            }
+            
+            // Check if it's a list of maps (structured mistakes)
+            if (list.get(0) instanceof Map) {
+                return list.stream()
+                        .map(item -> {
+                            Map<String, Object> map = (Map<String, Object>) item;
+                            String mistake = (String) map.getOrDefault("mistake", "");
+                            String correction = (String) map.getOrDefault("correction", "");
+                            String why = (String) map.getOrDefault("why", "");
+                            return String.format("Mistake: %s -> Correction: %s (%s)", mistake, correction, why);
+                        })
+                        .collect(Collectors.toList());
+            }
+            
+            // Fallback to simple string conversion
+            return list.stream()
                     .map(Object::toString)
                     .collect(Collectors.toList());
         }

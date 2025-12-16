@@ -46,8 +46,6 @@ public class EmailQueueServiceImpl implements EmailQueueService {
     @Override
     @Transactional
     public int processPendingEmails(int batchSize) {
-        log.debug("Processing pending emails, batch size: {}", batchSize);
-
         List<EmailQueue> pendingEmails = emailQueueRepository.findPendingEmailsReadyToProcess(
                 Instant.now(),
                 PageRequest.of(0, batchSize));
@@ -55,6 +53,8 @@ public class EmailQueueServiceImpl implements EmailQueueService {
         if (pendingEmails.isEmpty()) {
             return 0;
         }
+
+        log.debug("Processing pending emails, batch size: {}", batchSize);
 
         int processed = 0;
         for (EmailQueue email : pendingEmails) {
@@ -74,8 +74,6 @@ public class EmailQueueServiceImpl implements EmailQueueService {
     @Override
     @Transactional
     public int processRetryQueue() {
-        log.debug("Processing retry queue");
-
         List<EmailQueue> retryEmails = emailQueueRepository.findEmailsReadyForRetry(
                 Instant.now(),
                 PageRequest.of(0, emailConfig.getQueue().getBatchSize()));
@@ -83,6 +81,8 @@ public class EmailQueueServiceImpl implements EmailQueueService {
         if (retryEmails.isEmpty()) {
             return 0;
         }
+
+        log.debug("Processing retry queue");
 
         int processed = 0;
         for (EmailQueue email : retryEmails) {

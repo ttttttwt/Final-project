@@ -126,6 +126,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         // Call Gemini API
         GeminiResponseDTO response = geminiClientService.generateContent(prompt);
 
+        log.info("Raw Gemini response content: {}", response.content());
+
         long responseTimeMs = System.currentTimeMillis() - startTime;
 
         // Track usage
@@ -230,7 +232,16 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
             }
             cleaned = cleaned.trim();
 
-            return objectMapper.readValue(cleaned, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> parsed = objectMapper.readValue(cleaned, new TypeReference<Map<String, Object>>() {});
+
+            // Unwrap "exerciseSet" wrapper if present (as requested in prompt)
+            if (parsed.containsKey("exerciseSet") && parsed.get("exerciseSet") instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> inner = (Map<String, Object>) parsed.get("exerciseSet");
+                return inner;
+            }
+
+            return parsed;
         } catch (JsonProcessingException e) {
             log.error("Failed to parse AI response as JSON: {}", e.getMessage());
             return null;
