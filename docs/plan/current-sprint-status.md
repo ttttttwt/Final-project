@@ -3,8 +3,8 @@
 ## Sprint 5 — AI Integration (Gemini API)
 
 **Sprint**: 5 / 8 | **Duration**: Dec 12 – Dec 31, 2025 (20 days)  
-**Status**: 🟢 In Progress (Day 5) | **Progress**: 24.0/31.5 points (76.2%)  
-**Last Updated**: December 13, 2025 (Epic A: 93.3% ✅, Epic B: 100% ✅, Epic C: 80% ✅, Epic D: 80% ✅)
+**Status**: 🟢 In Progress (Day 5) | **Progress**: 28.0/31.5 points (88.9%)  
+**Last Updated**: December 16, 2025 (Epic A: 93.3% ✅, Epic B: 100% ✅, Epic C: 80% ✅, Epic D: 80% ✅, Epic E: 80% ✅)
 
 ---
 
@@ -24,19 +24,22 @@
 
 **Velocity Target**: 1.45 pts/day (29 points / 20 days)
 
-**Recent Updates** (Dec 13 - Sprint Day 5):
+**Recent Updates** (Dec 16 - Sprint Day 5):
 
-- ✅ **Task B7 Complete**: FallbackContentService with flexible matching (0.5 pt)
-- ✅ **Task B9 Complete**: Context window management with sliding window + summarization (1 pt)
-- ✅ **Code Review**: Fixed CRITICAL data loss bug in summarizeOldMessages
-- ✅ **Code Review**: Added automatic fallback for generateScenario, sendImmersiveMessage, sendLearningMessage
+- ✅ **Task E4 Complete**: Build flashcard study interface with animations (1 pt)
+- ✅ **Flashcard Components**: FlashCard (3D flip), SwipeableCard (gestures), StudyProgress, StudyTimer (isolated), MasteryIndicator, DeckCard
+- ✅ **Flashcard Pages**: Deck list, deck detail, study session with card stack
+- ✅ **Animations**: Pure CSS 3D transforms, swipe left/right, reduced motion support
+- ✅ **Keyboard Shortcuts**: Space (flip), Arrows (swipe), Escape (exit), Ctrl+Z (undo)
+- ✅ **Performance**: Isolated timer prevents page re-renders, memo() optimization
+- ✅ **Code Review**: 8.5/10 → 9.5/10 after fixes (timer, keyboard, memo)
+- ✅ **Epic E**: 80% complete (4/5 tasks, 4.0/5 pts)
+- ✅ **Previous**: E1, E2, E2a, E3 complete (AI services + role-play UI + grammar UI)
 - ✅ **Epic B**: 7/7 tasks complete (100%) - Role-play feature COMPLETE! ✅
-- ✅ **Tests**: 82 tests passing (79 unit tests for B7/B9)
-- ✅ **Previous**: B5, B6, C5, C6, D5, C4, D4, B4, C2, C3, A5, A9, A3, A4, A8, B2, B3, D2, D3 complete
 - ✅ **Epic A**: 7/9 tasks complete (93.3%)
 - ✅ **Epic C**: 4/5 tasks complete (80%)
 - ✅ **Epic D**: 4/5 tasks complete (80%)
-- 🎯 **Next**: A6 (Rate limiting), C7 (Grammar tests), D7 (Flashcard tests), E1 (Web UI)
+- 🎯 **Next**: E5 (Loading states), A6 (Rate limiting), D7/C7 (Integration tests)
 
 ---
 
@@ -335,7 +338,7 @@
 
 ### Epic E: Web Frontend (4 pts)
 
-**Status**: 🔄 In Progress (2.0/4 pts - 50%)  
+**Status**: 🔄 In Progress (4.0/5 pts - 80%)  
 **Timeline**: Day 15-18 (December 27-30)  
 **Dependencies**: Epics B, C, D
 
@@ -352,8 +355,33 @@
   - ✅ ModeToggle component with visual indicators
   - ✅ ModeDescription for explaining current mode
   - ✅ Connected to mode-specific backend endpoints
-- [ ] **E3**: Build grammar sandbox UI (1 pt)
-- [ ] **E4**: Build flashcard study interface with animations (1 pt)
+- [x] **E3**: Build grammar sandbox UI (1 pt) ✅ **COMPLETE** (Dec 16)
+  - ✅ Extended types/ai.ts with GrammarTopicDTO, GrammarProgressDTO, GrammarStatsDTO
+  - ✅ Extended ai-grammar.service.ts with 10+ API methods
+  - ✅ TopicSelector with category grouping and CEFR filtering
+  - ✅ ExerciseCard supporting 4 exercise types (MCQ, fill-blank, transformation, error-correction)
+  - ✅ ExerciseSetCard for history display with score visualization
+  - ✅ ResultCard with feedback, encouragement, and areas to improve
+  - ✅ StatsPanel with streaks, pass rate, time tracking
+  - ✅ PracticeTimer (isolated, memoized) for performance optimization
+  - ✅ Main page (app/ai/grammar/page.tsx) with generation form and history tabs
+  - ✅ Practice page (app/ai/grammar/[id]/page.tsx) with timer and submission
+  - ✅ Centralized time-utils.ts for DRY compliance
+  - ✅ Added radio-group.tsx and alert-dialog.tsx UI components
+- [x] **E4**: Build flashcard study interface with animations (1 pt) ✅ **COMPLETE** (Dec 16)
+  - ✅ FlashCard component: 3D flip animation (CSS transform rotateY), front/back faces, keyboard support
+  - ✅ SwipeableCard component: Touch/mouse drag gestures, SWIPE_THRESHOLD=100, visual indicators
+  - ✅ StudyProgress component: Progress bar, accuracy badge, correct/incorrect counts
+  - ✅ StudyTimer component: Isolated timer (prevents page re-renders), MM:SS format
+  - ✅ MasteryIndicator component: Star ratings 0-5, mastery bar, color coding
+  - ✅ DeckCard component: Deck list card with CEFR level badges, stats display
+  - ✅ useFlashcardKeyboard hook: Space (flip), Arrow keys (swipe left/right), Escape (exit), Ctrl+Z (undo)
+  - ✅ Flashcard pages: /ai/flashcards (list), /ai/flashcards/[id] (detail), /ai/flashcards/[id]/study (session)
+  - ✅ CSS animations: @keyframes swipe-left/right, 3D perspective, flashcard-inner flip, reduced motion support
+  - ✅ Study session: Card stack effect, swipe indicators (X/Check icons), undo functionality
+  - ✅ AI services: aiFlashcardService with all endpoints (generate, study, review)
+  - ✅ Code review fixes: Timer isolation, memo() on FlashCard, removed redundant keyboard handling
+  - ✅ Build passes: All routes compile successfully
 - [ ] **E5**: Add AI loading states and error handling (0.5 pt)
 
 ---
@@ -388,13 +416,13 @@
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| **Story Points** | 31.5 | 20.0 | 63.5% |
-| **Tasks Complete** | 37 | 21 | 56.8% |
+| **Story Points** | 31.5 | 28.0 | 88.9% |
+| **Tasks Complete** | 37 | 30 | 81.1% |
 | **Test Coverage (Backend)** | ≥70% | TBD | ⬜ |
 | **Test Coverage (Frontend)** | ≥60% | TBD | ⬜ |
 | **P0 Bugs** | 0 | 0 | ✅ |
 | **Days Remaining** | 20 | 15 | - |
-| **Velocity** | 1.45 pts/day | 4.00 pts/day | Day 5 |
+| **Velocity** | 1.45 pts/day | 5.60 pts/day | Day 5 |
 
 ---
 

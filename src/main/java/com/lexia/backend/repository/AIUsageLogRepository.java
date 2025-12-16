@@ -120,4 +120,33 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
            "WHERE a.createdAt >= :startDate " +
            "GROUP BY a.contentType")
     List<Object[]> sumCostByContentTypeSince(@Param("startDate") Instant startDate);
+
+    /**
+     * Get total cost by model since a date.
+     */
+    @Query("SELECT a.modelId, COALESCE(SUM(a.estimatedCostUsd), 0) FROM AIUsageLog a " +
+           "WHERE a.createdAt >= :startDate " +
+           "GROUP BY a.modelId")
+    List<Object[]> sumCostByModelSince(@Param("startDate") Instant startDate);
+
+    /**
+     * Get total cost by user since a date.
+     */
+    @Query("SELECT a.userId, COALESCE(SUM(a.estimatedCostUsd), 0), COUNT(a) FROM AIUsageLog a " +
+           "WHERE a.createdAt >= :startDate " +
+           "GROUP BY a.userId ORDER BY SUM(a.estimatedCostUsd) DESC")
+    List<Object[]> sumCostByUserSince(@Param("startDate") Instant startDate, Pageable pageable);
+
+    @Query("SELECT COUNT(DISTINCT a.userId) FROM AIUsageLog a WHERE a.createdAt >= :startDate")
+    long countActiveUsersSince(@Param("startDate") Instant startDate);
+
+    @Query("SELECT a.userId, COUNT(a), SUM(a.estimatedCostUsd), MAX(a.createdAt) FROM AIUsageLog a " +
+           "WHERE a.createdAt >= :startDate " +
+           "GROUP BY a.userId ORDER BY COUNT(a) DESC")
+    List<Object[]> findTopUsersSince(@Param("startDate") Instant startDate, Pageable pageable);
+
+    @Query("SELECT a.contentType, COUNT(a) FROM AIUsageLog a " +
+           "WHERE a.createdAt >= :startDate " +
+           "GROUP BY a.contentType")
+    List<Object[]> countGlobalByContentTypeSince(@Param("startDate") Instant startDate);
 }

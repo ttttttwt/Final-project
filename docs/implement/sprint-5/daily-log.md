@@ -244,17 +244,34 @@
 - [x] Code review: PASS
 
 ### 📊 Sprint Progress Update
-- **Epic D Progress**: 80% (6/7 tasks, 4.0/5.0 points)
-- **Sprint Progress**: 60.3% (19.0/31.5 points)
-- **Velocity**: 3.80 pts/day (262% of target)
+- **Epic E Progress**: 80% (4/5 tasks, 4.0/5.0 points)
+- **Epic D Progress**: 80% (4/5 tasks, 4.0/5.0 points)
+- **Sprint Progress**: 88.9% (28.0/31.5 points)
+- **Velocity**: 5.60 pts/day (386% of target)
 - **Days Elapsed**: 5/20 (25%)
-- **Completed Tasks**: D1, D2, D3, D4, D5, D6 (D7 remaining)
+- **Completed Tasks**: E1, E2, E2a, E3, E4 (E5 remaining)
 
-### 🎯 Next Steps (Day 6 - Dec 14)
-- [ ] **C5**: Create GrammarController with REST endpoints (0.5 pt) ✅ **ALREADY DONE**
+### 📋 Tasks Completed (Late Evening Session)
+- [x] **E4**: Build flashcard study interface with animations (1 pt) ✅ **COMPLETE**
+  - Created FlashCard component with 3D flip animation (191 lines, memo-optimized)
+  - Created SwipeableCard with touch/mouse gestures (229 lines, SWIPE_THRESHOLD=100)
+  - Created StudyProgress component with progress bar + stats (153 lines)
+  - Created StudyTimer isolated component (prevents page re-renders) (85 lines)
+  - Created MasteryIndicator with star ratings 0-5 (143 lines)
+  - Created DeckCard for deck list with CEFR badges (124 lines)
+  - Created useFlashcardKeyboard hook (Space, Arrows, Escape, Ctrl+Z) (168 lines)
+  - Created flashcard pages: list, [id], [id]/study (573 lines study page)
+  - Added flashcard CSS animations to globals.css (3D transforms, swipe, reduced motion)
+  - 17 new files created (components, pages, hooks)
+  - Routes: /ai/flashcards, /ai/flashcards/[id], /ai/flashcards/[id]/study
+  - Code Review: 8.5/10 → Fixed timer re-renders, keyboard cleanup, memo() added
+  - Build passes successfully ✅
+
+### 🎯 Next Steps (Day 6 - Dec 17)
+- [ ] **E5**: Add AI loading states and error handling (0.5 pt)
 - [ ] **A6**: Implement AiRateLimitService per user/feature (1 pt)
-- [ ] **B5**: Implement RolePlayController REST endpoints (1 pt)
 - [ ] **D7**: Write FlashcardService integration tests (1 pt)
+- [ ] **C7**: Write GrammarExerciseService integration tests (1 pt)
 
 ### 🔍 Notes
 - D5 completed using three-step workflow: Planning → Implementation → Code Review
@@ -2139,7 +2156,84 @@ GrammarControllerTest > GetFallbackExercisesTests > getFallback_noFallback_retur
   - Visual indicators (pulsing dots) for active mode
   - Connected to backend endpoints (`/messages/immersive`, `/messages/learning`)
 
+- [x] **E3**: Build grammar sandbox UI (1 pt) ✅ **COMPLETE** (Dec 16)
+  - **Workflow**: Three-step process (Planning → Implementation → Code Review)
+  - **Planning**: Used Plan subagent + UI/UX Pro Max skill for design research
+  - **Types Extended**: Added GrammarTopicDTO, GrammarProgressDTO, GrammarStatsDTO to `types/ai.ts`
+  - **Service Extended**: Added 10+ methods to `ai-grammar.service.ts` (getTopics, getTopicsByLevel, getCategories, getExerciseSet, getStats, getProgress, hasSubmitted, getFallbackExercises)
+  - **Components Created** (6 files in `components/ai/grammar/`):
+    - `TopicSelector.tsx`: Dropdown with category grouping, CEFR filtering, skeleton loader
+    - `ExerciseCard.tsx`: Renders 4 exercise types (MCQ, fill-blank, transformation, error-correction)
+    - `ExerciseSetCard.tsx`: History card showing score, percentage, pass/fail
+    - `ResultCard.tsx`: Post-submission display with encouragement and areas to improve
+    - `StatsPanel.tsx`: User statistics with streaks, pass rate, time tracking
+    - `PracticeTimer.tsx`: Isolated memoized timer component (performance fix)
+    - `index.ts`: Barrel exports
+  - **Pages Created**:
+    - `app/ai/grammar/page.tsx`: Main page with generation form, history tabs, stats sidebar (~515 lines)
+    - `app/ai/grammar/[id]/page.tsx`: Practice page with timer, question navigation, submission (~480 lines)
+  - **UI Components Added**: `radio-group.tsx`, `alert-dialog.tsx` (shadcn/ui)
+  - **Dependencies Installed**: @radix-ui/react-radio-group, @radix-ui/react-alert-dialog
+  - **Code Review Fixes Applied**:
+    - ✅ Timer isolated in `PracticeTimer` component (prevents full-page re-renders every second)
+    - ✅ Time formatting centralized in `lib/time-utils.ts` (DRY compliance)
+    - ✅ Type safety improved (`Record<number, string>` instead of `any`)
+    - ✅ `handleSubmit` signature fixed to accept optional `force` parameter
+  - **Key Features**:
+    - CEFR level selection (A1-C2) with visual badges
+    - Topic selector grouped by category
+    - Theme options, exercise count/time configuration
+    - Real-time countdown timer (isolated for performance)
+    - Question navigation with progress indicators
+    - Submit confirmation dialog for incomplete answers
+    - Results display with score, feedback, areas to improve
+    - History tab with infinite scroll pagination
+    - Stats panel with streaks and pass rate
+
 ### 🔧 Service Enhancements
 - Added `getScenario()` method to fetch scenario details
 - Added `endConversation()` method to mark conversations complete
 - Added `sendMessageWithMode()` for mode-specific message endpoints
+- Extended `ai-grammar.service.ts` with full API coverage for grammar feature
+
+### 📦 Files Created/Modified (E3 - Grammar Sandbox UI)
+
+| File | Type | Lines | Description |
+|------|------|-------|-------------|
+| `types/ai.ts` | Modified | +45 | GrammarTopicDTO, GrammarProgressDTO, GrammarStatsDTO |
+| `services/ai-grammar.service.ts` | Modified | +80 | 10+ new API methods |
+| `components/ai/grammar/TopicSelector.tsx` | New | ~150 | Topic dropdown with category grouping |
+| `components/ai/grammar/ExerciseCard.tsx` | New | ~280 | 4 exercise type renderers |
+| `components/ai/grammar/ExerciseSetCard.tsx` | New | ~176 | History card with score display |
+| `components/ai/grammar/ResultCard.tsx` | New | ~223 | Results with feedback |
+| `components/ai/grammar/StatsPanel.tsx` | New | ~172 | Statistics panel |
+| `components/ai/grammar/PracticeTimer.tsx` | New | ~115 | Isolated memoized timer |
+| `components/ai/grammar/index.ts` | New | ~10 | Barrel exports |
+| `app/ai/grammar/page.tsx` | New | ~515 | Main page with form/history |
+| `app/ai/grammar/[id]/page.tsx` | New | ~480 | Practice page with timer |
+| `components/ui/radio-group.tsx` | New | ~44 | shadcn/ui component |
+| `components/ui/alert-dialog.tsx` | New | ~142 | shadcn/ui component |
+| `lib/time-utils.ts` | New | ~35 | Centralized time formatting |
+| **Total New Code** | | **~2,467 lines** | **14 files** |
+
+### 📊 Sprint Progress Update (Day 5 - Dec 16)
+- **Epic E Progress**: 75% (4/5 tasks, 3.0/4.0 points)
+- **Sprint Progress**: 85.7% (27.0/31.5 points)
+- **Velocity**: 5.40 pts/day (372% of target)
+- **Days Elapsed**: 5/20 (25%)
+- **Completed Tasks**: E1, E2, E2a, E3 (E4, E5 remaining)
+
+### ⏱️ Time Spent (Day 5 - E3)
+- Planning & research: 20 minutes (subagent + UI/UX skill)
+- Implementation: 1.5 hours (types, service, components, pages)
+- Code review: 30 minutes (identified performance + DRY issues)
+- Refactoring: 30 minutes (PracticeTimer, time-utils.ts, type safety)
+- Validation & documentation: 15 minutes
+- **Total**: ~2.75 hours
+
+### 🎯 Next Steps (Day 6 - Dec 17)
+- [ ] **E4**: Build flashcard study interface with animations (1 pt)
+- [ ] **E5**: Add AI loading states and error handling (0.5 pt)
+- [ ] **A6**: Implement AiRateLimitService per user/feature (1 pt)
+- [ ] **C7**: Write grammar unit + integration tests (≥70%) (1 pt)
+- [ ] **D7**: Write flashcard unit + integration tests (≥70%) (1 pt)
