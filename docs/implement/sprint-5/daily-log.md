@@ -2110,3 +2110,36 @@ GrammarControllerTest > GetFallbackExercisesTests > getFallback_noFallback_retur
   - Created `lexia-web/services/ai-flashcard.service.ts` for deck management and study sessions.
   - Ensured strict type safety and consistency with backend API.
 
+- [x] **E2**: Build role-play chat interface (1 pt) ✅ **COMPLETE** (Dec 16)
+  - Created `components/ai/roleplay/` with 6 components:
+    - `TypingIndicator.tsx`: Animated typing dots for AI responses
+    - `MessageBubble.tsx`: Chat messages with user/AI styling and feedback display
+    - `VocabularyPanel.tsx`: Sidebar with key vocabulary, definitions, TTS support
+    - `ModeToggle.tsx`: Pill-style toggle between Immersive/Learning modes
+    - `ScenarioCard.tsx`: Scenario preview cards with CEFR badges and objectives
+    - `ConversationChat.tsx`: Main chat container with message history, input, mode toggle
+  - Created `app/ai/roleplay/` page structure:
+    - `page.tsx`: Scenario selection with generation form and conversation history
+    - `[id]/page.tsx`: Active conversation view with full chat interface
+    - `layout.tsx`: Metadata for SEO
+  - Features implemented:
+    - Immersive/Learning mode toggle with real-time switching
+    - Vocabulary hints sidebar (desktop) / drawer (mobile)
+    - Message feedback display for Learning mode (grammar, vocabulary, tips)
+    - Optimistic UI updates for responsive feel
+    - Character limit (500) with visual counter
+    - Keyboard shortcuts (Enter to send)
+    - Loading states and error handling
+    - Responsive design (320px - 1920px)
+    - Dark mode support
+    - ARIA labels and accessibility
+
+- [x] **E2a**: Add mode toggle button (Immersive/Learning) (0.5 pt) ✅ **COMPLETE** (Dec 16)
+  - Implemented in `ModeToggle.tsx` component
+  - Visual indicators (pulsing dots) for active mode
+  - Connected to backend endpoints (`/messages/immersive`, `/messages/learning`)
+
+### 🔧 Service Enhancements
+- Added `getScenario()` method to fetch scenario details
+- Added `endConversation()` method to mark conversations complete
+- Added `sendMessageWithMode()` for mode-specific message endpoints

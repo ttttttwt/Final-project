@@ -335,13 +335,23 @@
 
 ### Epic E: Web Frontend (4 pts)
 
-**Status**: 🔄 In Progress (0.5/4 pts - 12.5%)  
+**Status**: 🔄 In Progress (2.0/4 pts - 50%)  
 **Timeline**: Day 15-18 (December 27-30)  
 **Dependencies**: Epics B, C, D
 
 - [x] **E1**: Create AI services (roleplay, grammar, flashcard) (0.5 pt) ✅ **COMPLETE** (Dec 16)
-- [ ] **E2**: Build role-play chat interface (1 pt)
-- [ ] **E2a**: Add mode toggle button (Immersive/Learning) (0.5 pt) 🔵 **P1**
+- [x] **E2**: Build role-play chat interface (1 pt) ✅ **COMPLETE** (Dec 16)
+  - ✅ ConversationChat with message history, input, and vocabulary panel
+  - ✅ MessageBubble with user/AI styling and feedback display
+  - ✅ VocabularyPanel with definitions, examples, and TTS
+  - ✅ ScenarioCard for scenario selection
+  - ✅ TypingIndicator for AI response animation
+  - ✅ Responsive design (desktop sidebar, mobile drawer)
+  - ✅ Dark mode and accessibility support
+- [x] **E2a**: Add mode toggle button (Immersive/Learning) (0.5 pt) ✅ **COMPLETE** (Dec 16)
+  - ✅ ModeToggle component with visual indicators
+  - ✅ ModeDescription for explaining current mode
+  - ✅ Connected to mode-specific backend endpoints
 - [ ] **E3**: Build grammar sandbox UI (1 pt)
 - [ ] **E4**: Build flashcard study interface with animations (1 pt)
 - [ ] **E5**: Add AI loading states and error handling (0.5 pt)

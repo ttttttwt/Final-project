@@ -37,6 +37,7 @@ out/
 .vscode/
 .shared/
 .github/
+.claude
 
 ### Environment Variables ###
 .env
