@@ -3,6 +3,7 @@ package com.lexia.backend.controller;
 import com.lexia.backend.dto.ai.UserAiQuotaDTO;
 import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.service.ai.AIQuotaService;
+import com.lexia.backend.repository.UserRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class AdminAIQuotaController {
 
     private final AIQuotaService quotaService;
+    private final UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<Page<UserAiQuotaDTO>> getAllQuotas(Pageable pageable) {
@@ -57,6 +59,15 @@ public class AdminAIQuotaController {
     private UserAiQuotaDTO mapToDTO(UserAiQuota entity) {
         UserAiQuotaDTO dto = new UserAiQuotaDTO();
         dto.setUserId(entity.getUserId());
+        
+        // Fetch user details
+        userRepository.findById(entity.getUserId()).ifPresent(user -> {
+            dto.setUserEmail(user.getEmail());
+            if (user.getProfile() != null) {
+                dto.setUserFullName(user.getProfile().getFullName());
+            }
+        });
+
         dto.setDailyLimit(entity.getDailyLimit());
         dto.setDailyUsed(entity.getDailyUsed());
         dto.setLastResetDaily(entity.getLastResetDaily());
@@ -65,6 +76,23 @@ public class AdminAIQuotaController {
         dto.setLastResetMonthly(entity.getLastResetMonthly());
         dto.setIsPremium(entity.getIsPremium());
         dto.setSuspended(entity.getSuspended());
+        
+        // Set isUnlimited
+        dto.setIsUnlimited(entity.getDailyLimit() == Integer.MAX_VALUE);
+
+        // Feature specific
+        dto.setRolePlayDailyLimit(entity.getFeatureDailyLimit("roleplay"));
+        dto.setRolePlayUsedToday(entity.getFeatureDailyUsage("roleplay"));
+        
+        dto.setGrammarDailyLimit(entity.getFeatureDailyLimit("grammar"));
+        dto.setGrammarUsedToday(entity.getFeatureDailyUsage("grammar"));
+        
+        dto.setFlashcardDailyLimit(entity.getFeatureDailyLimit("flashcard"));
+        dto.setFlashcardUsedToday(entity.getFeatureDailyUsage("flashcard"));
+        
+        dto.setTotalUsedToday(entity.getDailyUsed());
+        dto.setTotalDailyLimit(entity.getDailyLimit());
+
         return dto;
     }
 }

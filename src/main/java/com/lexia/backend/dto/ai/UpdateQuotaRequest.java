@@ -8,4 +8,9 @@ public class UpdateQuotaRequest {
     private Integer monthlyLimit;
     private Boolean isPremium;
     private Boolean suspended;
+
+    // Feature specific
+    private Integer rolePlayDailyLimit;
+    private Integer grammarDailyLimit;
+    private Integer flashcardDailyLimit;
 }

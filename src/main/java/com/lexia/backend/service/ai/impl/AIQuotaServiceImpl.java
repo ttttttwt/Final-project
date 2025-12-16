@@ -38,6 +38,9 @@ public class AIQuotaServiceImpl implements AIQuotaService {
         if (request.getMonthlyLimit() != null) quota.setMonthlyLimit(request.getMonthlyLimit());
         if (request.getSuspended() != null) quota.setSuspended(request.getSuspended());
         if (request.getIsPremium() != null) quota.setIsPremium(request.getIsPremium());
+        
+        updateFeatureLimits(quota, request);
+        
         return quotaRepository.save(quota);
     }
 
@@ -59,8 +62,42 @@ public class AIQuotaServiceImpl implements AIQuotaService {
             if (request.getMonthlyLimit() != null) quota.setMonthlyLimit(request.getMonthlyLimit());
             if (request.getSuspended() != null) quota.setSuspended(request.getSuspended());
             if (request.getIsPremium() != null) quota.setIsPremium(request.getIsPremium());
+            
+            updateFeatureLimits(quota, request);
         });
         quotaRepository.saveAll(quotas);
+    }
+
+    private void updateFeatureLimits(UserAiQuota quota, UpdateQuotaRequest request) {
+        if (request.getRolePlayDailyLimit() != null) {
+            updateFeatureLimit(quota, "roleplay", request.getRolePlayDailyLimit());
+        }
+        if (request.getGrammarDailyLimit() != null) {
+            updateFeatureLimit(quota, "grammar", request.getGrammarDailyLimit());
+        }
+        if (request.getFlashcardDailyLimit() != null) {
+            updateFeatureLimit(quota, "flashcard", request.getFlashcardDailyLimit());
+        }
+    }
+
+    private void updateFeatureLimit(UserAiQuota quota, String feature, Integer limit) {
+        java.util.Map<String, java.util.Map<String, Integer>> limits = quota.getFeatureLimits();
+        if (limits == null) {
+            limits = new java.util.HashMap<>();
+            quota.setFeatureLimits(limits);
+        }
+        
+        java.util.Map<String, Integer> featureLimit = limits.get(feature);
+        if (featureLimit == null) {
+            featureLimit = new java.util.HashMap<>();
+            limits.put(feature, featureLimit);
+        } else if (!(featureLimit instanceof java.util.HashMap)) {
+             // Convert immutable map to mutable
+             featureLimit = new java.util.HashMap<>(featureLimit);
+             limits.put(feature, featureLimit);
+        }
+        
+        featureLimit.put("daily", limit);
     }
 
     @Override
