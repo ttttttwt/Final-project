@@ -335,11 +335,11 @@
 
 ### Epic E: Web Frontend (4 pts)
 
-**Status**: ⬜ Not Started  
+**Status**: 🔄 In Progress (0.5/4 pts - 12.5%)  
 **Timeline**: Day 15-18 (December 27-30)  
 **Dependencies**: Epics B, C, D
 
-- [ ] **E1**: Create AI services (roleplay, grammar, flashcard) (0.5 pt)
+- [x] **E1**: Create AI services (roleplay, grammar, flashcard) (0.5 pt) ✅ **COMPLETE** (Dec 16)
 - [ ] **E2**: Build role-play chat interface (1 pt)
 - [ ] **E2a**: Add mode toggle button (Immersive/Learning) (0.5 pt) 🔵 **P1**
 - [ ] **E3**: Build grammar sandbox UI (1 pt)

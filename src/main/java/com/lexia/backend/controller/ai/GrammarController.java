@@ -62,7 +62,6 @@ public class GrammarController {
 
     private static final Logger LOG = LoggerFactory.getLogger(GrammarController.class);
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
 
     private final GrammarExerciseService grammarExerciseService;

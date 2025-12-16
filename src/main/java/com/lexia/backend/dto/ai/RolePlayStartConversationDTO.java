@@ -38,5 +38,6 @@ public class RolePlayStartConversationDTO {
         allowableValues = {"immersive", "learning"},
         defaultValue = "immersive"
     )
+    @Builder.Default
     private String mode = "immersive";
 }

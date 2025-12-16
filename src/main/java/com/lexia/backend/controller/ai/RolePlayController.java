@@ -68,7 +68,6 @@ public class RolePlayController {
 
     private static final Logger LOG = LoggerFactory.getLogger(RolePlayController.class);
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
 
     private final RolePlayService rolePlayService;

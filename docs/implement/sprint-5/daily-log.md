@@ -2091,4 +2091,22 @@ GrammarControllerTest > GetFallbackExercisesTests > getFallback_noFallback_retur
   - **Improvement**: Increased `gemini.max-output-tokens` to 4000 in `application.properties` to prevent AI response truncation which triggered the fallback mechanism.
 
 ### ? Validation
-- [x] `FlashcardServiceImplTest` passed.
+### 🧹 Code Cleanup & Warning Fixes
+- [x] **Fixed 7 warnings** identified in the codebase:
+  - `GrammarController.java`: Removed unused `DEFAULT_PAGE_SIZE`.
+  - `RolePlayController.java`: Removed unused `DEFAULT_PAGE_SIZE`.
+  - `FlashcardProgressDTO.java`: Removed unused `java.util.UUID` import.
+  - `GenerateFlashcardsDTO.java`: Removed unused `jakarta.validation.constraints.NotEmpty` and `java.util.UUID` imports.
+  - `RolePlayStartConversationDTO.java`: Added `@Builder.Default` to `mode` field to fix builder warning.
+  - `GrammarTopic.java`: Removed unused `java.util.List` import.
+  - `GrammarExerciseMapper.java`: Removed unused `TypeReference` import, `objectMapper` field, and unnecessary `@SuppressWarnings("unchecked")`.
+- [x] **Validation**: `./gradlew compileJava` passed successfully.
+
+### 📋 Tasks Completed
+- [x] **E1**: Create AI services (roleplay, grammar, flashcard) (0.5 pt)
+  - Created `lexia-web/types/ai.ts` with comprehensive DTO definitions matching backend.
+  - Created `lexia-web/services/ai-roleplay.service.ts` for scenario generation and conversation management.
+  - Created `lexia-web/services/ai-grammar.service.ts` for exercise generation and submission.
+  - Created `lexia-web/services/ai-flashcard.service.ts` for deck management and study sessions.
+  - Ensured strict type safety and consistency with backend API.
+

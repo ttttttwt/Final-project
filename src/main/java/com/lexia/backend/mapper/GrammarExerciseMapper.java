@@ -1,7 +1,5 @@
 package com.lexia.backend.mapper;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lexia.backend.dto.ai.*;
 import com.lexia.backend.entity.GrammarExerciseSet;
 import com.lexia.backend.entity.GrammarTopic;
@@ -29,8 +27,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class GrammarExerciseMapper {
-
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private GrammarExerciseMapper() {
         // Private constructor to prevent instantiation
@@ -317,7 +313,6 @@ public class GrammarExerciseMapper {
     /**
      * Parses a single exercise from a map.
      */
-    @SuppressWarnings("unchecked")
     private static GrammarExerciseDTO parseExercise(Map<String, Object> exerciseMap) {
         if (exerciseMap == null) {
             return null;
@@ -339,7 +334,6 @@ public class GrammarExerciseMapper {
     /**
      * Converts an object to a List of Strings.
      */
-    @SuppressWarnings("unchecked")
     private static List<String> toStringList(Object obj) {
         if (obj == null) {
             return Collections.emptyList();
