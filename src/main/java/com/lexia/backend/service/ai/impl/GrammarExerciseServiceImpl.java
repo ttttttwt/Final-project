@@ -123,8 +123,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         String prompt = promptTemplateService.getAndResolve(GRAMMAR_TEMPLATE_KEY, variables)
                 .orElseGet(() -> buildDefaultPrompt(request));
 
-        // Call Gemini API
-        GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+        // Call Gemini API with structured output (JSON mode)
+        GeminiResponseDTO response = geminiClientService.generateStructuredContent(prompt);
 
         log.info("Raw Gemini response content: {}", response.content());
 

@@ -59,6 +59,27 @@ public interface GeminiClientService {
     GeminiResponseDTO generateContent(String prompt, String model, float temperature, int maxTokens);
 
     /**
+     * Generates structured content (JSON) synchronously.
+     * 
+     * <p>Sets responseMimeType to "application/json" to ensure valid JSON output.</p>
+     * 
+     * @param prompt the prompt to send to Gemini
+     * @param model the model to use
+     * @param temperature creativity level (0.0-1.0)
+     * @param maxTokens maximum output tokens
+     * @return GeminiResponseDTO containing generated content and metadata
+     */
+    GeminiResponseDTO generateStructuredContent(String prompt, String model, float temperature, int maxTokens);
+
+    /**
+     * Generates structured content (JSON) synchronously using default model and config.
+     * 
+     * @param prompt the prompt to send to Gemini
+     * @return GeminiResponseDTO containing generated content and metadata
+     */
+    GeminiResponseDTO generateStructuredContent(String prompt);
+
+    /**
      * Generates content asynchronously using the default model.
      * 
      * <p>Non-blocking call that returns immediately with a CompletableFuture.

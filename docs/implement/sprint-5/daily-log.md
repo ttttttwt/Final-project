@@ -2082,3 +2082,13 @@ GrammarControllerTest > GetFallbackExercisesTests > getFallback_noFallback_retur
 - ✅ Epic D now 60% complete
 - ✅ Zero blockers
 - ✅ 223+ unit tests passing across all epics
+## Day 6 (December 16, 2025) - Monday
+
+### ?? Bug Fixes
+- [x] **Flashcard Generation Crash**: Fixed `UnrecognizedPropertyException` when saving flashcards.
+  - **Issue**: `FlashcardBack` entity had `isValid()` and `isComplete()` methods that Jackson serialized as properties ("valid", "complete"). When deserializing (e.g., during save/refresh), these fields were not found in the class, causing a crash.
+  - **Fix**: Added `@JsonIgnore` to `isValid()` and `isComplete()` in `FlashcardBack.java`.
+  - **Improvement**: Increased `gemini.max-output-tokens` to 4000 in `application.properties` to prevent AI response truncation which triggered the fallback mechanism.
+
+### ? Validation
+- [x] `FlashcardServiceImplTest` passed.

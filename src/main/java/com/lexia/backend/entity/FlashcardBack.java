@@ -1,5 +1,6 @@
 package com.lexia.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.io.Serializable;
@@ -120,6 +121,7 @@ public class FlashcardBack implements Serializable {
      * Checks if this back has complete vocabulary information.
      * @return true if definition, partOfSpeech, pronunciation, and example are all present
      */
+    @JsonIgnore
     public boolean isComplete() {
         return definition != null && !definition.isBlank()
                 && partOfSpeech != null && !partOfSpeech.isBlank()
@@ -131,6 +133,7 @@ public class FlashcardBack implements Serializable {
      * Checks if this back has minimal required information.
      * @return true if at least definition is present
      */
+    @JsonIgnore
     public boolean isValid() {
         return definition != null && !definition.isBlank();
     }

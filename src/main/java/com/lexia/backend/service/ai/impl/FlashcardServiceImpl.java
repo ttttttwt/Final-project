@@ -866,16 +866,36 @@ public class FlashcardServiceImpl implements FlashcardService {
         content.append("Title: ").append(lesson.getTitle()).append("\n");
         content.append("Type: ").append(lesson.getLessonType()).append("\n\n");
         
+        int initialLength = content.length();
+        
+        log.info("Extracting content for lesson {} (Type: {}). Raw content: {}", 
+                lesson.getId(), lesson.getLessonType(), lesson.getContent());
+
         // Parse and include relevant content
         try {
             JsonNode rootNode = objectMapper.readTree(lesson.getContent());
+            log.info("Parsed JSON keys: {}", rootNode.fieldNames());
             
             // Extract based on lesson type
             switch (lesson.getLessonType()) {
                 case READING:
-                    if (rootNode.has("passage")) {
+                    // Handle 'passages' array (new schema)
+                    if (rootNode.has("passages") && rootNode.get("passages").isArray()) {
+                        content.append("Passages:\n");
+                        for (JsonNode passage : rootNode.get("passages")) {
+                            if (passage.has("title")) {
+                                content.append("Title: ").append(passage.get("title").asText()).append("\n");
+                            }
+                            if (passage.has("text")) {
+                                content.append(passage.get("text").asText()).append("\n\n");
+                            }
+                        }
+                    } 
+                    // Handle 'passage' string (legacy/fallback)
+                    else if (rootNode.has("passage")) {
                         content.append("Passage:\n").append(rootNode.get("passage").asText()).append("\n");
                     }
+                    
                     if (rootNode.has("vocabulary")) {
                         content.append("Vocabulary: ").append(rootNode.get("vocabulary").toString()).append("\n");
                     }
@@ -897,6 +917,9 @@ public class FlashcardServiceImpl implements FlashcardService {
                     break;
                     
                 case SPEAKING:
+                    if (rootNode.has("scenario")) {
+                        content.append("Scenario: ").append(rootNode.get("scenario").asText()).append("\n");
+                    }
                     if (rootNode.has("prompts")) {
                         content.append("Prompts: ").append(rootNode.get("prompts").toString()).append("\n");
                     }
@@ -905,7 +928,15 @@ public class FlashcardServiceImpl implements FlashcardService {
                     }
                     break;
             }
+            
+            // If no structured content was extracted, fall back to the full JSON
+            if (content.length() == initialLength) {
+                log.warn("No structured content extracted for lesson {}. Falling back to raw JSON.", lesson.getId());
+                content.append(rootNode.toPrettyString());
+            }
+            
         } catch (JsonProcessingException e) {
+            log.warn("Failed to parse lesson content as JSON: {}", e.getMessage());
             // Fall back to raw content
             content.append(lesson.getContent());
         }

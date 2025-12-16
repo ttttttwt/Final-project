@@ -131,7 +131,7 @@ public class FlashcardDeck {
      * Source type indicating how the deck was created.
      * Stored as lowercase string in database.
      */
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = SourceTypeConverter.class)
     @Column(name = "source_type", length = 20)
     private SourceType sourceType;
 
@@ -148,6 +148,19 @@ public class FlashcardDeck {
      */
     @Column(name = "cefr_level", length = 2)
     private String cefrLevel;
+
+    @Converter
+    public static class SourceTypeConverter implements AttributeConverter<SourceType, String> {
+        @Override
+        public String convertToDatabaseColumn(SourceType attribute) {
+            return attribute == null ? null : attribute.getValue();
+        }
+
+        @Override
+        public SourceType convertToEntityAttribute(String dbData) {
+            return dbData == null ? null : SourceType.fromValue(dbData);
+        }
+    }
 
     /**
      * Flashcard data stored as JSONB array.

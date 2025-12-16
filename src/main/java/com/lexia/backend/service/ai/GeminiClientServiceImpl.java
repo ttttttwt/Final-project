@@ -191,6 +191,63 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     }
 
     @Override
+    @Retry(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
+    @RateLimiter(name = CIRCUIT_BREAKER_NAME)
+    public GeminiResponseDTO generateStructuredContent(String prompt, String model, float temperature, int maxTokens) {
+        validateConfiguration();
+        validatePrompt(prompt);
+
+        log.debug("Generating structured content with model: {}, temperature: {}, maxTokens: {}", 
+                  model, temperature, maxTokens);
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // Build structured config
+            GenerateContentConfig config = buildStructuredConfig(temperature, maxTokens);
+
+            // Create content request
+            Content content = Content.builder()
+                    .role("user")
+                    .parts(Part.fromText(prompt))
+                    .build();
+
+            // Log full JSON request data
+            logGeminiRequest(model, prompt, config, temperature, maxTokens);
+
+            // Generate response
+            GenerateContentResponse response = geminiClient.models.generateContent(model, content, config);
+
+            long responseTimeMs = System.currentTimeMillis() - startTime;
+
+            // Extract response data
+            String generatedText = extractText(response);
+            TokenUsageDTO tokenUsage = extractTokenUsage(response, prompt, generatedText);
+            String finishReason = extractFinishReason(response);
+
+            log.info("Structured content generated successfully. Model: {}, Tokens: {}, Time: {}ms",
+                     model, tokenUsage.totalTokens(), responseTimeMs);
+
+            return GeminiResponseDTO.success(generatedText, model, tokenUsage, responseTimeMs, finishReason);
+
+        } catch (Exception e) {
+            log.error("Error generating structured content: {}", e.getMessage(), e);
+            throw mapException(e);
+        }
+    }
+
+    @Override
+    @Retry(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
+    @RateLimiter(name = CIRCUIT_BREAKER_NAME)
+    public GeminiResponseDTO generateStructuredContent(String prompt) {
+        return generateStructuredContent(prompt, geminiConfig.getDefaultModel(), 
+                                         0.3f, // Lower temperature for structured output
+                                         geminiConfig.getMaxOutputTokens());
+    }
+
+    @Override
     @Async
     public CompletableFuture<GeminiResponseDTO> generateContentAsync(String prompt) {
         return generateContentAsync(prompt, geminiConfig.getDefaultModel());
@@ -489,6 +546,17 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         return GenerateContentConfig.builder()
                 .maxOutputTokens(maxTokens)
                 .temperature(temperature)
+                .build();
+    }
+
+    /**
+     * Builds a GenerateContentConfig for structured output (JSON).
+     */
+    private GenerateContentConfig buildStructuredConfig(float temperature, int maxTokens) {
+        return GenerateContentConfig.builder()
+                .maxOutputTokens(maxTokens)
+                .temperature(temperature)
+                .responseMimeType("application/json")
                 .build();
     }
 
