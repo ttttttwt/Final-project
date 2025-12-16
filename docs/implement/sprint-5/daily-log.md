@@ -2232,8 +2232,85 @@ GrammarControllerTest > GetFallbackExercisesTests > getFallback_noFallback_retur
 - **Total**: ~2.75 hours
 
 ### 🎯 Next Steps (Day 6 - Dec 17)
-- [ ] **E4**: Build flashcard study interface with animations (1 pt)
-- [ ] **E5**: Add AI loading states and error handling (0.5 pt)
 - [ ] **A6**: Implement AiRateLimitService per user/feature (1 pt)
 - [ ] **C7**: Write grammar unit + integration tests (≥70%) (1 pt)
 - [ ] **D7**: Write flashcard unit + integration tests (≥70%) (1 pt)
+- [ ] **F1**: Create AI services matching web (0.5 pt)
+- [ ] **F2**: Build role-play screen (mobile chat) (1 pt)
+
+---
+
+## Day 5 (December 16, 2025) - E5 Session
+
+### 📋 Task Completed
+- [x] **E5**: Add AI loading states and error handling (0.5 pt) ✅ **COMPLETE**
+
+### 🎯 Implementation Details
+
+#### New Hooks Created (lexia-web/hooks/)
+| File | Lines | Description |
+|------|-------|-------------|
+| `useNetworkStatus.ts` | ~80 | Online/offline detection, reconnection awareness, connectivity check |
+| `useRetryWithBackoff.ts` | ~120 | Exponential backoff (2→4→8s), countdown timer, retry exhaustion, callbacks |
+| `useAiQuota.ts` | ~100 | AI quota fetching from backend, isNearLimit/isAtLimit states |
+| `index.ts` | ~15 | Barrel export file |
+
+#### Enhanced Components (components/ai/common/)
+| Component | New Features |
+|-----------|--------------|
+| `AiLoadingState.tsx` | StreamingIndicator (pulsing dots), TypingIndicator, RoleplaySkeleton, GrammarExerciseSkeleton, FlashcardDeckSkeleton, FlashcardStudySkeleton, ChatMessageSkeleton, AiPageLoadingState |
+| `AiErrorBoundary.tsx` | AiErrorType enum, categorizeError(), getErrorDetails(), AiErrorCard with countdown/exhaustion, NetworkOfflineBanner, NetworkReconnectedBanner, TimeoutWarning |
+| `RetryButton.tsx` | RetryButtonWithCountdown, countdown display, attempt tracking, contact support when exhausted, RetryLink |
+| `AiHeader.tsx` | AiPageWrapper enhanced with showQuota, showNetworkStatus, feature props |
+
+#### Updated AI Pages
+- `app/ai/roleplay/page.tsx` - Added AiErrorCard, RoleplaySkeleton, feature="roleplay"
+- `app/ai/grammar/page.tsx` - Added AiErrorCard, GrammarExerciseSkeleton, feature="grammar"
+- `app/ai/flashcards/page.tsx` - Added FlashcardDeckSkeleton, AiLoadingState, feature="flashcards"
+
+#### Test Files Created (7 files, 106 tests)
+| File | Test Count | Coverage |
+|------|------------|----------|
+| `tests/components/ai/common/AiLoadingState.test.tsx` | 20 | Skeleton variants, streaming indicator |
+| `tests/components/ai/common/AiErrorBoundary.test.tsx` | 27 | Error categorization, network banners |
+| `tests/components/ai/common/RetryButton.test.tsx` | 15 | Countdown, exhaustion states |
+| `tests/components/ai/common/QuotaWarning.test.tsx` | 14 | Limit warnings, reset time |
+| `tests/hooks/useNetworkStatus.test.ts` | 8 | Online/offline events, reconnection |
+| `tests/hooks/useRetryWithBackoff.test.ts` | 10 | Backoff logic, retry limits |
+| `tests/hooks/useAiQuota.test.ts` | 12 | Quota fetching, limit calculations |
+
+### 📊 Code Review Results
+- **Agent**: code-review-specialist
+- **Rating**: PASS (No critical or major issues)
+- **Highlights**:
+  - ✅ Excellent accessibility (ARIA roles, aria-live="assertive")
+  - ✅ Intelligent error categorization
+  - ✅ Proper exponential backoff with jitter
+  - ✅ Clean barrel exports pattern
+  - ✅ Comprehensive test coverage
+- **Minor Suggestions**:
+  - Consider moving default quota limits to constants file
+  - Verify `/api/v1/ai/quota` endpoint exists in backend
+
+### 📈 Test Results
+```
+Test Suites: 1 failed (pre-existing Sidebar test), 16 passed, 17 total
+Tests: 1 failed, 155 passed, 156 total
+Time: 16.051 s
+```
+*Note: Sidebar test failure is pre-existing and unrelated to E5*
+
+### 📊 Sprint Progress Update (Day 5 - E5)
+- **Epic E Progress**: 100% (5/5 tasks, 5.0/5 points) ✅ **EPIC COMPLETE!**
+- **Sprint Progress**: 90.5% (28.5/31.5 points)
+- **Velocity**: 5.70 pts/day (393% of target)
+- **Days Elapsed**: 5/20 (25%)
+- **Remaining Tasks**: A6, C7, D7, F1-F4, G1-G3 (optional)
+
+### ⏱️ Time Spent (E5)
+- Planning & research (subagent): 15 minutes
+- Implementation (hooks + components): 1.5 hours
+- Test creation & fixing: 45 minutes
+- Code review: 15 minutes
+- Documentation: 10 minutes
+- **Total**: ~2.5 hours

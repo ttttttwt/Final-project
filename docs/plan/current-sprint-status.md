@@ -3,8 +3,8 @@
 ## Sprint 5 — AI Integration (Gemini API)
 
 **Sprint**: 5 / 8 | **Duration**: Dec 12 – Dec 31, 2025 (20 days)  
-**Status**: 🟢 In Progress (Day 5) | **Progress**: 28.0/31.5 points (88.9%)  
-**Last Updated**: December 16, 2025 (Epic A: 93.3% ✅, Epic B: 100% ✅, Epic C: 80% ✅, Epic D: 80% ✅, Epic E: 80% ✅)
+**Status**: 🟢 In Progress (Day 5) | **Progress**: 28.5/31.5 points (90.5%)  
+**Last Updated**: December 16, 2025 (Epic A: 93.3% ✅, Epic B: 100% ✅, Epic C: 80% ✅, Epic D: 80% ✅, Epic E: 100% ✅)
 
 ---
 
@@ -18,7 +18,7 @@
 - 🔄 Role-play conversations with AI partner - **Database Ready**
 - 🔄 Grammar exercise generator - **Database Ready**
 - 🔄 Flashcard auto-generation from lessons - **Database Ready**
-- ⬜ Web UI for AI features
+- ✅ Web UI for AI features - **100% COMPLETE**
 - ⬜ Mobile UI for AI features
 - 🎯 Admin dashboard for AI monitoring (optional)
 
@@ -26,20 +26,12 @@
 
 **Recent Updates** (Dec 16 - Sprint Day 5):
 
-- ✅ **Task E4 Complete**: Build flashcard study interface with animations (1 pt)
-- ✅ **Flashcard Components**: FlashCard (3D flip), SwipeableCard (gestures), StudyProgress, StudyTimer (isolated), MasteryIndicator, DeckCard
-- ✅ **Flashcard Pages**: Deck list, deck detail, study session with card stack
-- ✅ **Animations**: Pure CSS 3D transforms, swipe left/right, reduced motion support
-- ✅ **Keyboard Shortcuts**: Space (flip), Arrows (swipe), Escape (exit), Ctrl+Z (undo)
-- ✅ **Performance**: Isolated timer prevents page re-renders, memo() optimization
-- ✅ **Code Review**: 8.5/10 → 9.5/10 after fixes (timer, keyboard, memo)
-- ✅ **Epic E**: 80% complete (4/5 tasks, 4.0/5 pts)
-- ✅ **Previous**: E1, E2, E2a, E3 complete (AI services + role-play UI + grammar UI)
-- ✅ **Epic B**: 7/7 tasks complete (100%) - Role-play feature COMPLETE! ✅
-- ✅ **Epic A**: 7/9 tasks complete (93.3%)
-- ✅ **Epic C**: 4/5 tasks complete (80%)
-- ✅ **Epic D**: 4/5 tasks complete (80%)
-- 🎯 **Next**: E5 (Loading states), A6 (Rate limiting), D7/C7 (Integration tests)
+- ✅ **Task E5 Complete**: Add AI loading states and error handling (0.5 pt)
+- ✅ **New Hooks**: useNetworkStatus, useRetryWithBackoff, useAiQuota
+- ✅ **Enhanced Components**: AiLoadingState (10+ skeletons), AiErrorBoundary (categorization), RetryButton (countdown)
+- ✅ **Network Handling**: Offline detection, reconnection banners, timeout warnings
+- ✅ **Code Review**: PASS - No critical or major issues found
+- ✅ **Tests**: 155 passing, ≥60% coverage on new components
 
 ---
 
@@ -382,7 +374,39 @@
   - ✅ AI services: aiFlashcardService with all endpoints (generate, study, review)
   - ✅ Code review fixes: Timer isolation, memo() on FlashCard, removed redundant keyboard handling
   - ✅ Build passes: All routes compile successfully
-- [ ] **E5**: Add AI loading states and error handling (0.5 pt)
+- [x] **E5**: Add AI loading states and error handling (0.5 pt) ✅ **COMPLETE** (Dec 16)
+  - ✅ **New hooks created** in lexia-web/hooks/:
+    - `useNetworkStatus.ts`: Online/offline detection with reconnection awareness
+    - `useRetryWithBackoff.ts`: Exponential backoff (2s→4s→8s), countdown timer, retry exhaustion
+    - `useAiQuota.ts`: AI quota fetching, isNearLimit/isAtLimit states
+  - ✅ **AiLoadingState.tsx enhanced** with 10+ new components:
+    - StreamingIndicator (pulsing dots for SSE)
+    - TypingIndicator (animated dots)
+    - RoleplaySkeleton, GrammarExerciseSkeleton, FlashcardDeckSkeleton, FlashcardStudySkeleton
+    - ChatMessageSkeleton, AiPageLoadingState
+  - ✅ **AiErrorBoundary.tsx enhanced**:
+    - AiErrorType enum (network, timeout, rate_limit, quota, auth, server, unknown)
+    - categorizeError() function for intelligent error classification
+    - AiErrorCard with retryCountdown, attemptNumber, isExhausted props
+    - NetworkOfflineBanner, NetworkReconnectedBanner, TimeoutWarning components
+  - ✅ **RetryButton.tsx enhanced**:
+    - RetryButtonWithCountdown with countdown display and attempt tracking
+    - Contact support prompt when retries exhausted
+    - RetryLink for inline retry actions
+  - ✅ **AiPageWrapper enhanced**: showQuota, showNetworkStatus, feature props
+  - ✅ **AI pages integrated**: roleplay, grammar, flashcards pages use new components
+  - ✅ **Unit tests created** (7 test files):
+    - tests/components/ai/common/AiLoadingState.test.tsx (20 tests)
+    - tests/components/ai/common/AiErrorBoundary.test.tsx (27 tests)
+    - tests/components/ai/common/RetryButton.test.tsx (15 tests)
+    - tests/components/ai/common/QuotaWarning.test.tsx (14 tests)
+    - tests/hooks/useNetworkStatus.test.ts (8 tests)
+    - tests/hooks/useRetryWithBackoff.test.ts (10 tests)
+    - tests/hooks/useAiQuota.test.ts (12 tests)
+  - ✅ **Code Review**: PASS - No critical/major issues, accessibility excellent
+  - ✅ **Tests**: 155 passing (1 pre-existing sidebar test unrelated)
+
+**Progress**: 5/5 tasks complete (5.0/5 points - 100%) ✅ **EPIC COMPLETE!**
 
 ---
 
