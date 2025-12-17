@@ -92,12 +92,19 @@ public class RolePlayServiceImpl implements RolePlayService {
             Industry: %s
             User Context: %s
 
-            IMPORTANT ROLE ASSIGNMENT RULES:
-            - Create scenarios where EITHER the user OR the AI can be the leader
-            - For meetings/interviews: vary who leads (sometimes user is interviewer, sometimes interviewee)
-            - The "openingLine" should ONLY be spoken by the LEADER role
-            - If "yourRole" (user) is the leader, set "openingLine" to empty string ""
-            - If "aiRole" is the leader, provide an appropriate opening line for AI
+            CRITICAL ROLE ASSIGNMENT RULES (MUST FOLLOW):
+            - The AI MUST ALWAYS be the LEADER who initiates and guides the conversation
+            - The USER MUST ALWAYS be the RESPONDER who reacts and answers
+            - ALWAYS provide an "openingLine" for the AI to start the conversation
+            - NEVER assign leadership roles to the user (no Manager, Interviewer, Doctor, Teacher, Host, etc.)
+
+            ROLE ASSIGNMENT EXAMPLES:
+            * JOB INTERVIEW: AI = Interviewer (HR Manager), User = Candidate (Developer, Designer, etc.)
+            * MEETINGS: AI = Project Manager, User = Team Member (Developer, Designer, Analyst)
+            * DOCTOR VISIT: AI = Doctor, User = Patient
+            * CUSTOMER SERVICE: AI = Support Agent, User = Customer
+            * HOTEL/RESTAURANT: AI = Receptionist/Waiter, User = Guest/Customer
+            * BUSINESS NEGOTIATION: AI = Seller/Vendor, User = Buyer/Client
 
             CONTEXT REQUIREMENTS (CRITICAL - PROVIDE RICH DETAILS):
             Always include SPECIFIC, CONCRETE details in contextDetails. Users need enough information to respond naturally.
@@ -113,9 +120,9 @@ public class RolePlayServiceImpl implements RolePlayService {
 
             SUGGESTED PROMPTS RULES:
             - ALWAYS provide 4-5 specific, actionable prompts
-            - Prompts should be complete sentences the user can say
-            - Match the user's role and the scenario context
-            - Include questions, statements, and requests appropriate to the situation
+            - Prompts should be complete sentences the user can say as a RESPONDER
+            - Match the user's responder role and the scenario context
+            - Include answers, questions to clarify, and appropriate responses to AI's questions
 
             Output strictly valid JSON matching this schema:
             {
@@ -125,15 +132,15 @@ public class RolePlayServiceImpl implements RolePlayService {
                 "setting": "specific location with details (e.g., 'TechCorp headquarters, 15th floor conference room')",
                 "situation": "detailed explanation of current circumstances and why this conversation is happening",
                 "keyInfo": ["5-7 specific facts the user should know, with names/numbers/dates"],
-                "yourGoal": "clear, specific objective for the user to achieve",
-                "tips": ["2-3 practical tips for handling this scenario professionally"]
+                "yourGoal": "clear, specific objective for the user to achieve as a responder",
+                "tips": ["2-3 practical tips for responding effectively in this scenario"]
               },
-              "yourRole": "string with role name and brief description",
-              "aiRole": "string with role name and brief description",
+              "yourRole": "string with RESPONDER role name and brief description (e.g., 'Software Developer - junior developer in the team')",
+              "aiRole": "string with LEADER role name and brief description (e.g., 'Project Manager - leading the weekly standup')",
               "objectives": ["3-4 learning objectives"],
               "keyVocabulary": [{"term": "string", "definition": "string", "ipa": "string"}],
-              "openingLine": "opening line for the LEADER role only, empty if user leads",
-              "suggestedPrompts": ["4-5 complete sentences the USER can say, specific to this scenario"],
+              "openingLine": "REQUIRED - AI's opening line to start the conversation (never empty)",
+              "suggestedPrompts": ["4-5 complete sentences the USER can say as a responder, specific to this scenario"],
               "agenda": ["3-5 specific topics to cover"],
               "suggestedDuration": 10
             }
@@ -1054,5 +1061,114 @@ public class RolePlayServiceImpl implements RolePlayService {
         String processed = input.replaceAll("(?i)(ignore|disregard)\\s+(previous|all)\\s+(instructions|prompts)",
                 "[filtered]");
         return processed.substring(0, Math.min(processed.length(), 500));
+    }
+
+    // ========== Conversation Deletion ==========
+
+    @Override
+    @Transactional
+    public void deleteConversation(UUID conversationId, UUID userId) {
+        log.debug("Deleting conversation {} for user {}", conversationId, userId);
+
+        RolePlayConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("RolePlayConversation", conversationId));
+
+        if (!conversation.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not own this conversation");
+        }
+
+        // Only allow deletion of completed or abandoned conversations
+        if (RolePlayConversation.STATUS_IN_PROGRESS.equals(conversation.getStatus())) {
+            throw new IllegalStateException(
+                    "Cannot delete an in-progress conversation. Please complete or abandon it first.");
+        }
+
+        conversationRepository.delete(conversation);
+
+        log.info("Deleted conversation {} (status: {}, messages: {})",
+                conversationId, conversation.getStatus(), conversation.getMessages().size());
+    }
+
+    // ========== Dynamic Prompts ==========
+
+    private static final String DYNAMIC_PROMPTS_TEMPLATE = """
+            Based on this conversation, generate 4-5 contextually relevant response prompts for the learner.
+
+            Scenario: %s
+            Learner's Role: %s
+            AI's Role: %s
+            CEFR Level: %s
+
+            AI's Last Message: "%s"
+
+            INSTRUCTIONS:
+            1. Generate 4-5 complete sentences the learner could say next
+            2. Prompts should be direct responses to what the AI just said
+            3. Include a variety: questions, answers, requests, statements
+            4. Match the CEFR level vocabulary and grammar complexity
+            5. Make them specific to the scenario context
+
+            Output as a JSON array of strings ONLY, no explanation:
+            ["prompt1", "prompt2", "prompt3", "prompt4", "prompt5"]
+            """;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> generateDynamicPrompts(UUID conversationId, UUID userId) {
+        log.debug("Generating dynamic prompts for conversation {}", conversationId);
+
+        RolePlayConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("RolePlayConversation", conversationId));
+
+        if (!conversation.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not own this conversation");
+        }
+
+        RolePlayScenario scenario = conversation.getScenario();
+        List<Map<String, Object>> messages = conversation.getMessages();
+
+        // Find the last AI message
+        String lastAiMessage = "";
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            Map<String, Object> msg = messages.get(i);
+            if ("ai".equals(msg.get("role"))) {
+                lastAiMessage = (String) msg.get("content");
+                break;
+            }
+        }
+
+        // If no AI message found, return default prompts from scenario
+        if (lastAiMessage.isEmpty()) {
+            log.info("No AI message found, returning scenario default prompts");
+            return scenario.getSuggestedPrompts() != null ? scenario.getSuggestedPrompts() : List.of();
+        }
+
+        try {
+            String prompt = String.format(DYNAMIC_PROMPTS_TEMPLATE,
+                    scenario.getContext() != null ? scenario.getContext() : scenario.getTitle(),
+                    scenario.getYourRole(),
+                    scenario.getAiRole(),
+                    scenario.getCefrLevel(),
+                    lastAiMessage);
+
+            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            String jsonContent = cleanJson(response.content());
+
+            // Parse JSON array
+            List<String> prompts = objectMapper.readValue(jsonContent,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+
+            log.info("Generated {} dynamic prompts for conversation {}", prompts.size(), conversationId);
+            return prompts;
+        } catch (Exception e) {
+            log.warn("Failed to generate dynamic prompts, falling back to scenario defaults: {}", e.getMessage());
+            return scenario.getSuggestedPrompts() != null ? scenario.getSuggestedPrompts()
+                    : List.of(
+                            "Could you tell me more about that?",
+                            "I understand. What should I do next?",
+                            "Thank you for the information.",
+                            "Can you explain that in more detail?",
+                            "I have a question about what you mentioned.");
+        }
     }
 }
