@@ -99,17 +99,42 @@ public class RolePlayServiceImpl implements RolePlayService {
             - If "yourRole" (user) is the leader, set "openingLine" to empty string ""
             - If "aiRole" is the leader, provide an appropriate opening line for AI
 
+            CONTEXT REQUIREMENTS (CRITICAL - PROVIDE RICH DETAILS):
+            Always include SPECIFIC, CONCRETE details in contextDetails. Users need enough information to respond naturally.
+
+            REQUIRED DETAILS BY SCENARIO TYPE:
+            * MEETINGS: Project name, current status (% complete), milestones achieved/missed, team members involved, budget status, specific issues to discuss
+            * JOB INTERVIEW: Company name, position title, salary range, required skills (3-5), interview round, interviewer's role, what they're looking for
+            * HOTEL/RESTAURANT BOOKING: Dates, number of guests, room/table type, price range, special requests, loyalty status
+            * DOCTOR/PATIENT: Patient age, specific symptoms (3-4), duration of illness, relevant history, medications tried, today's purpose
+            * BUSINESS NEGOTIATION: Product/service name, initial price, target price, contract terms, competitor offers, deal-breakers
+            * CUSTOMER SUPPORT: Order number, product name, purchase date, specific problem, previous contact attempts, desired resolution
+            * GENERAL: Specific names, locations, dates, relationship context, common interests
+
+            SUGGESTED PROMPTS RULES:
+            - ALWAYS provide 4-5 specific, actionable prompts
+            - Prompts should be complete sentences the user can say
+            - Match the user's role and the scenario context
+            - Include questions, statements, and requests appropriate to the situation
+
             Output strictly valid JSON matching this schema:
             {
-              "title": "string",
-              "context": "detailed context including agenda/topics to discuss, current situation, background info",
+              "title": "string - descriptive title",
+              "context": "2-3 sentence overview setting up the scenario",
+              "contextDetails": {
+                "setting": "specific location with details (e.g., 'TechCorp headquarters, 15th floor conference room')",
+                "situation": "detailed explanation of current circumstances and why this conversation is happening",
+                "keyInfo": ["5-7 specific facts the user should know, with names/numbers/dates"],
+                "yourGoal": "clear, specific objective for the user to achieve",
+                "tips": ["2-3 practical tips for handling this scenario professionally"]
+              },
               "yourRole": "string with role name and brief description",
               "aiRole": "string with role name and brief description",
-              "objectives": ["string"],
+              "objectives": ["3-4 learning objectives"],
               "keyVocabulary": [{"term": "string", "definition": "string", "ipa": "string"}],
               "openingLine": "opening line for the LEADER role only, empty if user leads",
-              "suggestedPrompts": ["3-5 example phrases the USER can say based on their role"],
-              "agenda": ["topic 1 to discuss", "topic 2", "topic 3"],
+              "suggestedPrompts": ["4-5 complete sentences the USER can say, specific to this scenario"],
+              "agenda": ["3-5 specific topics to cover"],
               "suggestedDuration": 10
             }
             """;

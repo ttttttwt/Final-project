@@ -29,6 +29,9 @@ public class RolePlayScenarioDTO {
     @Schema(description = "Scenario context", example = "You are in a weekly team meeting...")
     private String context;
 
+    @Schema(description = "Detailed context information including setting, situation, key facts, and goals")
+    private RolePlayContextDetailsDTO contextDetails;
+
     @Schema(description = "User role", example = "Team Member")
     private String yourRole;
 

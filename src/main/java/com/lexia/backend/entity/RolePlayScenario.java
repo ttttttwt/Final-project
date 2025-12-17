@@ -120,6 +120,32 @@ public class RolePlayScenario {
     @Builder.Default
     private Boolean isFallback = false;
 
+    /**
+     * JSON array of suggested prompts for the user.
+     * Example: ["Can you give me an update?", "What blockers do you have?"]
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "suggested_prompts", columnDefinition = "TEXT")
+    @Builder.Default
+    private List<String> suggestedPrompts = new ArrayList<>();
+
+    /**
+     * JSON object with detailed context information.
+     * Contains: setting, situation, keyInfo, yourGoal, tips
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "context_details", columnDefinition = "TEXT")
+    private Map<String, Object> contextDetails;
+
+    /**
+     * JSON array of agenda/discussion topics.
+     * Example: ["Project status", "Timeline review", "Blockers"]
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "agenda", columnDefinition = "TEXT")
+    @Builder.Default
+    private List<String> agenda = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();

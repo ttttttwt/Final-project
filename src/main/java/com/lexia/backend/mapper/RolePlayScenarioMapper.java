@@ -1,15 +1,18 @@
 package com.lexia.backend.mapper;
 
+import com.lexia.backend.dto.ai.RolePlayContextDetailsDTO;
 import com.lexia.backend.dto.ai.RolePlayScenarioDTO;
 import com.lexia.backend.dto.ai.RolePlayVocabularyItemDTO;
 import com.lexia.backend.entity.RolePlayScenario;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Mapper utility class for converting between RolePlayScenario entities and DTOs.
+ * Mapper utility class for converting between RolePlayScenario entities and
+ * DTOs.
  */
 public class RolePlayScenarioMapper {
 
@@ -26,6 +29,7 @@ public class RolePlayScenarioMapper {
                 .id(scenario.getId())
                 .title(scenario.getTitle())
                 .context(scenario.getContext())
+                .contextDetails(mapContextDetails(scenario.getContextDetails()))
                 .yourRole(scenario.getYourRole())
                 .aiRole(scenario.getAiRole())
                 .cefrLevel(scenario.getCefrLevel())
@@ -36,6 +40,8 @@ public class RolePlayScenarioMapper {
                 .openingLine(scenario.getOpeningLine())
                 .suggestedDuration(scenario.getSuggestedDuration())
                 .isFallback(scenario.getIsFallback())
+                .suggestedPrompts(safeList(scenario.getSuggestedPrompts()))
+                .agenda(safeList(scenario.getAgenda()))
                 .createdAt(scenario.getCreatedAt())
                 .build();
     }
@@ -49,6 +55,7 @@ public class RolePlayScenarioMapper {
                 .id(dto.getId())
                 .title(dto.getTitle())
                 .context(dto.getContext())
+                .contextDetails(unmapContextDetails(dto.getContextDetails()))
                 .yourRole(dto.getYourRole())
                 .aiRole(dto.getAiRole())
                 .cefrLevel(dto.getCefrLevel())
@@ -59,6 +66,8 @@ public class RolePlayScenarioMapper {
                 .openingLine(dto.getOpeningLine())
                 .suggestedDuration(dto.getSuggestedDuration())
                 .isFallback(dto.getIsFallback())
+                .suggestedPrompts(safeList(dto.getSuggestedPrompts()))
+                .agenda(safeList(dto.getAgenda()))
                 .createdAt(dto.getCreatedAt())
                 .build();
     }
@@ -103,5 +112,39 @@ public class RolePlayScenarioMapper {
 
     private static String asString(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static RolePlayContextDetailsDTO mapContextDetails(Map<String, Object> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+
+        return RolePlayContextDetailsDTO.builder()
+                .setting(asString(raw.get("setting")))
+                .situation(asString(raw.get("situation")))
+                .keyInfo(raw.get("keyInfo") instanceof List ? (List<String>) raw.get("keyInfo") : null)
+                .yourGoal(asString(raw.get("yourGoal")))
+                .tips(raw.get("tips") instanceof List ? (List<String>) raw.get("tips") : null)
+                .build();
+    }
+
+    private static Map<String, Object> unmapContextDetails(RolePlayContextDetailsDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        if (dto.getSetting() != null)
+            result.put("setting", dto.getSetting());
+        if (dto.getSituation() != null)
+            result.put("situation", dto.getSituation());
+        if (dto.getKeyInfo() != null)
+            result.put("keyInfo", dto.getKeyInfo());
+        if (dto.getYourGoal() != null)
+            result.put("yourGoal", dto.getYourGoal());
+        if (dto.getTips() != null)
+            result.put("tips", dto.getTips());
+        return result.isEmpty() ? null : result;
     }
 }
