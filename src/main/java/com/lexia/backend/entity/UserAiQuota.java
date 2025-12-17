@@ -193,6 +193,7 @@ public class UserAiQuota {
      * Gets the daily limit for a specific feature, applying premium multiplier if applicable.
      */
     public int getFeatureDailyLimit(String contentType) {
+        if (featureLimits == null) return dailyLimit;
         Map<String, Integer> limits = featureLimits.get(contentType);
         if (limits == null) {
             return dailyLimit; // Fall back to global limit
@@ -208,6 +209,7 @@ public class UserAiQuota {
      * Gets the monthly limit for a specific feature, applying premium multiplier if applicable.
      */
     public int getFeatureMonthlyLimit(String contentType) {
+        if (featureLimits == null) return monthlyLimit;
         Map<String, Integer> limits = featureLimits.get(contentType);
         if (limits == null) {
             return monthlyLimit; // Fall back to global limit
@@ -223,6 +225,7 @@ public class UserAiQuota {
      * Gets the daily usage count for a specific feature.
      */
     public int getFeatureDailyUsage(String contentType) {
+        if (featureUsage == null) return 0;
         Map<String, Integer> usage = featureUsage.get(contentType);
         if (usage == null) {
             return 0;
@@ -234,6 +237,7 @@ public class UserAiQuota {
      * Gets the monthly usage count for a specific feature.
      */
     public int getFeatureMonthlyUsage(String contentType) {
+        if (featureUsage == null) return 0;
         Map<String, Integer> usage = featureUsage.get(contentType);
         if (usage == null) {
             return 0;
