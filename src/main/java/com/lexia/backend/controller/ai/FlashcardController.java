@@ -147,6 +147,78 @@ public class FlashcardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(deck);
     }
 
+    /**
+     * Generate flashcards from a topic using AI.
+     * 
+     * <p>Uses Google Gemini AI to generate vocabulary flashcards based on
+     * the given topic and CEFR level.</p>
+     * 
+     * @param user the authenticated user
+     * @param request the generation request with topic and options
+     * @return 201 Created with generated flashcard deck
+     */
+    @PostMapping(value = "/generate-by-topic", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Generate flashcards from topic",
+        description = "Uses AI to generate vocabulary flashcards for a given topic. " +
+                      "Creates cards with definitions, example sentences, and pronunciation (IPA)."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Flashcards generated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = FlashcardDeckDTO.class),
+                examples = @ExampleObject(name = "Generated Deck", value = """
+                    {
+                      "id": "550e8400-e29b-41d4-a716-446655440000",
+                      "userId": "123e4567-e89b-12d3-a456-426614174000",
+                      "title": "Vocabulary: Business Negotiations",
+                      "description": "AI-generated vocabulary for: Business negotiations",
+                      "sourceType": "AI_GENERATED",
+                      "cefrLevel": "B2",
+                      "cardCount": 15,
+                      "createdAt": "2025-12-17T10:30:00Z"
+                    }
+                    """)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request - validation failed",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - Invalid or missing JWT token",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Rate limit exceeded - daily flashcard quota reached",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "503",
+            description = "AI service unavailable",
+            content = @Content(mediaType = "application/json")
+        )
+    })
+    public ResponseEntity<FlashcardDeckDTO> generateFromTopic(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody GenerateFlashcardsByTopicDTO request) {
+
+        LOG.info("User {} generating flashcards from topic '{}'", user.getEmail(), request.getTopic());
+
+        FlashcardDeckDTO deck = flashcardService.generateFromTopic(request, user.getId());
+
+        LOG.info("User {} generated deck '{}' with {} cards from topic", 
+                user.getEmail(), deck.getTitle(), deck.getCardCount());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(deck);
+    }
+
     // ========== Deck CRUD Endpoints ==========
 
     /**

@@ -59,6 +59,12 @@ public class RolePlayScenarioDTO {
     @Schema(description = "True if this is pre-seeded fallback content", example = "false")
     private Boolean isFallback;
 
+    @Schema(description = "Suggested prompts/phrases the user can say", example = "[\"Can you give me an update?\", \"What blockers do you have?\"]")
+    private List<String> suggestedPrompts;
+
+    @Schema(description = "Agenda items or topics to discuss", example = "[\"Project status\", \"Timeline review\", \"Blockers\"]")
+    private List<String> agenda;
+
     @Schema(description = "Created timestamp", accessMode = Schema.AccessMode.READ_ONLY)
     private Instant createdAt;
 }

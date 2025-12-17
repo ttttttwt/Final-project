@@ -65,26 +65,17 @@ public class AiController {
         response.setMonthlyResetAt(monthlyReset.toInstant().toString());
 
         if (feature != null && !feature.isEmpty()) {
-            // Feature-specific quota
-            Map<String, Map<String, Integer>> featureLimits = userQuota.getFeatureLimits();
-            Map<String, Map<String, Integer>> featureUsage = userQuota.getFeatureUsage();
-            
-            Map<String, Integer> limits = featureLimits != null ? featureLimits.getOrDefault(feature, Map.of()) : Map.of();
-            Map<String, Integer> usage = featureUsage != null ? featureUsage.getOrDefault(feature, Map.of()) : Map.of();
-            
-            // If feature specific limits are not set, fallback to global limits or 0?
-            // Usually if feature limit is not set, it might mean it uses global limit or has no specific limit.
-            // For now, let's return what's in the map, defaulting to 0 if not found, 
-            // but maybe we should fallback to global if 0? 
-            // The frontend logic might handle 0 as "no limit" or "blocked".
-            // Let's assume if feature limit is missing, we return global limit as a safe fallback for now, 
-            // or just 0. Given the user report, returning 0 might block them if they rely on this.
-            // However, the entity has "createDefaultFeatureLimits" so it should be populated.
-            
-            response.setDailyLimit(limits.getOrDefault("daily", userQuota.getDailyLimit()));
-            response.setMonthlyLimit(limits.getOrDefault("monthly", userQuota.getMonthlyLimit()));
-            response.setDailyUsed(usage.getOrDefault("daily", 0));
-            response.setMonthlyUsed(usage.getOrDefault("monthly", 0));
+            // Normalize feature key
+            String featureKey = feature.toLowerCase();
+            if (featureKey.equals("role_play")) featureKey = "roleplay";
+            if (featureKey.equals("magic_flashcard")) featureKey = "flashcard";
+            if (featureKey.equals("grammar_sandbox")) featureKey = "grammar";
+
+            // Feature-specific quota using entity helper methods
+            response.setDailyLimit(userQuota.getFeatureDailyLimit(featureKey));
+            response.setMonthlyLimit(userQuota.getFeatureMonthlyLimit(featureKey));
+            response.setDailyUsed(userQuota.getFeatureDailyUsage(featureKey));
+            response.setMonthlyUsed(userQuota.getFeatureMonthlyUsage(featureKey));
         } else {
             // Global quota
             response.setDailyLimit(userQuota.getDailyLimit());

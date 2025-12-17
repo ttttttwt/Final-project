@@ -66,7 +66,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     /** Pattern to extract JSON from AI response */
     private static final Pattern JSON_PATTERN = Pattern.compile("\\{[\\s\\S]*\\}|\\[[\\s\\S]*\\]");
 
-    /** Prompt template for flashcard generation */
+    /** Prompt template for flashcard generation from lesson */
     private static final String FLASHCARD_GENERATION_PROMPT = """
         You are an expert English vocabulary teacher creating flashcards for language learners.
         
@@ -96,6 +96,41 @@ public class FlashcardServiceImpl implements FlashcardService {
               "collocations": ["collaborate with", "collaborate on", "closely collaborate"]
             },
             "tags": ["business", "teamwork"],
+            "difficulty": 3
+          }
+        ]
+        
+        Generate exactly %d cards. Output ONLY the JSON array, no additional text.
+        """;
+
+    /** Prompt template for flashcard generation from topic */
+    private static final String TOPIC_FLASHCARD_GENERATION_PROMPT = """
+        You are an expert English vocabulary teacher creating flashcards for language learners.
+        
+        TASK: Generate %d vocabulary flashcards about the topic: %s
+        CEFR Level: %s
+        Focus Areas: %s
+        
+        OUTPUT REQUIREMENTS:
+        - Generate flashcards for vocabulary words/phrases commonly used in this topic
+        - Each card should have: word/phrase, definition, part of speech, pronunciation (IPA), example sentence
+        - Include synonyms and collocations where relevant
+        - Assign difficulty level (1-5) based on word frequency and complexity
+        - Make sure vocabulary is appropriate for the CEFR level
+        - Output ONLY valid JSON array matching this schema:
+        
+        [
+          {
+            "front": "negotiate",
+            "back": {
+              "definition": "to discuss something with someone to reach an agreement",
+              "partOfSpeech": "verb",
+              "pronunciation": "/nɪˈɡoʊʃieɪt/",
+              "exampleSentence": "We need to negotiate the terms of the contract.",
+              "synonyms": ["bargain", "discuss", "work out"],
+              "collocations": ["negotiate with", "negotiate a deal", "negotiate terms"]
+            },
+            "tags": ["business", "communication"],
             "difficulty": 3
           }
         ]
@@ -158,6 +193,59 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         log.info("Created flashcard deck {} with {} cards (fallback: {})", 
                 deck.getId(), cards.size(), usedFallback);
+
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
+    }
+
+    @Override
+    public FlashcardDeckDTO generateFromTopic(GenerateFlashcardsByTopicDTO request, UUID userId) {
+        log.info("Generating flashcards from topic '{}' for user {}", request.getTopic(), userId);
+
+        String cefrLevel = request.getCefrLevelOrDefault();
+        int maxCards = request.getCardCountOrDefault();
+        String focusAreasStr = request.getFocusAreas() != null && !request.getFocusAreas().isEmpty() ? 
+                String.join(", ", request.getFocusAreas()) : "general vocabulary";
+
+        // Generate flashcards using AI
+        List<FlashcardCard> cards;
+        boolean usedFallback = false;
+
+        try {
+            cards = generateCardsFromTopicWithAI(request.getTopic(), cefrLevel, maxCards, focusAreasStr, userId);
+        } catch (Exception e) {
+            log.warn("AI generation from topic failed, using fallback: {}", e.getMessage());
+            cards = generateFallbackCardsForTopic(request.getTopic(), cefrLevel, maxCards);
+            usedFallback = true;
+        }
+
+        // Validate we got cards
+        if (cards == null || cards.isEmpty()) {
+            throw new AiServiceException("Failed to generate flashcards for topic: " + request.getTopic());
+        }
+
+        // Create the deck
+        String title = request.getEffectiveTitle();
+        String description = request.getDescription() != null ? 
+                request.getDescription() : 
+                "AI-generated vocabulary for: " + request.getTopic();
+
+        FlashcardDeck deck = FlashcardDeck.builder()
+                .userId(userId)
+                .title(title)
+                .description(description)
+                .sourceType(FlashcardDeck.SourceType.AI_GENERATED)
+                .cefrLevel(cefrLevel)
+                .cards(cards)
+                .cardCount(cards.size())
+                .build();
+
+        deck = deckRepository.save(deck);
+
+        // Initialize progress records for all cards
+        initializeProgressRecords(deck, userId);
+
+        log.info("Created AI-generated deck {} with {} cards from topic '{}' (fallback: {})", 
+                deck.getId(), cards.size(), request.getTopic(), usedFallback);
 
         return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
@@ -729,6 +817,61 @@ public class FlashcardServiceImpl implements FlashcardService {
             trackAiUsage(userId, null, System.currentTimeMillis() - startTime, false, e.getMessage());
             throw new AiServiceException("Failed to generate flashcards with AI", e);
         }
+    }
+
+    /**
+     * Generates flashcards from a topic using Gemini AI.
+     */
+    private List<FlashcardCard> generateCardsFromTopicWithAI(
+            String topic, 
+            String cefrLevel, 
+            int maxCards, 
+            String focusAreas,
+            UUID userId) {
+        
+        String prompt = String.format(TOPIC_FLASHCARD_GENERATION_PROMPT, 
+                maxCards, topic, cefrLevel, focusAreas, maxCards);
+
+        // Track AI usage
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            
+            // Track successful usage
+            trackAiUsage(userId, response, System.currentTimeMillis() - startTime, true, null);
+            
+            return parseAIGeneratedCards(response.content());
+        } catch (Exception e) {
+            // Track failed usage
+            trackAiUsage(userId, null, System.currentTimeMillis() - startTime, false, e.getMessage());
+            throw new AiServiceException("Failed to generate flashcards from topic with AI", e);
+        }
+    }
+
+    /**
+     * Generates fallback flashcards for a topic when AI fails.
+     */
+    private List<FlashcardCard> generateFallbackCardsForTopic(String topic, String cefrLevel, int maxCards) {
+        log.info("Using fallback flashcard generation for topic: {}", topic);
+        
+        // Simple fallback: Create a basic card explaining that AI generation failed
+        // In production, you might want to have pre-generated vocabulary lists by topic
+        List<FlashcardCard> cards = new ArrayList<>();
+        
+        FlashcardCard card = new FlashcardCard();
+        card.setFront(topic);
+        FlashcardBack back = FlashcardBack.builder()
+                .definition("Vocabulary topic for learning. Please add your own cards.")
+                .partOfSpeech("noun")
+                .exampleSentence("Study the vocabulary related to " + topic + ".")
+                .build();
+        card.setBack(back);
+        card.setTags(List.of(topic.toLowerCase()));
+        card.setDifficulty(2);
+        cards.add(card);
+        
+        return cards;
     }
 
     /**

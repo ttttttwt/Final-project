@@ -55,6 +55,21 @@ public interface FlashcardService {
      */
     FlashcardDeckDTO generateFromLesson(GenerateFlashcardsDTO request, UUID userId);
 
+    /**
+     * Generates a flashcard deck from a topic using AI.
+     * 
+     * <p>This method uses Google Gemini AI to generate vocabulary flashcards
+     * based on the given topic and CEFR level, with definitions, example 
+     * sentences, and pronunciation.</p>
+     * 
+     * @param request the generation request containing topic and options
+     * @param userId the ID of the user requesting the generation
+     * @return the generated flashcard deck DTO
+     * @throws com.lexia.backend.exception.ai.AiRateLimitException if user has exceeded their quota
+     * @throws com.lexia.backend.exception.ai.AiServiceException if AI generation fails
+     */
+    FlashcardDeckDTO generateFromTopic(GenerateFlashcardsByTopicDTO request, UUID userId);
+
     // ========== Deck CRUD Methods ==========
 
     /**

@@ -37,18 +37,23 @@ import java.util.regex.Pattern;
 /**
  * Implementation of the Role-Play Service for AI-powered conversation practice.
  * 
- * <p>Supports two conversation modes:</p>
+ * <p>
+ * Supports two conversation modes:
+ * </p>
  * <ul>
- *   <li><b>Immersive Mode</b>: Fast chat-only responses (~500 tokens, &lt;1s p95)</li>
- *   <li><b>Learning Mode</b>: Chat with feedback (~1500 tokens, &lt;3s p95)</li>
+ * <li><b>Immersive Mode</b>: Fast chat-only responses (~500 tokens, &lt;1s
+ * p95)</li>
+ * <li><b>Learning Mode</b>: Chat with feedback (~1500 tokens, &lt;3s p95)</li>
  * </ul>
  * 
- * <p>Features:</p>
+ * <p>
+ * Features:
+ * </p>
  * <ul>
- *   <li>SSE streaming for real-time responses</li>
- *   <li>Context window management (last 10 messages)</li>
- *   <li>Fallback content when AI fails</li>
- *   <li>Usage tracking and quota management</li>
+ * <li>SSE streaming for real-time responses</li>
+ * <li>Context window management (last 10 messages)</li>
+ * <li>Fallback content when AI fails</li>
+ * <li>Usage tracking and quota management</li>
  * </ul>
  * 
  * @author LEXIA Team
@@ -70,7 +75,14 @@ public class RolePlayServiceImpl implements RolePlayService {
     private static final int CONTEXT_WINDOW_SIZE = 10;
     private static final long SSE_TIMEOUT_MS = 30_000L;
     private static final int MAX_MESSAGE_LENGTH = 500;
-    
+
+    // Keywords that indicate a leadership/initiative role
+    private static final List<String> LEADERSHIP_KEYWORDS = List.of(
+            "manager", "lead", "leader", "director", "supervisor", "head",
+            "chair", "host", "interviewer", "doctor", "teacher", "instructor",
+            "moderator", "facilitator", "coordinator", "chief", "executive",
+            "president", "captain", "principal", "boss");
+
     private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
     private static final String SCENARIO_GENERATION_PROMPT = """
@@ -79,16 +91,25 @@ public class RolePlayServiceImpl implements RolePlayService {
             Domain: %s
             Industry: %s
             User Context: %s
-            
+
+            IMPORTANT ROLE ASSIGNMENT RULES:
+            - Create scenarios where EITHER the user OR the AI can be the leader
+            - For meetings/interviews: vary who leads (sometimes user is interviewer, sometimes interviewee)
+            - The "openingLine" should ONLY be spoken by the LEADER role
+            - If "yourRole" (user) is the leader, set "openingLine" to empty string ""
+            - If "aiRole" is the leader, provide an appropriate opening line for AI
+
             Output strictly valid JSON matching this schema:
             {
               "title": "string",
-              "context": "string",
-              "yourRole": "string",
-              "aiRole": "string",
+              "context": "detailed context including agenda/topics to discuss, current situation, background info",
+              "yourRole": "string with role name and brief description",
+              "aiRole": "string with role name and brief description",
               "objectives": ["string"],
               "keyVocabulary": [{"term": "string", "definition": "string", "ipa": "string"}],
-              "openingLine": "string",
+              "openingLine": "opening line for the LEADER role only, empty if user leads",
+              "suggestedPrompts": ["3-5 example phrases the USER can say based on their role"],
+              "agenda": ["topic 1 to discuss", "topic 2", "topic 3"],
               "suggestedDuration": 10
             }
             """;
@@ -104,18 +125,18 @@ public class RolePlayServiceImpl implements RolePlayService {
 
         try {
             GeminiResponseDTO response = geminiClientService.generateContent(prompt);
-            
+
             String jsonContent = cleanJson(response.content());
             RolePlayScenarioDTO generatedDto = objectMapper.readValue(jsonContent, RolePlayScenarioDTO.class);
-            
+
             generatedDto.setCefrLevel(request.getCefrLevel());
             generatedDto.setDomain(request.getDomain());
             generatedDto.setIndustry(request.getIndustry());
             generatedDto.setIsFallback(false);
-            
+
             RolePlayScenario entity = RolePlayScenarioMapper.toEntity(generatedDto);
             entity = scenarioRepository.save(entity);
-            
+
             return RolePlayScenarioMapper.toDTO(entity);
         } catch (JsonProcessingException e) {
             log.error("Failed to parse AI generated scenario, falling back to pre-defined scenario", e);
@@ -134,19 +155,18 @@ public class RolePlayServiceImpl implements RolePlayService {
      * Uses flexible matching: exact match → CEFR only → domain only → any fallback.
      */
     private RolePlayScenarioDTO getFallbackScenarioForRequest(RolePlayRequestDTO request, String reason) {
-        log.info("Retrieving fallback scenario for CEFR={}, domain={}, reason: {}", 
+        log.info("Retrieving fallback scenario for CEFR={}, domain={}, reason: {}",
                 request.getCefrLevel(), request.getDomain(), reason);
-        
+
         Optional<RolePlayScenarioDTO> fallback = fallbackContentService.getRandomFallbackScenarioFlexible(
-                request.getCefrLevel(), 
-                request.getDomain()
-        );
-        
+                request.getCefrLevel(),
+                request.getDomain());
+
         if (fallback.isPresent()) {
             log.info("Using fallback scenario: {}", fallback.get().getTitle());
             return fallback.get();
         }
-        
+
         // If no fallback scenarios exist at all, throw exception
         log.error("No fallback scenarios available in database");
         throw new AiServiceException("AI service unavailable and no fallback scenarios available. " + reason);
@@ -179,16 +199,39 @@ public class RolePlayServiceImpl implements RolePlayService {
                 .messages(new ArrayList<>())
                 .build();
 
-        if (scenario.getOpeningLine() != null && !scenario.getOpeningLine().isBlank()) {
+        // Determine who should lead the conversation
+        boolean userIsLeader = isLeadershipRole(scenario.getYourRole());
+
+        // Only add AI opening line if AI should lead (user is responder)
+        // Skip if user has the leadership role - let user start
+        if (!userIsLeader && scenario.getOpeningLine() != null && !scenario.getOpeningLine().isBlank()) {
             Map<String, Object> openingMessage = new HashMap<>();
             openingMessage.put("role", "ai");
             openingMessage.put("content", scenario.getOpeningLine());
             openingMessage.put("timestamp", Instant.now().toString());
             conversation.getMessages().add(openingMessage);
+            log.debug("AI leads conversation - added opening line");
+        } else if (userIsLeader) {
+            log.debug("User leads conversation - skipping AI opening line");
         }
 
         conversation = conversationRepository.save(conversation);
         return RolePlayConversationMapper.toDTO(conversation);
+    }
+
+    /**
+     * Checks if a role name indicates a leadership/initiative role.
+     * Leadership roles include managers, leads, interviewers, hosts, etc.
+     * 
+     * @param roleName the role name to check
+     * @return true if the role is a leadership role
+     */
+    private boolean isLeadershipRole(String roleName) {
+        if (roleName == null || roleName.isBlank()) {
+            return false;
+        }
+        String lowerRole = roleName.toLowerCase();
+        return LEADERSHIP_KEYWORDS.stream().anyMatch(lowerRole::contains);
     }
 
     @Override
@@ -220,7 +263,7 @@ public class RolePlayServiceImpl implements RolePlayService {
                 .append(". The user is ").append(conversation.getScenario().getYourRole())
                 .append(". Context: ").append(conversation.getScenario().getContext())
                 .append("\n\n");
-        
+
         // Use ContextWindowManager for context window
         String contextWindow = contextWindowManager.buildContextWindow(conversation);
         promptBuilder.append(contextWindow);
@@ -288,54 +331,54 @@ public class RolePlayServiceImpl implements RolePlayService {
     @Transactional
     public RolePlayMessageDTO sendImmersiveMessage(UUID conversationId, UUID userId, String message) {
         log.debug("Sending immersive message for conversation {}", conversationId);
-        
+
         RolePlayConversation conversation = validateAndGetConversation(conversationId, userId);
         String sanitizedMessage = sanitizeUserInput(message);
-        
+
         // Add user message
         addUserMessage(conversation, sanitizedMessage);
-        
+
         String aiContent;
         boolean usedFallback = false;
         long responseTime = 0;
-        
+
         try {
             // Build immersive prompt (concise, no feedback)
             String prompt = buildImmersivePrompt(conversation, sanitizedMessage);
-            
+
             long startTime = System.currentTimeMillis();
             GeminiResponseDTO response = geminiClientService.generateContent(prompt);
             responseTime = System.currentTimeMillis() - startTime;
-            
+
             aiContent = response.content();
-            
+
             // Track usage
             trackUsage(userId, response, responseTime);
         } catch (Exception e) {
-            log.warn("AI failed during immersive message, using fallback for conversation {}: {}", 
+            log.warn("AI failed during immersive message, using fallback for conversation {}: {}",
                     conversationId, e.getMessage());
             aiContent = generateFallbackResponseWithService(conversation, sanitizedMessage);
             usedFallback = true;
         }
-        
+
         // Add AI message (no feedback for immersive mode)
         Map<String, Object> aiMsgMap = createAiMessage(aiContent, null);
         if (usedFallback) {
             aiMsgMap.put("isFallback", true);
         }
         conversation.getMessages().add(aiMsgMap);
-        
+
         // Check if summarization is needed (B9: context window management)
         if (contextWindowManager.shouldSummarize(conversation)) {
             log.info("Conversation {} needs summarization after immersive message", conversationId);
             contextWindowManager.summarizeOldMessages(conversation);
         }
-        
+
         conversationRepository.save(conversation);
-        
-        log.info("Immersive message sent{} in {}ms for conversation {}", 
+
+        log.info("Immersive message sent{} in {}ms for conversation {}",
                 usedFallback ? " (fallback)" : "", responseTime, conversationId);
-        
+
         return RolePlayMessageDTO.builder()
                 .role("ai")
                 .content(aiContent)
@@ -349,60 +392,60 @@ public class RolePlayServiceImpl implements RolePlayService {
     @Transactional
     public RolePlayMessageDTO sendLearningMessage(UUID conversationId, UUID userId, String message) {
         log.debug("Sending learning message for conversation {}", conversationId);
-        
+
         RolePlayConversation conversation = validateAndGetConversation(conversationId, userId);
         String sanitizedMessage = sanitizeUserInput(message);
-        
+
         // Add user message
         addUserMessage(conversation, sanitizedMessage);
-        
+
         String aiContent;
         Map<String, Object> feedback = null;
         boolean usedFallback = false;
         long responseTime = 0;
-        
+
         try {
             // Build learning prompt (includes feedback request)
             String prompt = buildLearningPrompt(conversation, sanitizedMessage);
-            
+
             long startTime = System.currentTimeMillis();
             GeminiResponseDTO response = geminiClientService.generateContent(prompt);
             responseTime = System.currentTimeMillis() - startTime;
-            
+
             // Parse learning mode response (AI message + feedback)
             LearningModeResponse parsedResponse = parseLearningResponse(response.content());
             aiContent = parsedResponse.aiMessage;
             feedback = parsedResponse.feedback;
-            
+
             // Track usage
             trackUsage(userId, response, responseTime);
         } catch (Exception e) {
-            log.warn("AI failed during learning message, using fallback for conversation {}: {}", 
+            log.warn("AI failed during learning message, using fallback for conversation {}: {}",
                     conversationId, e.getMessage());
             aiContent = generateFallbackLearningResponse(conversation, sanitizedMessage);
             // Generate basic fallback feedback
             feedback = createFallbackFeedback(conversation.getScenario().getCefrLevel());
             usedFallback = true;
         }
-        
+
         // Add AI message with feedback
         Map<String, Object> aiMsgMap = createAiMessage(aiContent, feedback);
         if (usedFallback) {
             aiMsgMap.put("isFallback", true);
         }
         conversation.getMessages().add(aiMsgMap);
-        
+
         // Check if summarization is needed (B9: context window management)
         if (contextWindowManager.shouldSummarize(conversation)) {
             log.info("Conversation {} needs summarization after learning message", conversationId);
             contextWindowManager.summarizeOldMessages(conversation);
         }
-        
+
         conversationRepository.save(conversation);
-        
-        log.info("Learning message sent{} in {}ms for conversation {}", 
+
+        log.info("Learning message sent{} in {}ms for conversation {}",
                 usedFallback ? " (fallback)" : "", responseTime, conversationId);
-        
+
         return RolePlayMessageDTO.builder()
                 .role("ai")
                 .content(aiContent)
@@ -417,22 +460,22 @@ public class RolePlayServiceImpl implements RolePlayService {
     @Transactional
     public SseEmitter streamMessage(UUID conversationId, UUID userId, String message) {
         log.debug("Starting SSE stream for conversation {}", conversationId);
-        
+
         RolePlayConversation conversation = validateAndGetConversation(conversationId, userId);
         String sanitizedMessage = sanitizeUserInput(message);
-        
+
         // Add user message immediately
         addUserMessage(conversation, sanitizedMessage);
         conversationRepository.save(conversation);
-        
+
         // Build prompt
         String prompt = buildImmersivePrompt(conversation, sanitizedMessage);
-        
+
         // Create emitter with timeout for the client
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
         StringBuilder fullContent = new StringBuilder();
         UUID convId = conversationId;
-        
+
         emitter.onTimeout(() -> {
             log.warn("SSE stream timed out for conversation {}", convId);
             // Persist whatever content we have before timeout
@@ -440,7 +483,7 @@ public class RolePlayServiceImpl implements RolePlayService {
                 persistStreamedMessage(convId, userId, fullContent.toString());
             }
         });
-        
+
         emitter.onError(ex -> {
             log.error("SSE stream error for conversation {}: {}", convId, ex.getMessage());
             try {
@@ -451,19 +494,19 @@ public class RolePlayServiceImpl implements RolePlayService {
                 // Client disconnected
             }
         });
-        
+
         // Stream content in background thread
         sseExecutor.submit(() -> {
             try {
                 // Use streaming generation from Gemini
                 SseEmitter geminiEmitter = geminiClientService.streamContent(prompt);
-                
+
                 // For now, since we can't easily relay SSE, fall back to non-streaming
                 // and send the response in chunks to simulate streaming
                 GeminiResponseDTO response = geminiClientService.generateContent(prompt);
                 String content = response.content();
                 fullContent.append(content);
-                
+
                 // Send content in chunks for streaming effect
                 int chunkSize = 50;
                 for (int i = 0; i < content.length(); i += chunkSize) {
@@ -474,15 +517,15 @@ public class RolePlayServiceImpl implements RolePlayService {
                             .data("{\"token\": \"" + escapeJsonString(chunk) + "\"}"));
                     Thread.sleep(50); // Small delay between chunks
                 }
-                
+
                 // Send completion event
                 emitter.send(SseEmitter.event()
                         .name("done")
                         .data("{\"complete\": true}"));
-                
+
                 // Persist the AI message
                 persistStreamedMessage(convId, userId, fullContent.toString());
-                
+
                 emitter.complete();
                 log.debug("SSE stream completed for conversation {}", convId);
             } catch (Exception e) {
@@ -497,17 +540,18 @@ public class RolePlayServiceImpl implements RolePlayService {
                 }
             }
         });
-        
+
         return emitter; // Return our emitter that we control
     }
-    
+
     private String escapeJsonString(String input) {
-        if (input == null) return "";
+        if (input == null)
+            return "";
         return input.replace("\\", "\\\\")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\r")
-                    .replace("\t", "\\t");
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 
     // ========== Fallback Mode (B5d) ==========
@@ -516,22 +560,22 @@ public class RolePlayServiceImpl implements RolePlayService {
     @Transactional
     public RolePlayMessageDTO sendFallbackMessage(UUID conversationId, UUID userId, String message) {
         log.debug("Sending fallback message for conversation {}", conversationId);
-        
+
         RolePlayConversation conversation = validateAndGetConversation(conversationId, userId);
         String sanitizedMessage = sanitizeUserInput(message);
-        
+
         // Add user message
         addUserMessage(conversation, sanitizedMessage);
-        
+
         String aiContent;
         boolean usedFallback = false;
-        
+
         try {
             // Try AI first
             String prompt = buildImmersivePrompt(conversation, sanitizedMessage);
             GeminiResponseDTO response = geminiClientService.generateContent(prompt);
             aiContent = response.content();
-            
+
             // Track AI usage
             trackUsage(userId, response, response.responseTimeMs());
         } catch (Exception e) {
@@ -539,22 +583,22 @@ public class RolePlayServiceImpl implements RolePlayService {
             aiContent = generateFallbackResponse(conversation, sanitizedMessage);
             usedFallback = true;
         }
-        
+
         // Add AI message
         Map<String, Object> aiMsgMap = createAiMessage(aiContent, null);
         if (usedFallback) {
             aiMsgMap.put("isFallback", true);
         }
         conversation.getMessages().add(aiMsgMap);
-        
+
         // Check if summarization is needed (B9: context window management)
         if (contextWindowManager.shouldSummarize(conversation)) {
             log.info("Conversation {} needs summarization after fallback message", conversationId);
             contextWindowManager.summarizeOldMessages(conversation);
         }
-        
+
         conversationRepository.save(conversation);
-        
+
         return RolePlayMessageDTO.builder()
                 .role("ai")
                 .content(aiContent)
@@ -568,38 +612,38 @@ public class RolePlayServiceImpl implements RolePlayService {
     @Transactional
     public RolePlayConversationDTO completeConversation(UUID conversationId, UUID userId) {
         log.debug("Completing conversation {}", conversationId);
-        
+
         RolePlayConversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("RolePlayConversation", conversationId));
-        
+
         if (!conversation.getUserId().equals(userId)) {
             throw new AccessDeniedException("User does not own this conversation");
         }
-        
+
         if (RolePlayConversation.STATUS_COMPLETED.equals(conversation.getStatus())) {
             throw new IllegalStateException("Conversation is already completed");
         }
-        
+
         if (RolePlayConversation.STATUS_ABANDONED.equals(conversation.getStatus())) {
             throw new IllegalStateException("Cannot complete an abandoned conversation");
         }
-        
+
         // Calculate metrics
         Map<String, Object> metrics = calculateConversationMetrics(conversation);
         conversation.setMetrics(metrics);
         conversation.setStatus(RolePlayConversation.STATUS_COMPLETED);
-        
+
         // Generate feedback summary for learning mode
         if ("learning".equals(conversation.getMode())) {
             Map<String, Object> feedbackSummary = generateFeedbackSummary(conversation);
             conversation.setFeedbackSummary(feedbackSummary);
         }
-        
+
         conversation = conversationRepository.save(conversation);
-        
-        log.info("Conversation {} completed with {} messages", conversationId, 
+
+        log.info("Conversation {} completed with {} messages", conversationId,
                 conversation.getMessages().size());
-        
+
         return RolePlayConversationMapper.toDTO(conversation);
     }
 
@@ -607,31 +651,31 @@ public class RolePlayServiceImpl implements RolePlayService {
     public RolePlayConversationDTO getConversation(UUID conversationId, UUID userId) {
         RolePlayConversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("RolePlayConversation", conversationId));
-        
+
         if (!conversation.getUserId().equals(userId)) {
             throw new AccessDeniedException("User does not own this conversation");
         }
-        
+
         return RolePlayConversationMapper.toDTO(conversation);
     }
 
     // ========== Private Helper Methods ==========
-    
+
     private RolePlayConversation validateAndGetConversation(UUID conversationId, UUID userId) {
         RolePlayConversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("RolePlayConversation", conversationId));
-        
+
         if (!conversation.getUserId().equals(userId)) {
             throw new AccessDeniedException("User does not own this conversation");
         }
-        
+
         if (!RolePlayConversation.STATUS_IN_PROGRESS.equals(conversation.getStatus())) {
             throw new IllegalStateException("Cannot send message to " + conversation.getStatus() + " conversation");
         }
-        
+
         return conversation;
     }
-    
+
     private void addUserMessage(RolePlayConversation conversation, String content) {
         Map<String, Object> userMsgMap = new HashMap<>();
         userMsgMap.put("role", "user");
@@ -639,7 +683,7 @@ public class RolePlayServiceImpl implements RolePlayService {
         userMsgMap.put("timestamp", Instant.now().toString());
         conversation.getMessages().add(userMsgMap);
     }
-    
+
     private Map<String, Object> createAiMessage(String content, Map<String, Object> feedback) {
         Map<String, Object> aiMsgMap = new HashMap<>();
         aiMsgMap.put("role", "ai");
@@ -650,93 +694,160 @@ public class RolePlayServiceImpl implements RolePlayService {
         }
         return aiMsgMap;
     }
-    
+
     private String buildImmersivePrompt(RolePlayConversation conversation, String userMessage) {
         StringBuilder promptBuilder = new StringBuilder();
-        promptBuilder.append("You are ").append(conversation.getScenario().getAiRole())
-                .append(". The user is ").append(conversation.getScenario().getYourRole())
+        String aiRole = conversation.getScenario().getAiRole();
+        String yourRole = conversation.getScenario().getYourRole();
+
+        promptBuilder.append("You are ").append(aiRole)
+                .append(". The user is ").append(yourRole)
                 .append(". Context: ").append(conversation.getScenario().getContext())
                 .append("\n\n");
-        
-        promptBuilder.append("INSTRUCTIONS: Respond naturally in your role. Keep response concise (2-4 sentences). ")
+
+        // Add role boundary instructions
+        promptBuilder.append("CRITICAL ROLE INSTRUCTIONS:\n");
+        promptBuilder.append("- You are ONLY playing the role of: ").append(aiRole).append("\n");
+        promptBuilder.append("- The USER is playing the role of: ").append(yourRole).append("\n");
+        promptBuilder.append("- NEVER take over the user's role or responsibilities\n");
+        promptBuilder
+                .append("- If the user's role involves leadership (Manager, Team Lead, Host, Interviewer, etc.), ");
+        promptBuilder.append("you must WAIT for the user to lead. Only respond when addressed.\n");
+        promptBuilder.append("- Do NOT open meetings, welcome people, or set agendas unless that is YOUR role\n");
+        promptBuilder
+                .append("- Be REACTIVE: answer questions, provide information when asked, report when prompted\n\n");
+
+        promptBuilder.append(
+                "RESPONSE INSTRUCTIONS: Respond naturally in your role. Keep response concise (2-4 sentences). ")
                 .append("Match the CEFR level: ").append(conversation.getScenario().getCefrLevel())
                 .append("\n\n");
-        
+
         // Use ContextWindowManager for context window management
         String contextWindow = contextWindowManager.buildContextWindow(conversation);
         promptBuilder.append(contextWindow);
-        
+
         return promptBuilder.toString();
     }
-    
+
     private String buildLearningPrompt(RolePlayConversation conversation, String userMessage) {
         StringBuilder promptBuilder = new StringBuilder();
-        promptBuilder.append("You are ").append(conversation.getScenario().getAiRole())
-                .append(". The user is ").append(conversation.getScenario().getYourRole())
+        String aiRole = conversation.getScenario().getAiRole();
+        String yourRole = conversation.getScenario().getYourRole();
+
+        promptBuilder.append("You are ").append(aiRole)
+                .append(". The user is ").append(yourRole)
                 .append(". Context: ").append(conversation.getScenario().getContext())
                 .append("\nCEFR Level: ").append(conversation.getScenario().getCefrLevel())
                 .append("\n\n");
-        
-        promptBuilder.append("""
-                INSTRUCTIONS: 
-                1. First, respond naturally in your role (2-4 sentences)
-                2. Then, provide feedback on the user's message
-                
-                OUTPUT FORMAT (strict JSON):
-                {
-                  "aiMessage": "your response here",
-                  "feedback": {
-                    "grammarFeedback": "any grammar corrections or 'Excellent grammar!'",
-                    "vocabularyFeedback": "alternative expressions or 'Great vocabulary choice!'",
-                    "fluencyScore": 85,
-                    "suggestions": ["suggestion 1", "suggestion 2"]
-                  }
-                }
-                
-                """);
-        
+
+        // Add role boundary instructions
+        promptBuilder.append("CRITICAL ROLE INSTRUCTIONS:\n");
+        promptBuilder.append("- You are ONLY playing the role of: ").append(aiRole).append("\n");
+        promptBuilder.append("- The USER is playing the role of: ").append(yourRole).append("\n");
+        promptBuilder.append("- NEVER take over the user's role or responsibilities\n");
+        promptBuilder
+                .append("- If the user's role involves leadership (Manager, Team Lead, Host, Interviewer, etc.), ");
+        promptBuilder.append("you must WAIT for the user to lead. Only respond when addressed.\n");
+        promptBuilder.append("- Do NOT open meetings, welcome people, or set agendas unless that is YOUR role\n");
+        promptBuilder
+                .append("- Be REACTIVE: answer questions, provide information when asked, report when prompted\n\n");
+
+        promptBuilder
+                .append("""
+                        INSTRUCTIONS:
+                        1. First, respond naturally in your role (2-4 sentences)
+                        2. Then, analyze the user's LAST message and provide detailed feedback
+
+                        OUTPUT FORMAT (strict JSON):
+                        {
+                          "aiMessage": "your in-character response here",
+                          "feedback": {
+                            "grammarCorrections": [
+                              {"original": "incorrect phrase from user", "corrected": "correct version", "explanation": "brief explanation"}
+                            ],
+                            "vocabularySuggestions": [
+                              "Consider using 'alternative word' instead of 'basic word' for more professional tone",
+                              "The phrase 'better expression' works well in this context"
+                            ],
+                            "tips": [
+                              "Tip for improving communication in this context"
+                            ]
+                          }
+                        }
+
+                        FEEDBACK RULES:
+                        - grammarCorrections: List grammar/spelling errors with corrections. Empty array if no errors.
+                        - vocabularySuggestions: Suggest better vocabulary, idioms, or professional expressions. Empty array if already excellent.
+                        - tips: Provide 1-2 helpful tips for this conversation context. Can include pronunciation, tone, or cultural notes.
+                        - Always be encouraging, not critical.
+
+                        """);
+
         // Use ContextWindowManager for context window management
         String contextWindow = contextWindowManager.buildContextWindow(conversation);
         promptBuilder.append(contextWindow);
-        
+
         return promptBuilder.toString();
     }
-    
+
     private LearningModeResponse parseLearningResponse(String content) {
         try {
             String jsonContent = cleanJson(content);
             var node = objectMapper.readTree(jsonContent);
-            
+
             String aiMessage = node.has("aiMessage") ? node.get("aiMessage").asText() : content;
             Map<String, Object> feedback = new HashMap<>();
-            
+
             if (node.has("feedback")) {
                 var feedbackNode = node.get("feedback");
-                if (feedbackNode.has("grammarFeedback")) {
-                    feedback.put("grammarFeedback", feedbackNode.get("grammarFeedback").asText());
+
+                // Parse grammarCorrections - array of {original, corrected, explanation}
+                if (feedbackNode.has("grammarCorrections") && feedbackNode.get("grammarCorrections").isArray()) {
+                    List<Map<String, String>> corrections = new ArrayList<>();
+                    feedbackNode.get("grammarCorrections").forEach(c -> {
+                        Map<String, String> correction = new HashMap<>();
+                        if (c.has("original"))
+                            correction.put("original", c.get("original").asText());
+                        if (c.has("corrected"))
+                            correction.put("corrected", c.get("corrected").asText());
+                        if (c.has("explanation"))
+                            correction.put("explanation", c.get("explanation").asText());
+                        if (!correction.isEmpty())
+                            corrections.add(correction);
+                    });
+                    feedback.put("grammarCorrections", corrections);
                 }
-                if (feedbackNode.has("vocabularyFeedback")) {
-                    feedback.put("vocabularyFeedback", feedbackNode.get("vocabularyFeedback").asText());
+
+                // Parse vocabularySuggestions - array of strings
+                if (feedbackNode.has("vocabularySuggestions") && feedbackNode.get("vocabularySuggestions").isArray()) {
+                    List<String> suggestions = new ArrayList<>();
+                    feedbackNode.get("vocabularySuggestions").forEach(s -> suggestions.add(s.asText()));
+                    feedback.put("vocabularySuggestions", suggestions);
                 }
+
+                // Parse tips - array of strings
+                if (feedbackNode.has("tips") && feedbackNode.get("tips").isArray()) {
+                    List<String> tips = new ArrayList<>();
+                    feedbackNode.get("tips").forEach(t -> tips.add(t.asText()));
+                    feedback.put("tips", tips);
+                }
+
+                // Keep backward compatibility with old format fields
                 if (feedbackNode.has("fluencyScore")) {
                     feedback.put("fluencyScore", feedbackNode.get("fluencyScore").asInt());
                 }
-                if (feedbackNode.has("suggestions")) {
-                    List<String> suggestions = new ArrayList<>();
-                    feedbackNode.get("suggestions").forEach(s -> suggestions.add(s.asText()));
-                    feedback.put("suggestions", suggestions);
-                }
             }
-            
+
             return new LearningModeResponse(aiMessage, feedback);
         } catch (Exception e) {
             log.warn("Failed to parse learning response JSON, using raw content: {}", e.getMessage());
             return new LearningModeResponse(content, Map.of());
         }
     }
-    
-    private record LearningModeResponse(String aiMessage, Map<String, Object> feedback) {}
-    
+
+    private record LearningModeResponse(String aiMessage, Map<String, Object> feedback) {
+    }
+
     private void trackUsage(UUID userId, GeminiResponseDTO response, long responseTimeMs) {
         AiUsageTrackingRequest trackingRequest = AiUsageTrackingRequest.builder()
                 .userId(userId)
@@ -749,7 +860,7 @@ public class RolePlayServiceImpl implements RolePlayService {
                 .build();
         aiUsageTracker.trackUsage(trackingRequest);
     }
-    
+
     private void persistStreamedMessage(UUID conversationId, UUID userId, String content) {
         try {
             RolePlayConversation conversation = conversationRepository.findById(conversationId)
@@ -764,24 +875,25 @@ public class RolePlayServiceImpl implements RolePlayService {
             log.error("Failed to persist streamed message: {}", e.getMessage());
         }
     }
-    
+
     private String generateFallbackResponse(RolePlayConversation conversation, String userMessage) {
         // Use FallbackContentService for context-aware fallback responses
         String cefrLevel = conversation.getScenario().getCefrLevel();
         String aiRole = conversation.getScenario().getAiRole();
-        
+
         log.debug("Using FallbackContentService for CEFR={}, role={}", cefrLevel, aiRole);
         return fallbackContentService.generateFallbackResponse(cefrLevel, aiRole, userMessage);
     }
-    
+
     /**
-     * Generates a fallback response for immersive mode using FallbackContentService.
+     * Generates a fallback response for immersive mode using
+     * FallbackContentService.
      * Alias for generateFallbackResponse to maintain clear naming convention.
      */
     private String generateFallbackResponseWithService(RolePlayConversation conversation, String userMessage) {
         return generateFallbackResponse(conversation, userMessage);
     }
-    
+
     /**
      * Generates a fallback response for learning mode using FallbackContentService.
      * Learning mode fallback includes more educational context.
@@ -789,50 +901,49 @@ public class RolePlayServiceImpl implements RolePlayService {
     private String generateFallbackLearningResponse(RolePlayConversation conversation, String userMessage) {
         String cefrLevel = conversation.getScenario().getCefrLevel();
         String aiRole = conversation.getScenario().getAiRole();
-        
         log.debug("Using FallbackContentService for learning mode CEFR={}, role={}", cefrLevel, aiRole);
         return fallbackContentService.generateFallbackLearningResponse(cefrLevel, aiRole, userMessage);
     }
-    
+
     /**
      * Creates a basic fallback feedback map when AI is unavailable.
      * Provides generic but helpful feedback based on CEFR level.
+     * Uses field names compatible with frontend FeedbackSection component.
      */
     private Map<String, Object> createFallbackFeedback(String cefrLevel) {
-        String suggestion;
-        int score = 70; // Default moderate score for fallback
-        
+        String tip;
+
         switch (cefrLevel != null ? cefrLevel.toUpperCase() : "B1") {
             case "A1", "A2":
-                suggestion = "Keep practicing with simple sentences. Focus on using basic vocabulary correctly.";
+                tip = "Keep practicing with simple sentences. Focus on using basic vocabulary correctly.";
                 break;
             case "B1", "B2":
-                suggestion = "Good effort! Try to use more varied vocabulary and complex sentence structures.";
+                tip = "Good effort! Try to use more varied vocabulary and complex sentence structures.";
                 break;
             case "C1", "C2":
-                suggestion = "Continue developing your fluency. Consider using more idiomatic expressions.";
+                tip = "Continue developing your fluency. Consider using more idiomatic expressions.";
                 break;
             default:
-                suggestion = "Keep practicing! Regular conversation practice helps improve fluency.";
+                tip = "Keep practicing! Regular conversation practice helps improve fluency.";
         }
-        
+
         Map<String, Object> feedback = new HashMap<>();
-        feedback.put("score", score);
-        feedback.put("grammarNotes", List.of("Unable to analyze grammar - AI service temporarily unavailable"));
+        // Use empty arrays for grammar/vocabulary - we can't analyze without AI
+        feedback.put("grammarCorrections", List.of());
         feedback.put("vocabularySuggestions", List.of());
-        feedback.put("fluencyTips", List.of(suggestion));
+        feedback.put("tips", List.of(tip, "AI feedback is temporarily unavailable. Keep practicing!"));
         feedback.put("isFallback", true);
         return feedback;
     }
-    
+
     private Map<String, Object> calculateConversationMetrics(RolePlayConversation conversation) {
         Map<String, Object> metrics = new HashMap<>();
         List<Map<String, Object>> messages = conversation.getMessages();
-        
+
         int messageCount = messages.size();
         int userWordCount = 0;
         int aiWordCount = 0;
-        
+
         for (Map<String, Object> msg : messages) {
             String content = (String) msg.get("content");
             if (content != null) {
@@ -844,7 +955,7 @@ public class RolePlayServiceImpl implements RolePlayService {
                 }
             }
         }
-        
+
         // Calculate duration
         long durationMinutes = 0;
         if (messageCount >= 2) {
@@ -860,22 +971,22 @@ public class RolePlayServiceImpl implements RolePlayService {
                 log.warn("Could not calculate duration: {}", e.getMessage());
             }
         }
-        
+
         metrics.put("messageCount", messageCount);
         metrics.put("userWordCount", userWordCount);
         metrics.put("aiWordCount", aiWordCount);
         metrics.put("durationMinutes", durationMinutes);
-        
+
         return metrics;
     }
-    
+
     private Map<String, Object> generateFeedbackSummary(RolePlayConversation conversation) {
         Map<String, Object> summary = new HashMap<>();
-        
+
         List<String> allGrammarFeedback = new ArrayList<>();
         List<String> allVocabFeedback = new ArrayList<>();
         List<Integer> fluencyScores = new ArrayList<>();
-        
+
         for (Map<String, Object> msg : conversation.getMessages()) {
             if (msg.containsKey("feedback")) {
                 @SuppressWarnings("unchecked")
@@ -891,18 +1002,18 @@ public class RolePlayServiceImpl implements RolePlayService {
                 }
             }
         }
-        
+
         summary.put("grammarPoints", allGrammarFeedback);
         summary.put("vocabularyPoints", allVocabFeedback);
-        
+
         if (!fluencyScores.isEmpty()) {
             double avgFluency = fluencyScores.stream().mapToInt(i -> i).average().orElse(0);
             summary.put("averageFluencyScore", Math.round(avgFluency));
         }
-        
+
         return summary;
     }
-    
+
     private String cleanJson(String content) {
         Pattern pattern = Pattern.compile("\\{.*\\}|\\[.*\\]", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(content);
@@ -913,8 +1024,10 @@ public class RolePlayServiceImpl implements RolePlayService {
     }
 
     private String sanitizeUserInput(String input) {
-        if (input == null) return "";
-        String processed = input.replaceAll("(?i)(ignore|disregard)\\s+(previous|all)\\s+(instructions|prompts)", "[filtered]");
+        if (input == null)
+            return "";
+        String processed = input.replaceAll("(?i)(ignore|disregard)\\s+(previous|all)\\s+(instructions|prompts)",
+                "[filtered]");
         return processed.substring(0, Math.min(processed.length(), 500));
     }
 }
