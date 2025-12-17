@@ -13,6 +13,7 @@ import com.lexia.backend.repository.CourseRepository;
 import com.lexia.backend.repository.EnrollmentRepository;
 import com.lexia.backend.repository.LessonProgressRepository;
 import com.lexia.backend.repository.LessonRepository;
+import com.lexia.backend.repository.UserProfileRepository;
 import com.lexia.backend.service.EnrollmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final UserProfileRepository userProfileRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -55,6 +57,15 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Transactional
     public EnrollmentDTO enroll(User user, Long courseId) {
         log.info("Enrolling user {} in course {}", user.getId(), courseId);
+
+        // Verify user has completed placement test
+        UserProfile profile = userProfileRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalStateException("User profile not found"));
+
+        if (profile.getCurrentLevel() == null) {
+            log.warn("User {} attempted to enroll without placement test", user.getId());
+            throw new IllegalStateException("You must complete the placement test before enrolling in a course");
+        }
 
         // Check if already enrolled
         if (enrollmentRepository.existsByUserIdAndCourseId(user.getId(), courseId)) {

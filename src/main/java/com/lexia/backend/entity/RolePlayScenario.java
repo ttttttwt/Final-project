@@ -107,8 +107,7 @@ public class RolePlayScenario {
     @Builder.Default
     private List<Map<String, Object>> keyVocabulary = new ArrayList<>();
 
-    @NotBlank
-    @Column(name = "opening_line", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "opening_line", columnDefinition = "TEXT")
     private String openingLine;
 
     @Min(1)

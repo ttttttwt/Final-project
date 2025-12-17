@@ -2335,3 +2335,15 @@ Time: 16.051 s
 - [x] Build successful: `npm run build` in `lexia-web`.
 - [x] UI components render correctly.
 
+### 🛡️ Security Update
+- [x] **Enrollment Restriction**: Modified `EnrollmentServiceImpl` to require users to complete the placement test before enrolling in any course.
+  - Added check for `userProfile.currentLevel`.
+  - Throws `IllegalStateException` if level is missing.
+
+### 🎨 UI Improvements
+- [x] **Course Listing**: Added a prominent banner for users who haven't taken the placement test.
+  - Displays a warning message and a "Take Placement Test" button.
+  - Blocks enrollment attempts with a toast error if the test is not completed.
+
+
+

@@ -103,7 +103,7 @@ public class RolePlayServiceImpl implements RolePlayService {
             Always include SPECIFIC, CONCRETE details in contextDetails. Users need enough information to respond naturally.
 
             REQUIRED DETAILS BY SCENARIO TYPE:
-            * MEETINGS: Project name, current status (% complete), milestones achieved/missed, team members involved, budget status, specific issues to discuss
+            * MEETINGS: Project name, current status (%% complete), milestones achieved/missed, team members involved, budget status, specific issues to discuss
             * JOB INTERVIEW: Company name, position title, salary range, required skills (3-5), interview round, interviewer's role, what they're looking for
             * HOTEL/RESTAURANT BOOKING: Dates, number of guests, room/table type, price range, special requests, loyalty status
             * DOCTOR/PATIENT: Patient age, specific symptoms (3-4), duration of illness, relevant history, medications tried, today's purpose
