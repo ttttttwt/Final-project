@@ -63,6 +63,18 @@ public class FlashcardDeckDTO {
     private Long sourceId;
 
     /**
+     * Course title (if sourceType is LESSON).
+     */
+    @Schema(description = "Course title (if from lesson)")
+    private String courseTitle;
+
+    /**
+     * Lesson title (if sourceType is LESSON).
+     */
+    @Schema(description = "Lesson title (if from lesson)")
+    private String lessonTitle;
+
+    /**
      * CEFR level (A1-C2).
      */
     @Schema(description = "CEFR level", 

@@ -30,13 +30,15 @@ import java.util.stream.Collectors;
 /**
  * Implementation of GrammarExerciseService with AI-powered generation.
  * 
- * <p>Provides grammar exercise generation using Google Gemini API with:</p>
+ * <p>
+ * Provides grammar exercise generation using Google Gemini API with:
+ * </p>
  * <ul>
- *   <li>CEFR-level appropriate exercises</li>
- *   <li>Multiple exercise types (MCQ, fill-in-blank, etc.)</li>
- *   <li>Fallback content support when AI is unavailable</li>
- *   <li>Usage tracking and rate limiting</li>
- *   <li>Progress tracking and scoring</li>
+ * <li>CEFR-level appropriate exercises</li>
+ * <li>Multiple exercise types (MCQ, fill-in-blank, etc.)</li>
+ * <li>Fallback content support when AI is unavailable</li>
+ * <li>Usage tracking and rate limiting</li>
+ * <li>Progress tracking and scoring</li>
  * </ul>
  * 
  * @author LEXIA Team
@@ -168,7 +170,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         }
 
         // No fallback available - create minimal exercise set
-        log.warn("No fallback content available for {} at level {}", 
+        log.warn("No fallback content available for {} at level {}",
                 request.getGrammarTopic(), request.getCefrLevel());
 
         Map<String, Object> content = createBasicExerciseContent(request);
@@ -180,7 +182,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
     }
 
     /**
-     * Creates basic fallback exercise content when no pre-seeded content is available.
+     * Creates basic fallback exercise content when no pre-seeded content is
+     * available.
      */
     private Map<String, Object> createBasicExerciseContent(GrammarRequestDTO request) {
         Map<String, Object> content = new HashMap<>();
@@ -198,7 +201,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
             Map<String, Object> exercise = new HashMap<>();
             exercise.put("type", "multiple_choice");
             exercise.put("instruction", "Select the correct answer.");
-            exercise.put("question", "This is a placeholder question for " + request.getGrammarTopic() + " - Question " + (i + 1));
+            exercise.put("question",
+                    "This is a placeholder question for " + request.getGrammarTopic() + " - Question " + (i + 1));
             exercise.put("options", List.of("Option A", "Option B", "Option C", "Option D"));
             exercise.put("correctAnswer", "A");
             exercise.put("explanation", "Fallback content - detailed explanation pending.");
@@ -232,7 +236,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
             }
             cleaned = cleaned.trim();
 
-            Map<String, Object> parsed = objectMapper.readValue(cleaned, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> parsed = objectMapper.readValue(cleaned, new TypeReference<Map<String, Object>>() {
+            });
 
             // Unwrap "exerciseSet" wrapper if present (as requested in prompt)
             if (parsed.containsKey("exerciseSet") && parsed.get("exerciseSet") instanceof Map) {
@@ -265,40 +270,39 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
      */
     private String buildDefaultPrompt(GrammarRequestDTO request) {
         return String.format("""
-            You are an expert ESL grammar instructor creating exercises for learners.
-            
-            Create %d grammar exercises for the topic "%s" at CEFR level %s.
-            Theme: %s
-            
-            Return a JSON object with this structure:
-            {
-              "explanation": {
-                "rule": "Explanation of the grammar rule",
-                "examples": ["Example 1", "Example 2"],
-                "commonMistakes": ["Common mistake 1"]
-              },
-              "exercises": [
+                You are an expert ESL grammar instructor creating exercises for learners.
+
+                Create %d grammar exercises for the topic "%s" at CEFR level %s.
+                Theme: %s
+
+                Return a JSON object with this structure:
                 {
-                  "type": "multiple_choice",
-                  "instruction": "Choose the correct answer",
-                  "question": "Question text with ___",
-                  "options": ["A", "B", "C", "D"],
-                  "correctAnswer": "A",
-                  "explanation": "Why A is correct",
-                  "difficulty": "medium"
+                  "explanation": {
+                    "rule": "Explanation of the grammar rule",
+                    "examples": ["Example 1", "Example 2"],
+                    "commonMistakes": ["Common mistake 1"]
+                  },
+                  "exercises": [
+                    {
+                      "type": "multiple_choice",
+                      "instruction": "Choose the correct answer",
+                      "question": "Question text with ___",
+                      "options": ["A", "B", "C", "D"],
+                      "correctAnswer": "A",
+                      "explanation": "Why A is correct",
+                      "difficulty": "medium"
+                    }
+                  ]
                 }
-              ]
-            }
-            
-            Include a mix of exercise types: multiple_choice, fill_blank, transformation, error_correction.
-            Make the content appropriate for %s level learners.
-            """,
-            request.getExerciseCount(),
-            request.getGrammarTopic(),
-            request.getCefrLevel(),
-            request.getTheme() != null ? request.getTheme() : "general",
-            request.getCefrLevel()
-        );
+
+                Include a mix of exercise types: multiple_choice, fill_blank, transformation, error_correction.
+                Make the content appropriate for %s level learners.
+                """,
+                request.getExerciseCount(),
+                request.getGrammarTopic(),
+                request.getCefrLevel(),
+                request.getTheme() != null ? request.getTheme() : "general",
+                request.getCefrLevel());
     }
 
     /**
@@ -364,7 +368,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         GrammarExerciseSet exerciseSet = exerciseSetRepository.findById(exerciseSetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exercise set not found: " + exerciseSetId));
 
-        // Security: Verify ownership - exercise sets with null userId are public/fallback
+        // Security: Verify ownership - exercise sets with null userId are
+        // public/fallback
         if (exerciseSet.getUserId() != null && !exerciseSet.getUserId().equals(userId)) {
             log.warn("User {} attempted to access exercise set {} owned by {}",
                     userId, exerciseSetId, exerciseSet.getUserId());
@@ -390,7 +395,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
             answers = Collections.emptyList();
         }
 
-        // Map answers by question index for O(1) lookup and handling out-of-order submissions
+        // Map answers by question index for O(1) lookup and handling out-of-order
+        // submissions
         Map<Integer, GrammarAnswerDTO.AnswerItem> answerMap = new HashMap<>();
         for (GrammarAnswerDTO.AnswerItem answer : answers) {
             int index = answer.getQuestionIndex() != null ? answer.getQuestionIndex() : answerMap.size();
@@ -440,9 +446,10 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
 
         boolean passed = percentage.doubleValue() >= PASSING_THRESHOLD;
 
-        // Use total time from submission if provided, otherwise sum from individual answers
-        int totalTimeSeconds = submission.getTotalTimeSeconds() != null 
-                ? submission.getTotalTimeSeconds() 
+        // Use total time from submission if provided, otherwise sum from individual
+        // answers
+        int totalTimeSeconds = submission.getTotalTimeSeconds() != null
+                ? submission.getTotalTimeSeconds()
                 : totalTimeMs / 1000;
 
         // Create or update progress
@@ -465,7 +472,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
 
         progressRepository.save(progress);
 
-        log.info("User {} scored {}/{} ({}%) on exercise set {}", 
+        log.info("User {} scored {}/{} ({}%) on exercise set {}",
                 userId, score, maxScore, percentage, exerciseSetId);
 
         // Build result DTO
@@ -519,7 +526,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
      * Identifies areas where the user needs improvement.
      */
     private List<String> identifyAreasToImprove(List<GrammarResultDTO.QuestionFeedback> feedback,
-                                                 List<Map<String, Object>> exercises) {
+            List<Map<String, Object>> exercises) {
         List<String> areas = new ArrayList<>();
 
         for (int i = 0; i < feedback.size(); i++) {
@@ -622,5 +629,26 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
 
         GrammarExerciseSet fallback = fallbacks.get(new Random().nextInt(fallbacks.size()));
         return GrammarExerciseMapper.toExerciseSetDTO(fallback);
+    }
+
+    @Override
+    @Transactional
+    public void resetProgress(UUID exerciseSetId, UUID userId) {
+        log.info("Resetting progress for exercise set: {} by user: {}", exerciseSetId, userId);
+
+        // Verify exercise set exists
+        if (!exerciseSetRepository.existsById(exerciseSetId)) {
+            throw new ResourceNotFoundException("Exercise set not found: " + exerciseSetId);
+        }
+
+        // Check if progress exists
+        if (!progressRepository.existsByUserIdAndExerciseSet_Id(userId, exerciseSetId)) {
+            throw new ResourceNotFoundException("No progress found for this exercise set");
+        }
+
+        // Delete the progress record
+        progressRepository.deleteByUserIdAndExerciseSet_Id(userId, exerciseSetId);
+
+        log.info("Successfully reset progress for exercise set: {} by user: {}", exerciseSetId, userId);
     }
 }

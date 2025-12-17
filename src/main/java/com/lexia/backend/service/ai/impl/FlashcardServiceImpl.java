@@ -159,7 +159,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         log.info("Created flashcard deck {} with {} cards (fallback: {})", 
                 deck.getId(), cards.size(), usedFallback);
 
-        return FlashcardMapper.toDeckDTO(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
     // ========== Deck CRUD Methods ==========
@@ -205,28 +205,29 @@ public class FlashcardServiceImpl implements FlashcardService {
         }
 
         log.info("Created deck {} with {} cards", deck.getId(), cards.size());
-        return FlashcardMapper.toDeckDTO(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
     @Override
     @Transactional(readOnly = true)
     public FlashcardDeckDTO getDeck(UUID deckId, UUID userId) {
         FlashcardDeck deck = findDeckWithOwnershipCheck(deckId, userId);
-        return FlashcardMapper.toDeckDTO(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
     @Override
     @Transactional(readOnly = true)
     public FlashcardDeckDTO getDeckSummary(UUID deckId, UUID userId) {
         FlashcardDeck deck = findDeckWithOwnershipCheck(deckId, userId);
-        return FlashcardMapper.toDeckDTOWithoutCards(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTOWithoutCards(deck));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<FlashcardDeckDTO> getUserDecks(UUID userId, Pageable pageable) {
         return deckRepository.findByUserId(userId, pageable)
-                .map(FlashcardMapper::toDeckDTOWithoutCards);
+                .map(FlashcardMapper::toDeckDTOWithoutCards)
+                .map(this::enrichDeckDTO);
     }
 
     @Override
@@ -234,6 +235,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     public List<FlashcardDeckDTO> getUserDecks(UUID userId) {
         return deckRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(FlashcardMapper::toDeckDTOWithoutCards)
+                .map(this::enrichDeckDTO)
                 .collect(Collectors.toList());
     }
 
@@ -243,6 +245,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         FlashcardDeck.SourceType type = FlashcardDeck.SourceType.valueOf(sourceType.toUpperCase());
         return deckRepository.findByUserIdAndSourceType(userId, type).stream()
                 .map(FlashcardMapper::toDeckDTOWithoutCards)
+                .map(this::enrichDeckDTO)
                 .collect(Collectors.toList());
     }
 
@@ -270,7 +273,7 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         deck = deckRepository.save(deck);
         log.info("Updated deck {}", deckId);
-        return FlashcardMapper.toDeckDTO(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
     /**
@@ -402,7 +405,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         progressRepository.save(progress);
 
         log.debug("Added card to deck {}, new count: {}", deckId, deck.getCardCount());
-        return FlashcardMapper.toDeckDTO(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
     @Override
@@ -418,7 +421,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         deck = deckRepository.save(deck);
 
         log.debug("Updated card {} in deck {}", cardIndex, deckId);
-        return FlashcardMapper.toDeckDTO(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
     @Override
@@ -437,7 +440,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         reindexProgressRecords(userId, deckId, cardIndex);
 
         log.debug("Removed card {} from deck {}, new count: {}", cardIndex, deckId, deck.getCardCount());
-        return FlashcardMapper.toDeckDTO(deck);
+        return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
     // ========== Study Session Methods ==========
@@ -564,6 +567,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         return deckRepository.findByUserIdAndSourceTypeAndSourceId(
                         userId, FlashcardDeck.SourceType.LESSON, lessonId)
                 .map(FlashcardMapper::toDeckDTO)
+                .map(this::enrichDeckDTO)
                 .orElse(null);
     }
 
@@ -586,6 +590,48 @@ public class FlashcardServiceImpl implements FlashcardService {
     }
 
     // ========== Private Helper Methods ==========
+
+    /**
+     * Enriches the deck DTO with course and lesson titles if applicable.
+     * Also populates progress statistics.
+     */
+    private FlashcardDeckDTO enrichDeckDTO(FlashcardDeckDTO dto) {
+        if (dto == null) return null;
+
+        // Populate Course/Lesson titles
+        if ("LESSON".equals(dto.getSourceType()) && dto.getSourceId() != null) {
+            try {
+                lessonRepository.findById(dto.getSourceId()).ifPresent(lesson -> {
+                    dto.setLessonTitle(lesson.getTitle());
+                    if (lesson.getSection() != null && lesson.getSection().getCourse() != null) {
+                        dto.setCourseTitle(lesson.getSection().getCourse().getTitle());
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Failed to fetch lesson details for deck {}: {}", dto.getId(), e.getMessage());
+            }
+        }
+
+        // Populate Progress Stats
+        try {
+            // Due count
+            long dueCount = progressRepository.countDueCardsForDeck(dto.getUserId(), dto.getId(), Instant.now());
+            dto.setDueCount((int) dueCount);
+
+            // Other stats
+            Object[] stats = progressRepository.getDeckProgressStatistics(dto.getUserId(), dto.getId());
+            if (stats != null && stats.length >= 8) {
+                // Columns: 0:total, 1:new, 2:learning, 3:reviewing, 4:mastered, 5:reviews, 6:correct, 7:accuracy
+                dto.setNewCount(stats[1] != null ? ((Number) stats[1]).intValue() : 0);
+                dto.setMasteredCount(stats[4] != null ? ((Number) stats[4]).intValue() : 0);
+                dto.setAccuracyRate(stats[7] != null ? ((Number) stats[7]).doubleValue() : 0.0);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch progress stats for deck {}: {}", dto.getId(), e.getMessage());
+        }
+
+        return dto;
+    }
 
     /**
      * Finds a deck and verifies ownership.
