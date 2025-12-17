@@ -2,6 +2,7 @@ package com.lexia.backend.service.ai.impl;
 
 import com.lexia.backend.repository.AIUsageLogRepository;
 import com.lexia.backend.service.ai.AICostService;
+import com.lexia.backend.service.ai.AIConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +19,15 @@ import java.util.stream.Collectors;
 public class AICostServiceImpl implements AICostService {
 
     private final AIUsageLogRepository usageLogRepository;
+    private final AIConfigService configService;
 
     @Override
     public Map<String, Object> getCostAnalytics(String period) {
         Instant start = getStartDate(period);
         
         BigDecimal totalCost = usageLogRepository.sumCostSince(start);
+        if (totalCost == null) totalCost = BigDecimal.ZERO;
+
         List<Object[]> costByModel = usageLogRepository.sumCostByModelSince(start);
         List<Object[]> costByFeature = usageLogRepository.sumCostByContentTypeSince(start);
 
@@ -31,6 +35,13 @@ public class AICostServiceImpl implements AICostService {
         result.put("totalCost", totalCost);
         result.put("costByModel", convertToMap(costByModel));
         result.put("costByFeature", convertToMap(costByFeature));
+        
+        // Add budget info
+        double budgetLimit = Double.parseDouble(configService.getConfig("global.monthlyBudgetLimit").getConfigValue());
+        result.put("budgetLimit", budgetLimit);
+        
+        double percentage = budgetLimit > 0 ? (totalCost.doubleValue() / budgetLimit) * 100 : 0;
+        result.put("budgetUsedPercentage", percentage);
         
         return result;
     }
@@ -97,6 +108,12 @@ public class AICostServiceImpl implements AICostService {
             map.put("userEmail", "user-" + obj[0].toString().substring(0, 8) + "..."); 
             return map;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> updateBudget(double budget) {
+        configService.updateConfig("global.monthlyBudgetLimit", String.valueOf(budget));
+        return Map.of("budget", budget);
     }
 
     private Instant getStartDate(String period) {

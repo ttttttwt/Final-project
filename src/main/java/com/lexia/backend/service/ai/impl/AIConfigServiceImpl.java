@@ -61,6 +61,17 @@ public class AIConfigServiceImpl implements AIConfigService {
                 .collect(Collectors.toMap(AIConfig::getConfigKey, AIConfig::getConfigValue));
         
         AIGlobalSettings settings = new AIGlobalSettings();
+        
+        // New fields
+        settings.setGlobalEnabled(Boolean.parseBoolean(configMap.getOrDefault("global.enabled", "true")));
+        settings.setMonthlyBudgetLimit(Double.parseDouble(configMap.getOrDefault("global.monthlyBudgetLimit", "100.0")));
+        settings.setAlertThresholdPercentage(Integer.parseInt(configMap.getOrDefault("global.alertThresholdPercentage", "80")));
+        settings.setFallbackEnabled(Boolean.parseBoolean(configMap.getOrDefault("global.fallbackEnabled", "false")));
+        settings.setRateLimitEnabled(Boolean.parseBoolean(configMap.getOrDefault("global.rateLimitEnabled", "true")));
+        settings.setCostPerInputToken(Double.parseDouble(configMap.getOrDefault("global.costPerInputToken", "0.000001")));
+        settings.setCostPerOutputToken(Double.parseDouble(configMap.getOrDefault("global.costPerOutputToken", "0.000002")));
+
+        // Legacy fields
         settings.setDefaultDailyLimit(Integer.parseInt(configMap.getOrDefault("global.defaultDailyLimit", "100")));
         settings.setDefaultMonthlyLimit(Integer.parseInt(configMap.getOrDefault("global.defaultMonthlyLimit", "3000")));
         settings.setCostPerToken(Double.parseDouble(configMap.getOrDefault("global.costPerToken", "0.00001")));
@@ -81,6 +92,16 @@ public class AIConfigServiceImpl implements AIConfigService {
         
         List<AIConfig> toSave = new ArrayList<>();
         
+        // New fields
+        updateList(toSave, existingConfigs, "global.enabled", String.valueOf(settings.isGlobalEnabled()));
+        updateList(toSave, existingConfigs, "global.monthlyBudgetLimit", String.valueOf(settings.getMonthlyBudgetLimit()));
+        updateList(toSave, existingConfigs, "global.alertThresholdPercentage", String.valueOf(settings.getAlertThresholdPercentage()));
+        updateList(toSave, existingConfigs, "global.fallbackEnabled", String.valueOf(settings.isFallbackEnabled()));
+        updateList(toSave, existingConfigs, "global.rateLimitEnabled", String.valueOf(settings.isRateLimitEnabled()));
+        updateList(toSave, existingConfigs, "global.costPerInputToken", String.valueOf(settings.getCostPerInputToken()));
+        updateList(toSave, existingConfigs, "global.costPerOutputToken", String.valueOf(settings.getCostPerOutputToken()));
+
+        // Legacy fields
         updateList(toSave, existingConfigs, "global.defaultDailyLimit", String.valueOf(settings.getDefaultDailyLimit()));
         updateList(toSave, existingConfigs, "global.defaultMonthlyLimit", String.valueOf(settings.getDefaultMonthlyLimit()));
         updateList(toSave, existingConfigs, "global.costPerToken", String.valueOf(settings.getCostPerToken()));

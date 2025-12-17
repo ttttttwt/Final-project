@@ -43,4 +43,9 @@ public class AdminAICostController {
             @RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(costService.getCostsByUser(period, limit));
     }
+
+    @PutMapping("/budget")
+    public ResponseEntity<Map<String, Object>> updateBudget(@RequestBody Map<String, Double> body) {
+        return ResponseEntity.ok(costService.updateBudget(body.get("budget")));
+    }
 }
