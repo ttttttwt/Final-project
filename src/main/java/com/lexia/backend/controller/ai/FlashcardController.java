@@ -1,5 +1,6 @@
 package com.lexia.backend.controller.ai;
 
+import com.lexia.backend.annotation.QuotaCheck;
 import com.lexia.backend.dto.ai.*;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.service.ai.FlashcardService;
@@ -31,21 +32,27 @@ import java.util.UUID;
  * REST Controller for AI-Powered Flashcard Operations.
  * Provides endpoints for generating, managing, and studying flashcard decks.
  * 
- * <p>Base path: /api/v1/ai/flashcards</p>
+ * <p>
+ * Base path: /api/v1/ai/flashcards
+ * </p>
  * 
- * <p>Features:</p>
+ * <p>
+ * Features:
+ * </p>
  * <ul>
- *   <li>AI-generated flashcards from lesson content</li>
- *   <li>Manual deck creation and management</li>
- *   <li>SM-2 spaced repetition study sessions</li>
- *   <li>Progress tracking with mastery levels</li>
+ * <li>AI-generated flashcards from lesson content</li>
+ * <li>Manual deck creation and management</li>
+ * <li>SM-2 spaced repetition study sessions</li>
+ * <li>Progress tracking with mastery levels</li>
  * </ul>
  * 
- * <p>Security:</p>
+ * <p>
+ * Security:
+ * </p>
  * <ul>
- *   <li>All endpoints require JWT authentication</li>
- *   <li>Users can only access their own decks</li>
- *   <li>AI operations are rate-limited per user</li>
+ * <li>All endpoints require JWT authentication</li>
+ * <li>Users can only access their own decks</li>
+ * <li>AI operations are rate-limited per user</li>
  * </ul>
  * 
  * @author LEXIA Team
@@ -70,29 +77,23 @@ public class FlashcardController {
     /**
      * Generate flashcards from lesson content using AI.
      * 
-     * <p>Uses Google Gemini AI to extract vocabulary from lesson content
+     * <p>
+     * Uses Google Gemini AI to extract vocabulary from lesson content
      * and generate comprehensive flashcards with definitions, examples,
-     * and pronunciation.</p>
+     * and pronunciation.
+     * </p>
      * 
-     * @param user the authenticated user
+     * @param user    the authenticated user
      * @param request the generation request with lesson ID and options
      * @return 201 Created with generated flashcard deck
      */
     @PostMapping(value = "/generate", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Generate flashcards from lesson",
-        description = "Uses AI to generate flashcards from completed lesson content. " +
-                      "Extracts key vocabulary and creates cards with definitions, " +
-                      "example sentences, and pronunciation (IPA)."
-    )
+    @Operation(summary = "Generate flashcards from lesson", description = "Uses AI to generate flashcards from completed lesson content. "
+            +
+            "Extracts key vocabulary and creates cards with definitions, " +
+            "example sentences, and pronunciation (IPA).")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "Flashcards generated successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = FlashcardDeckDTO.class),
-                examples = @ExampleObject(name = "Generated Deck", value = """
+            @ApiResponse(responseCode = "201", description = "Flashcards generated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FlashcardDeckDTO.class), examples = @ExampleObject(name = "Generated Deck", value = """
                     {
                       "id": "550e8400-e29b-41d4-a716-446655440000",
                       "userId": "123e4567-e89b-12d3-a456-426614174000",
@@ -104,35 +105,14 @@ public class FlashcardController {
                       "cardCount": 20,
                       "createdAt": "2025-12-13T10:30:00Z"
                     }
-                    """)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Invalid request - validation failed",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - Invalid or missing JWT token",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Lesson not found",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "409",
-            description = "Deck already exists for this lesson",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "429",
-            description = "Rate limit exceeded - daily flashcard quota reached",
-            content = @Content(mediaType = "application/json")
-        )
+                    """))),
+            @ApiResponse(responseCode = "400", description = "Invalid request - validation failed", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "Lesson not found", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "409", description = "Deck already exists for this lesson", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "429", description = "Rate limit exceeded - daily flashcard quota reached", content = @Content(mediaType = "application/json"))
     })
+    @QuotaCheck(contentType = "flashcard", incrementSession = true, sessionType = "flashcard")
     public ResponseEntity<FlashcardDeckDTO> generateFromLesson(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody GenerateFlashcardsDTO request) {
@@ -141,7 +121,7 @@ public class FlashcardController {
 
         FlashcardDeckDTO deck = flashcardService.generateFromLesson(request, user.getId());
 
-        LOG.info("User {} generated deck '{}' with {} cards", 
+        LOG.info("User {} generated deck '{}' with {} cards",
                 user.getEmail(), deck.getTitle(), deck.getCardCount());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(deck);
@@ -150,27 +130,21 @@ public class FlashcardController {
     /**
      * Generate flashcards from a topic using AI.
      * 
-     * <p>Uses Google Gemini AI to generate vocabulary flashcards based on
-     * the given topic and CEFR level.</p>
+     * <p>
+     * Uses Google Gemini AI to generate vocabulary flashcards based on
+     * the given topic and CEFR level.
+     * </p>
      * 
-     * @param user the authenticated user
+     * @param user    the authenticated user
      * @param request the generation request with topic and options
      * @return 201 Created with generated flashcard deck
      */
     @PostMapping(value = "/generate-by-topic", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Generate flashcards from topic",
-        description = "Uses AI to generate vocabulary flashcards for a given topic. " +
-                      "Creates cards with definitions, example sentences, and pronunciation (IPA)."
-    )
+    @Operation(summary = "Generate flashcards from topic", description = "Uses AI to generate vocabulary flashcards for a given topic. "
+            +
+            "Creates cards with definitions, example sentences, and pronunciation (IPA).")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "Flashcards generated successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = FlashcardDeckDTO.class),
-                examples = @ExampleObject(name = "Generated Deck", value = """
+            @ApiResponse(responseCode = "201", description = "Flashcards generated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FlashcardDeckDTO.class), examples = @ExampleObject(name = "Generated Deck", value = """
                     {
                       "id": "550e8400-e29b-41d4-a716-446655440000",
                       "userId": "123e4567-e89b-12d3-a456-426614174000",
@@ -181,30 +155,13 @@ public class FlashcardController {
                       "cardCount": 15,
                       "createdAt": "2025-12-17T10:30:00Z"
                     }
-                    """)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Invalid request - validation failed",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - Invalid or missing JWT token",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "429",
-            description = "Rate limit exceeded - daily flashcard quota reached",
-            content = @Content(mediaType = "application/json")
-        ),
-        @ApiResponse(
-            responseCode = "503",
-            description = "AI service unavailable",
-            content = @Content(mediaType = "application/json")
-        )
+                    """))),
+            @ApiResponse(responseCode = "400", description = "Invalid request - validation failed", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "429", description = "Rate limit exceeded - daily flashcard quota reached", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "503", description = "AI service unavailable", content = @Content(mediaType = "application/json"))
     })
+    @QuotaCheck(contentType = "flashcard", incrementSession = true, sessionType = "flashcard")
     public ResponseEntity<FlashcardDeckDTO> generateFromTopic(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody GenerateFlashcardsByTopicDTO request) {
@@ -213,7 +170,7 @@ public class FlashcardController {
 
         FlashcardDeckDTO deck = flashcardService.generateFromTopic(request, user.getId());
 
-        LOG.info("User {} generated deck '{}' with {} cards from topic", 
+        LOG.info("User {} generated deck '{}' with {} cards from topic",
                 user.getEmail(), deck.getTitle(), deck.getCardCount());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(deck);
@@ -224,27 +181,18 @@ public class FlashcardController {
     /**
      * Create a new flashcard deck manually.
      * 
-     * @param user the authenticated user
+     * @param user    the authenticated user
      * @param request the deck creation request
      * @return 201 Created with the new deck
      */
     @PostMapping(value = "/decks", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Create custom flashcard deck",
-        description = "Creates a new flashcard deck with optional initial cards. " +
-                      "Use sourceType=USER_CREATED for manual decks."
-    )
+    @Operation(summary = "Create custom flashcard deck", description = "Creates a new flashcard deck with optional initial cards. "
+            +
+            "Use sourceType=USER_CREATED for manual decks.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "Deck created successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = FlashcardDeckDTO.class)
-            )
-        ),
-        @ApiResponse(responseCode = "400", description = "Invalid request"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "201", description = "Deck created successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FlashcardDeckDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<FlashcardDeckDTO> createDeck(
             @AuthenticationPrincipal User user,
@@ -257,7 +205,7 @@ public class FlashcardController {
 
         FlashcardDeckDTO deck = flashcardService.createDeck(request, user.getId());
 
-        LOG.info("User {} created deck '{}' (ID: {})", 
+        LOG.info("User {} created deck '{}' (ID: {})",
                 user.getEmail(), deck.getTitle(), deck.getId());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(deck);
@@ -266,46 +214,32 @@ public class FlashcardController {
     /**
      * List all flashcard decks for the authenticated user.
      * 
-     * @param user the authenticated user
-     * @param page page number (0-based)
-     * @param size page size (default 20, max 100)
-     * @param sort sort field (default: createdAt)
+     * @param user      the authenticated user
+     * @param page      page number (0-based)
+     * @param size      page size (default 20, max 100)
+     * @param sort      sort field (default: createdAt)
      * @param direction sort direction (ASC or DESC)
      * @return 200 OK with paginated deck list
      */
     @GetMapping(value = "/decks", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "List user's flashcard decks",
-        description = "Retrieves all flashcard decks owned by the authenticated user with pagination."
-    )
+    @Operation(summary = "List user's flashcard decks", description = "Retrieves all flashcard decks owned by the authenticated user with pagination.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Successfully retrieved deck list",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = Page.class)
-            )
-        ),
-        @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved deck list", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<Page<FlashcardDeckDTO>> getUserDecks(
             @AuthenticationPrincipal User user,
-            @Parameter(description = "Page number (0-based)") 
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size (max 100)") 
-            @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sort field") 
-            @RequestParam(defaultValue = "createdAt") String sort,
-            @Parameter(description = "Sort direction") 
-            @RequestParam(defaultValue = "DESC") String direction) {
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort field") @RequestParam(defaultValue = "createdAt") String sort,
+            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "DESC") String direction) {
 
         LOG.debug("User {} fetching decks (page={}, size={})", user.getEmail(), page, size);
 
         // Validate and cap page size
         size = Math.min(size, 100);
 
-        Pageable pageable = PageRequest.of(page, size, 
+        Pageable pageable = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.fromString(direction), sort));
 
         Page<FlashcardDeckDTO> decks = flashcardService.getUserDecks(user.getId(), pageable);
@@ -316,23 +250,14 @@ public class FlashcardController {
     /**
      * Get a specific flashcard deck by ID.
      * 
-     * @param user the authenticated user
+     * @param user   the authenticated user
      * @param deckId the deck UUID
      * @return 200 OK with deck details including cards
      */
     @GetMapping(value = "/decks/{deckId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Get flashcard deck details",
-        description = "Retrieves a specific deck with all its flashcards."
-    )
+    @Operation(summary = "Get flashcard deck details", description = "Retrieves a specific deck with all its flashcards.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Successfully retrieved deck",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = FlashcardDeckDTO.class),
-                examples = @ExampleObject(name = "Deck with Cards", value = """
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved deck", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FlashcardDeckDTO.class), examples = @ExampleObject(name = "Deck with Cards", value = """
                     {
                       "id": "550e8400-e29b-41d4-a716-446655440000",
                       "title": "Business Meeting Vocabulary",
@@ -351,29 +276,19 @@ public class FlashcardController {
                       "dueCount": 5,
                       "masteredCount": 10
                     }
-                    """)
-            )
-        ),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Deck not found",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(value = """
+                    """))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Deck not found", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
                     {
                       "status": 404,
                       "error": "Not Found",
                       "message": "Flashcard deck not found: 550e8400-e29b-41d4-a716-446655440000"
                     }
-                    """)
-            )
-        )
+                    """)))
     })
     public ResponseEntity<FlashcardDeckDTO> getDeck(
             @AuthenticationPrincipal User user,
-            @Parameter(description = "Deck UUID", required = true) 
-            @PathVariable UUID deckId) {
+            @Parameter(description = "Deck UUID", required = true) @PathVariable UUID deckId) {
 
         LOG.debug("User {} fetching deck {}", user.getEmail(), deckId);
 
@@ -385,30 +300,22 @@ public class FlashcardController {
     /**
      * Update an existing flashcard deck.
      * 
-     * @param user the authenticated user
-     * @param deckId the deck UUID
+     * @param user    the authenticated user
+     * @param deckId  the deck UUID
      * @param request the update request
      * @return 200 OK with updated deck
      */
     @PutMapping(value = "/decks/{deckId}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Update flashcard deck",
-        description = "Updates deck metadata or cards. Only non-null fields are updated."
-    )
+    @Operation(summary = "Update flashcard deck", description = "Updates deck metadata or cards. Only non-null fields are updated.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Deck updated successfully",
-            content = @Content(schema = @Schema(implementation = FlashcardDeckDTO.class))
-        ),
-        @ApiResponse(responseCode = "400", description = "Invalid request"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Deck not found")
+            @ApiResponse(responseCode = "200", description = "Deck updated successfully", content = @Content(schema = @Schema(implementation = FlashcardDeckDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Deck not found")
     })
     public ResponseEntity<FlashcardDeckDTO> updateDeck(
             @AuthenticationPrincipal User user,
-            @Parameter(description = "Deck UUID", required = true) 
-            @PathVariable UUID deckId,
+            @Parameter(description = "Deck UUID", required = true) @PathVariable UUID deckId,
             @Valid @RequestBody UpdateFlashcardDeckDTO request) {
 
         LOG.info("User {} updating deck {}", user.getEmail(), deckId);
@@ -423,24 +330,20 @@ public class FlashcardController {
     /**
      * Delete a flashcard deck.
      * 
-     * @param user the authenticated user
+     * @param user   the authenticated user
      * @param deckId the deck UUID
      * @return 204 No Content on successful deletion
      */
     @DeleteMapping(value = "/decks/{deckId}")
-    @Operation(
-        summary = "Delete flashcard deck",
-        description = "Permanently deletes a deck and all associated progress records."
-    )
+    @Operation(summary = "Delete flashcard deck", description = "Permanently deletes a deck and all associated progress records.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Deck deleted successfully"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Deck not found")
+            @ApiResponse(responseCode = "204", description = "Deck deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Deck not found")
     })
     public ResponseEntity<Void> deleteDeck(
             @AuthenticationPrincipal User user,
-            @Parameter(description = "Deck UUID", required = true) 
-            @PathVariable UUID deckId) {
+            @Parameter(description = "Deck UUID", required = true) @PathVariable UUID deckId) {
 
         LOG.info("User {} deleting deck {}", user.getEmail(), deckId);
 
@@ -456,32 +359,26 @@ public class FlashcardController {
     /**
      * Get cards for a study session.
      * 
-     * <p>Returns cards prioritized by SM-2 spaced repetition algorithm:</p>
+     * <p>
+     * Returns cards prioritized by SM-2 spaced repetition algorithm:
+     * </p>
      * <ol>
-     *   <li>Overdue cards (most overdue first)</li>
-     *   <li>New cards (never reviewed)</li>
-     *   <li>Regular due cards</li>
+     * <li>Overdue cards (most overdue first)</li>
+     * <li>New cards (never reviewed)</li>
+     * <li>Regular due cards</li>
      * </ol>
      * 
-     * @param user the authenticated user
-     * @param deckId the deck UUID
+     * @param user     the authenticated user
+     * @param deckId   the deck UUID
      * @param maxCards maximum cards to return (default 20)
      * @return 200 OK with study session data
      */
     @GetMapping(value = "/decks/{deckId}/study", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Get study session",
-        description = "Retrieves cards due for review, ordered by spaced repetition priority. " +
-                      "Includes progress data for each card."
-    )
+    @Operation(summary = "Get study session", description = "Retrieves cards due for review, ordered by spaced repetition priority. "
+            +
+            "Includes progress data for each card.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Study session retrieved successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = FlashcardStudySessionDTO.class),
-                examples = @ExampleObject(name = "Study Session", value = """
+            @ApiResponse(responseCode = "200", description = "Study session retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FlashcardStudySessionDTO.class), examples = @ExampleObject(name = "Study Session", value = """
                     {
                       "deckId": "550e8400-e29b-41d4-a716-446655440000",
                       "deckTitle": "Business Meeting Vocabulary",
@@ -508,18 +405,14 @@ public class FlashcardController {
                         "masteredCount": 3
                       }
                     }
-                    """)
-            )
-        ),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Deck not found")
+                    """))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Deck not found")
     })
     public ResponseEntity<FlashcardStudySessionDTO> getStudySession(
             @AuthenticationPrincipal User user,
-            @Parameter(description = "Deck UUID", required = true) 
-            @PathVariable UUID deckId,
-            @Parameter(description = "Maximum cards to include (default 20, max 50)") 
-            @RequestParam(required = false, defaultValue = "20") Integer maxCards) {
+            @Parameter(description = "Deck UUID", required = true) @PathVariable UUID deckId,
+            @Parameter(description = "Maximum cards to include (default 20, max 50)") @RequestParam(required = false, defaultValue = "20") Integer maxCards) {
 
         LOG.info("User {} starting study session for deck {}", user.getEmail(), deckId);
 
@@ -528,7 +421,7 @@ public class FlashcardController {
 
         FlashcardStudySessionDTO session = flashcardService.getStudySession(deckId, user.getId(), maxCards);
 
-        LOG.info("User {} study session: {} cards to study ({} due, {} new)", 
+        LOG.info("User {} study session: {} cards to study ({} due, {} new)",
                 user.getEmail(), session.getSessionSize(), session.getDueCards(), session.getNewCards());
 
         return ResponseEntity.ok(session);
@@ -537,28 +430,22 @@ public class FlashcardController {
     /**
      * Submit review results for studied cards.
      * 
-     * <p>Updates SM-2 spaced repetition data for each reviewed card,
-     * including ease factor, interval, next review date, and mastery level.</p>
+     * <p>
+     * Updates SM-2 spaced repetition data for each reviewed card,
+     * including ease factor, interval, next review date, and mastery level.
+     * </p>
      * 
-     * @param user the authenticated user
-     * @param deckId the deck UUID
+     * @param user    the authenticated user
+     * @param deckId  the deck UUID
      * @param results the review results with quality ratings
      * @return 200 OK with updated study session
      */
     @PostMapping(value = "/decks/{deckId}/review", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Submit review results",
-        description = "Submits quality ratings for reviewed cards. Updates spaced repetition " +
-                      "data (ease factor, interval, next review date) based on SM-2 algorithm."
-    )
+    @Operation(summary = "Submit review results", description = "Submits quality ratings for reviewed cards. Updates spaced repetition "
+            +
+            "data (ease factor, interval, next review date) based on SM-2 algorithm.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Review submitted successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = FlashcardStudySessionDTO.class),
-                examples = @ExampleObject(name = "Review Submitted", value = """
+            @ApiResponse(responseCode = "200", description = "Review submitted successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FlashcardStudySessionDTO.class), examples = @ExampleObject(name = "Review Submitted", value = """
                     {
                       "deckId": "550e8400-e29b-41d4-a716-446655440000",
                       "deckTitle": "Business Meeting Vocabulary",
@@ -572,15 +459,8 @@ public class FlashcardController {
                         "masteredCount": 5
                       }
                     }
-                    """)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Invalid review data",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(value = """
+                    """))),
+            @ApiResponse(responseCode = "400", description = "Invalid review data", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
                     {
                       "status": 400,
                       "error": "Bad Request",
@@ -589,24 +469,21 @@ public class FlashcardController {
                         {"field": "reviews[0].quality", "message": "must be less than or equal to 5"}
                       ]
                     }
-                    """)
-            )
-        ),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Deck not found")
+                    """))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Deck not found")
     })
     public ResponseEntity<FlashcardStudySessionDTO> submitReview(
             @AuthenticationPrincipal User user,
-            @Parameter(description = "Deck UUID", required = true) 
-            @PathVariable UUID deckId,
+            @Parameter(description = "Deck UUID", required = true) @PathVariable UUID deckId,
             @Valid @RequestBody FlashcardReviewResultDTO results) {
 
-        LOG.info("User {} submitting review for deck {} ({} cards)", 
+        LOG.info("User {} submitting review for deck {} ({} cards)",
                 user.getEmail(), deckId, results.getReviews().size());
 
         FlashcardStudySessionDTO session = flashcardService.submitReview(deckId, user.getId(), results);
 
-        LOG.info("User {} review submitted. Next session: {} due, {} new", 
+        LOG.info("User {} review submitted. Next session: {} due, {} new",
                 user.getEmail(), session.getDueCards(), session.getNewCards());
 
         return ResponseEntity.ok(session);
@@ -621,24 +498,14 @@ public class FlashcardController {
      * @return 200 OK with total due count
      */
     @GetMapping(value = "/due-count", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Get total due cards count",
-        description = "Returns the total number of cards due for review across all user's decks."
-    )
+    @Operation(summary = "Get total due cards count", description = "Returns the total number of cards due for review across all user's decks.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Successfully retrieved due count",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(value = """
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved due count", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
                     {
                       "totalDueCards": 42
                     }
-                    """)
-            )
-        ),
-        @ApiResponse(responseCode = "401", description = "Unauthorized")
+                    """))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<DueCountResponse> getTotalDueCount(
             @AuthenticationPrincipal User user) {
@@ -651,50 +518,38 @@ public class FlashcardController {
     /**
      * Check if a deck exists for a specific lesson.
      * 
-     * @param user the authenticated user
+     * @param user     the authenticated user
      * @param lessonId the lesson ID
      * @return 200 OK with exists flag and optional deck ID
      */
     @GetMapping(value = "/lessons/{lessonId}/deck", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Check for lesson deck",
-        description = "Checks if a flashcard deck has already been generated from a specific lesson."
-    )
+    @Operation(summary = "Check for lesson deck", description = "Checks if a flashcard deck has already been generated from a specific lesson.")
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Check completed",
-            content = @Content(
-                mediaType = "application/json",
-                examples = {
+            @ApiResponse(responseCode = "200", description = "Check completed", content = @Content(mediaType = "application/json", examples = {
                     @ExampleObject(name = "Deck Exists", value = """
-                        {
-                          "exists": true,
-                          "deckId": "550e8400-e29b-41d4-a716-446655440000"
-                        }
-                        """),
+                            {
+                              "exists": true,
+                              "deckId": "550e8400-e29b-41d4-a716-446655440000"
+                            }
+                            """),
                     @ExampleObject(name = "No Deck", value = """
-                        {
-                          "exists": false,
-                          "deckId": null
-                        }
-                        """)
-                }
-            )
-        ),
-        @ApiResponse(responseCode = "401", description = "Unauthorized")
+                            {
+                              "exists": false,
+                              "deckId": null
+                            }
+                            """)
+            })),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<LessonDeckCheckResponse> checkLessonDeck(
             @AuthenticationPrincipal User user,
-            @Parameter(description = "Lesson ID", required = true) 
-            @PathVariable Long lessonId) {
+            @Parameter(description = "Lesson ID", required = true) @PathVariable Long lessonId) {
 
         FlashcardDeckDTO deck = flashcardService.getLessonDeck(lessonId, user.getId());
 
         LessonDeckCheckResponse response = new LessonDeckCheckResponse(
                 deck != null,
-                deck != null ? deck.getId() : null
-        );
+                deck != null ? deck.getId() : null);
 
         return ResponseEntity.ok(response);
     }
@@ -706,18 +561,15 @@ public class FlashcardController {
      */
     @Schema(description = "Total due cards count response")
     public record DueCountResponse(
-        @Schema(description = "Total cards due for review", example = "42")
-        long totalDueCards
-    ) {}
+            @Schema(description = "Total cards due for review", example = "42") long totalDueCards) {
+    }
 
     /**
      * Response DTO for lesson deck check.
      */
     @Schema(description = "Lesson deck check response")
     public record LessonDeckCheckResponse(
-        @Schema(description = "Whether a deck exists for this lesson")
-        boolean exists,
-        @Schema(description = "Deck ID if exists")
-        UUID deckId
-    ) {}
+            @Schema(description = "Whether a deck exists for this lesson") boolean exists,
+            @Schema(description = "Deck ID if exists") UUID deckId) {
+    }
 }

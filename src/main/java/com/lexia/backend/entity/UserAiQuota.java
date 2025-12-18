@@ -5,8 +5,11 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import com.lexia.backend.enums.PlanType;
+
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -15,21 +18,23 @@ import java.util.UUID;
  * Entity representing user AI quota configuration and usage tracking.
  * Manages daily/monthly limits and feature-specific quotas.
  * 
- * <p>Features:</p>
+ * <p>
+ * Features:
+ * </p>
  * <ul>
- *   <li>Global daily/monthly request limits</li>
- *   <li>Per-feature quotas (roleplay, grammar, flashcard)</li>
- *   <li>Premium tier support with multipliers</li>
- *   <li>Suspension capability for abuse prevention</li>
- *   <li>Automatic quota reset tracking</li>
+ * <li>Global daily/monthly request limits</li>
+ * <li>Per-feature quotas (roleplay, grammar, flashcard)</li>
+ * <li>Premium tier support with multipliers</li>
+ * <li>Suspension capability for abuse prevention</li>
+ * <li>Automatic quota reset tracking</li>
  * </ul>
  * 
  * @see com.lexia.backend.service.ai.AiUsageTracker
  */
 @Entity
 @Table(name = "user_ai_quotas", indexes = {
-    @Index(name = "idx_user_ai_quotas_suspended", columnList = "suspended"),
-    @Index(name = "idx_user_ai_quotas_premium", columnList = "is_premium")
+        @Index(name = "idx_user_ai_quotas_suspended", columnList = "suspended"),
+        @Index(name = "idx_user_ai_quotas_premium", columnList = "is_premium")
 })
 @Getter
 @Setter
@@ -106,6 +111,48 @@ public class UserAiQuota {
     @Column(name = "premium_multiplier", precision = 3, scale = 2, nullable = false)
     @Builder.Default
     private BigDecimal premiumMultiplier = BigDecimal.ONE;
+
+    // ========== Subscription Quota Limits ==========
+
+    /**
+     * User's current subscription plan type.
+     * Determines quota limits applied to this user.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "plan_type", length = 20)
+    @Builder.Default
+    private PlanType planType = PlanType.FREE;
+
+    /**
+     * Date when the monthly quota cycle resets.
+     * Based on subscription start date, not calendar month.
+     */
+    @Column(name = "quota_reset_date")
+    private LocalDate quotaResetDate;
+
+    /**
+     * Number of role play sessions used this month.
+     * Each conversation counts as 1 session regardless of message count.
+     */
+    @Column(name = "roleplay_sessions_used", nullable = false)
+    @Builder.Default
+    private Integer roleplaySessionsUsed = 0;
+
+    /**
+     * Number of flashcard decks generated this month.
+     * Each deck generation counts as 1.
+     */
+    @Column(name = "flashcard_decks_used", nullable = false)
+    @Builder.Default
+    private Integer flashcardDecksUsed = 0;
+
+    /**
+     * Number of grammar exercises generated this month.
+     * Each exercise generation counts as 1.
+     */
+    @Column(name = "grammar_exercises_used", nullable = false)
+    @Builder.Default
+    private Integer grammarExercisesUsed = 0;
 
     // ========== Suspension Status ==========
 
@@ -190,10 +237,12 @@ public class UserAiQuota {
     }
 
     /**
-     * Gets the daily limit for a specific feature, applying premium multiplier if applicable.
+     * Gets the daily limit for a specific feature, applying premium multiplier if
+     * applicable.
      */
     public int getFeatureDailyLimit(String contentType) {
-        if (featureLimits == null) return dailyLimit;
+        if (featureLimits == null)
+            return dailyLimit;
         Map<String, Integer> limits = featureLimits.get(contentType);
         if (limits == null) {
             return dailyLimit; // Fall back to global limit
@@ -206,10 +255,12 @@ public class UserAiQuota {
     }
 
     /**
-     * Gets the monthly limit for a specific feature, applying premium multiplier if applicable.
+     * Gets the monthly limit for a specific feature, applying premium multiplier if
+     * applicable.
      */
     public int getFeatureMonthlyLimit(String contentType) {
-        if (featureLimits == null) return monthlyLimit;
+        if (featureLimits == null)
+            return monthlyLimit;
         Map<String, Integer> limits = featureLimits.get(contentType);
         if (limits == null) {
             return monthlyLimit; // Fall back to global limit
@@ -225,7 +276,8 @@ public class UserAiQuota {
      * Gets the daily usage count for a specific feature.
      */
     public int getFeatureDailyUsage(String contentType) {
-        if (featureUsage == null) return 0;
+        if (featureUsage == null)
+            return 0;
         Map<String, Integer> usage = featureUsage.get(contentType);
         if (usage == null) {
             return 0;
@@ -237,7 +289,8 @@ public class UserAiQuota {
      * Gets the monthly usage count for a specific feature.
      */
     public int getFeatureMonthlyUsage(String contentType) {
-        if (featureUsage == null) return 0;
+        if (featureUsage == null)
+            return 0;
         Map<String, Integer> usage = featureUsage.get(contentType);
         if (usage == null) {
             return 0;
@@ -258,19 +311,19 @@ public class UserAiQuota {
         if (featureUsage == null) {
             featureUsage = createDefaultFeatureUsage();
         }
-        
+
         Map<String, Integer> usage = featureUsage.get(contentType);
         if (usage == null) {
             usage = new HashMap<>(Map.of("daily", 0, "monthly", 0));
             featureUsage.put(contentType, usage);
         }
-        
+
         // Create mutable copy if needed
         if (!(usage instanceof HashMap)) {
             usage = new HashMap<>(usage);
             featureUsage.put(contentType, usage);
         }
-        
+
         usage.put("daily", usage.getOrDefault("daily", 0) + 1);
         usage.put("monthly", usage.getOrDefault("monthly", 0) + 1);
     }
@@ -309,7 +362,7 @@ public class UserAiQuota {
     public void resetDailyUsage() {
         dailyUsed = 0;
         lastResetDaily = Instant.now();
-        
+
         if (featureUsage != null) {
             for (Map<String, Integer> usage : featureUsage.values()) {
                 if (usage instanceof HashMap) {
@@ -325,7 +378,7 @@ public class UserAiQuota {
     public void resetMonthlyUsage() {
         monthlyUsed = 0;
         lastResetMonthly = Instant.now();
-        
+
         if (featureUsage != null) {
             for (Map<String, Integer> usage : featureUsage.values()) {
                 if (usage instanceof HashMap) {

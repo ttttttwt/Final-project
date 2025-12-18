@@ -1,5 +1,6 @@
 package com.lexia.backend.controller.ai;
 
+import com.lexia.backend.annotation.QuotaCheck;
 import com.lexia.backend.dto.ai.*;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.service.ai.RolePlayService;
@@ -229,6 +230,7 @@ public class RolePlayController {
                         @ApiResponse(responseCode = "401", description = "Unauthorized"),
                         @ApiResponse(responseCode = "404", description = "Scenario not found")
         })
+        @QuotaCheck(contentType = "roleplay", incrementSession = true, sessionType = "roleplay")
         public ResponseEntity<RolePlayConversationDTO> startConversation(
                         @AuthenticationPrincipal User user,
                         @Valid @RequestBody RolePlayStartConversationDTO request) {
@@ -342,6 +344,7 @@ public class RolePlayController {
                         @ApiResponse(responseCode = "400", description = "Bad request - conversation not in progress"),
                         @ApiResponse(responseCode = "429", description = "Rate limit exceeded")
         })
+        @QuotaCheck(contentType = "roleplay")
         public ResponseEntity<RolePlayMessageDTO> sendImmersiveMessage(
                         @AuthenticationPrincipal User user,
                         @Parameter(description = "Conversation UUID") @PathVariable UUID conversationId,
@@ -393,6 +396,7 @@ public class RolePlayController {
                         @ApiResponse(responseCode = "404", description = "Conversation not found"),
                         @ApiResponse(responseCode = "429", description = "Rate limit exceeded")
         })
+        @QuotaCheck(contentType = "roleplay")
         public ResponseEntity<RolePlayMessageDTO> sendLearningMessage(
                         @AuthenticationPrincipal User user,
                         @Parameter(description = "Conversation UUID") @PathVariable UUID conversationId,
