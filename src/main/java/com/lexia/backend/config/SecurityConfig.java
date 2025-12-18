@@ -78,6 +78,9 @@ public class SecurityConfig {
                         // Allow public access to file downloads (access control handled in controller)
                         .requestMatchers("/api/v1/files/*/download").permitAll()
 
+                        // Allow public access to Stripe Webhook
+                        .requestMatchers("/api/v1/webhook/stripe").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
 

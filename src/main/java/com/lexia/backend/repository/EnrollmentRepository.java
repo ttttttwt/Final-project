@@ -143,4 +143,14 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      */
     @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.course.cefrLevel = :cefrLevel")
     long countByCefrLevel(@Param("cefrLevel") String cefrLevel);
+
+    /**
+     * Count total enrollments for a specific user.
+     * Used for admin user details.
+     *
+     * @param userId the user's UUID
+     * @return number of enrollments for this user
+     */
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.userId = :userId")
+    int countByUserId(@Param("userId") UUID userId);
 }

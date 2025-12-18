@@ -61,6 +61,19 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /**
+     * Soft delete flag. When true, user is considered deleted but data is retained.
+     */
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false;
+
+    /**
+     * Timestamp when user was soft deleted. Null if not deleted.
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     // Relationships
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private UserProfile profile;

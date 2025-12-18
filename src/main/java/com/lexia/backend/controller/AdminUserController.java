@@ -1,6 +1,7 @@
 package com.lexia.backend.controller;
 
 import com.lexia.backend.dto.AdminUserDTO;
+import com.lexia.backend.dto.AdminUserDetailDTO;
 import com.lexia.backend.dto.CreateUserDTO;
 import com.lexia.backend.dto.UpdateUserDTO;
 import com.lexia.backend.service.AdminUserService;
@@ -39,9 +40,15 @@ public class AdminUserController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get user details", description = "Get detailed information about a specific user")
+    @Operation(summary = "Get user summary", description = "Get summary information about a specific user")
     public ResponseEntity<AdminUserDTO> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(adminUserService.getUserById(id));
+    }
+
+    @GetMapping("/{id}/detail")
+    @Operation(summary = "Get user detail", description = "Get comprehensive user details including learning progress, subscription, AI usage")
+    public ResponseEntity<AdminUserDetailDTO> getUserDetail(@PathVariable UUID id) {
+        return ResponseEntity.ok(adminUserService.getUserDetailById(id));
     }
 
     @PostMapping
@@ -59,9 +66,33 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete user", description = "Delete (or deactivate) a user account")
+    @Operation(summary = "Soft delete user", description = "Soft delete a user account (marks as deleted but keeps data)")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         adminUserService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== Soft Delete Management Endpoints ====================
+
+    @GetMapping("/deleted")
+    @Operation(summary = "List deleted users", description = "Get a paginated list of soft-deleted users (trash view)")
+    public ResponseEntity<Page<AdminUserDTO>> getDeletedUsers(
+            @PageableDefault(sort = "deletedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(adminUserService.getDeletedUsers(pageable));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    @Operation(summary = "Hard delete user", description = "Permanently delete a user from the database (cannot be undone)")
+    public ResponseEntity<Void> hardDeleteUser(
+            @PathVariable UUID id,
+            @Parameter(description = "Reason for permanent deletion (required for audit trail)") @RequestParam String reason) {
+        adminUserService.hardDeleteUser(id, reason);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore deleted user", description = "Restore a soft-deleted user account")
+    public ResponseEntity<AdminUserDTO> restoreUser(@PathVariable UUID id) {
+        return ResponseEntity.ok(adminUserService.restoreUser(id));
     }
 }

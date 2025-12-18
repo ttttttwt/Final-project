@@ -36,4 +36,32 @@ public class AdminUserDTO {
 
     @Schema(description = "Account creation timestamp")
     private LocalDateTime createdAt;
+
+    // ==================== Soft Delete Fields ====================
+
+    @Schema(description = "Soft delete flag")
+    private Boolean isDeleted;
+
+    @Schema(description = "Soft delete timestamp")
+    private LocalDateTime deletedAt;
+
+    // ==================== Enhanced User Info Fields ====================
+
+    @Schema(description = "Current CEFR level from placement test (A1, A2, B1, B2, C1, C2)")
+    private String cefrLevel;
+
+    @Schema(description = "Number of courses user is enrolled in")
+    private Integer enrolledCoursesCount;
+
+    @Schema(description = "Number of learning paths user is enrolled in")
+    private Integer enrolledPathsCount;
+
+    @Schema(description = "Subscription type (FREE, PREMIUM)")
+    private String subscriptionType;
+
+    @Schema(description = "Last activity timestamp")
+    private LocalDateTime lastActiveAt;
+
+    @Schema(description = "Current learning streak in days")
+    private Integer streakDays;
 }

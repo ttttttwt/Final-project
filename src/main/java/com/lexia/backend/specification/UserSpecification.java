@@ -41,6 +41,9 @@ public class UserSpecification {
             // Distinct to avoid duplicates due to joins
             query.distinct(true);
 
+            // Filter out soft-deleted users by default
+            predicates.add(cb.equal(root.get("isDeleted"), false));
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

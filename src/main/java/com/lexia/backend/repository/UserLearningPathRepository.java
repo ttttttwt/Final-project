@@ -72,4 +72,14 @@ public interface UserLearningPathRepository extends JpaRepository<UserLearningPa
      */
     @Query("SELECT ulp FROM UserLearningPath ulp WHERE ulp.user.id = :userId AND ulp.completedAt IS NOT NULL ORDER BY ulp.completedAt DESC")
     List<UserLearningPath> findCompletedByUserId(@Param("userId") UUID userId);
+
+    /**
+     * Count total learning path enrollments for a user.
+     * Used for admin user details.
+     *
+     * @param userId the user's UUID
+     * @return number of learning paths this user is enrolled in
+     */
+    @Query("SELECT COUNT(ulp) FROM UserLearningPath ulp WHERE ulp.user.id = :userId")
+    int countByUserId(@Param("userId") UUID userId);
 }
