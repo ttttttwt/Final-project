@@ -1,5 +1,6 @@
 package com.lexia.backend.auth;
 
+import com.lexia.backend.dto.ChangePasswordDTO;
 import com.lexia.backend.dto.LoginDTO;
 import com.lexia.backend.dto.LoginResponseDTO;
 import com.lexia.backend.dto.RefreshTokenDTO;
@@ -362,5 +363,65 @@ public class AuthService {
 
         refreshTokenRepository.deleteByUserId(userId);
         LOG.info("User {} logged out successfully. All refresh tokens revoked.", user.getEmail());
+    }
+
+    /**
+     * Changes the password for an authenticated user.
+     * Validates current password, ensures new password meets requirements,
+     * and revokes all refresh tokens for security.
+     *
+     * @param userId            the authenticated user's ID
+     * @param changePasswordDTO the password change request
+     * @throws InvalidTokenException      if user not found or inactive
+     * @throws UserAlreadyExistsException if current password is incorrect
+     * @throws IllegalArgumentException   if new password validation fails
+     */
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordDTO changePasswordDTO) {
+        LOG.info("Attempting to change password for user: {}", userId);
+
+        // Find user by ID
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    LOG.warn("Change password failed: User not found: {}", userId);
+                    return new InvalidTokenException("User not found");
+                });
+
+        // Check if user is active
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            LOG.warn("Change password failed: User account is inactive: {}", user.getEmail());
+            throw new InvalidTokenException("User account is inactive");
+        }
+
+        // Validate current password
+        if (!validatePassword(changePasswordDTO.getCurrentPassword(), user.getPasswordHash())) {
+            LOG.warn("Change password failed: Invalid current password for user: {}", user.getEmail());
+            throw new UserAlreadyExistsException("Current password is incorrect");
+        }
+
+        // Validate new password != current password
+        if (changePasswordDTO.getCurrentPassword().equals(changePasswordDTO.getNewPassword())) {
+            LOG.warn("Change password failed: New password same as current for user: {}", user.getEmail());
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        // Validate new password matches confirmation
+        if (!changePasswordDTO.getNewPassword().equals(changePasswordDTO.getConfirmNewPassword())) {
+            LOG.warn("Change password failed: Password confirmation mismatch for user: {}", user.getEmail());
+            throw new IllegalArgumentException("New password and confirmation do not match");
+        }
+
+        // Hash the new password using BCrypt with cost factor 12
+        String newHashedPassword = passwordEncoder.encode(changePasswordDTO.getNewPassword());
+        LOG.debug("New password hashed successfully for user: {}", user.getEmail());
+
+        // Update user's password
+        user.setPasswordHash(newHashedPassword);
+        userRepository.save(user);
+        LOG.info("Password updated successfully for user: {}", user.getEmail());
+
+        // Revoke all refresh tokens for security (force re-login on all devices)
+        refreshTokenRepository.deleteByUserId(userId);
+        LOG.info("All refresh tokens revoked for user: {} after password change", user.getEmail());
     }
 }

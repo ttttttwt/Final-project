@@ -55,8 +55,24 @@ public class SubscriptionService {
             subscription.setStripeCustomerId(stripeCustomerId);
             subscription.setStripeSubscriptionId(stripeSubscriptionId);
             subscription.setStatus(SubscriptionStatus.ACTIVE);
-            // Assuming default to MONTHLY if not specified, or logic to determine plan
-            // For now, we can leave planType as is or update it if we pass metadata
+            
+            if (session.getMetadata() != null && session.getMetadata().containsKey("plan_type")) {
+                String planTypeStr = session.getMetadata().get("plan_type");
+                try {
+                    subscription.setPlanType(PlanType.valueOf(planTypeStr));
+                } catch (IllegalArgumentException e) {
+                    // Fallback to MONTHLY if invalid
+                    subscription.setPlanType(PlanType.MONTHLY);
+                }
+            }
+
+            try {
+                com.stripe.model.Subscription stripeSub = com.stripe.model.Subscription.retrieve(stripeSubscriptionId);
+                subscription.setCurrentPeriodEnd(LocalDateTime.ofEpochSecond(stripeSub.getCurrentPeriodEnd(), 0, ZoneOffset.UTC));
+            } catch (Exception e) {
+                // Log error or ignore
+            }
+            
             subscriptionRepository.save(subscription);
         }
     }

@@ -19,12 +19,13 @@ public class StripeService {
         Stripe.apiKey = apiKey;
     }
 
-    public Session createCheckoutSession(String customerId, String priceId, String successUrl, String cancelUrl, String clientReferenceId) throws StripeException {
+    public Session createCheckoutSession(String customerId, String priceId, String successUrl, String cancelUrl, String clientReferenceId, String planType) throws StripeException {
         SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
                 .setSuccessUrl(successUrl)
                 .setCancelUrl(cancelUrl)
                 .setClientReferenceId(clientReferenceId)
+                .putMetadata("plan_type", planType)
                 .addLineItem(
                         SessionCreateParams.LineItem.builder()
                                 .setQuantity(1L)

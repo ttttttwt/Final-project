@@ -58,11 +58,12 @@ public class SubscriptionController {
         
         Subscription subscription = subscriptionService.getSubscription(user.getId());
         
+        String planType = "YEARLY".equalsIgnoreCase(request.getPlanType()) ? "YEARLY" : "MONTHLY";
         String priceId = "YEARLY".equalsIgnoreCase(request.getPlanType()) ? yearlyPriceId : monthlyPriceId;
         String successUrl = frontendUrl + "/pricing/success?session_id={CHECKOUT_SESSION_ID}";
         String cancelUrl = frontendUrl + "/pricing/cancel";
 
-        Session session = stripeService.createCheckoutSession(subscription.getStripeCustomerId(), priceId, successUrl, cancelUrl, user.getId().toString());
+        Session session = stripeService.createCheckoutSession(subscription.getStripeCustomerId(), priceId, successUrl, cancelUrl, user.getId().toString(), planType);
         
         Map<String, String> response = new HashMap<>();
         response.put("url", session.getUrl());

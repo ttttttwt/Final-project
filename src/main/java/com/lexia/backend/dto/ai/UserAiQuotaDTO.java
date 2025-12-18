@@ -25,12 +25,18 @@ public class UserAiQuotaDTO {
     // Feature specific
     private Integer rolePlayDailyLimit;
     private Integer rolePlayUsedToday;
+    private Integer rolePlayMonthlyLimit;
+    private Integer rolePlayUsedMonth;
 
     private Integer grammarDailyLimit;
     private Integer grammarUsedToday;
+    private Integer grammarMonthlyLimit;
+    private Integer grammarUsedMonth;
 
     private Integer flashcardDailyLimit;
     private Integer flashcardUsedToday;
+    private Integer flashcardMonthlyLimit;
+    private Integer flashcardUsedMonth;
 
     // Total used today (for the badge logic in frontend)
     private Integer totalUsedToday;
