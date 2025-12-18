@@ -2344,6 +2344,16 @@ Time: 16.051 s
 - [x] **Course Listing**: Added a prominent banner for users who haven't taken the placement test.
   - Displays a warning message and a "Take Placement Test" button.
   - Blocks enrollment attempts with a toast error if the test is not completed.
+- [x] **Level Enforcement**: Added logic to warn users when enrolling in courses above their level.
+  - Checks `user.currentLevel` vs `course.cefrLevel`.
+  - Shows a warning toast with "Enroll Anyway" option if course level is higher.
+
+### 🗄️ Database Update
+- [x] **Learning Path Data**: Created migration `V33__Seed_Courses_And_Fix_Links.sql`.
+  - Ensures default courses (A1, B1, C1) exist in the database.
+  - Creates sections and lessons for these courses.
+  - Correctly links courses to their respective Learning Paths, fixing the "mock data" issue.
+
 
 
 
