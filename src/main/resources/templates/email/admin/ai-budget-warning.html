@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{email/base/layout :: layout(~{::content})}"
+  lang="en"
+>
+  <head>
+    <title>AI Budget Warning - LEXIA Admin</title>
+  </head>
+  <body>
+    <div th:fragment="content">
+      <div style="text-align: center;">
+        <span style="font-size: 64px;">📊</span>
+      </div>
+
+      <h1 style="text-align: center; color: #ca8a04;">
+        ⚠️ AI Budget Warning
+      </h1>
+
+      <p>
+        <span>Hi</span>
+        <strong th:text="${adminName ?: 'Admin'}">Admin</strong>,
+      </p>
+
+      <p>
+        Your AI usage is approaching the monthly budget limit. Please review the current usage.
+      </p>
+
+      <!-- Budget Details -->
+      <div class="card card-warning">
+        <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #ca8a04;">💰 Budget Overview</h3>
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Current Cost</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${currentCost}">
+              $75.00
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Budget Limit</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${budgetLimit}">
+              $100.00
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Usage</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #ca8a04;" th:text="${percentage}">
+              75%
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px;">📝 What You Can Do</h3>
+        <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px;">
+          <li>Review user quotas and adjust if needed</li>
+          <li>Consider increasing the monthly budget</li>
+          <li>Check for users with unusually high usage</li>
+          <li>Review AI feature configurations</li>
+        </ul>
+      </div>
+
+      <!-- Action Button -->
+      <div class="btn-container">
+        <a href="/admin/ai/costs" class="btn" style="background: #ca8a04;">
+          View Cost Analytics
+        </a>
+      </div>
+
+      <hr class="divider" />
+
+      <p class="small-text muted" style="text-align: center;">
+        This is an automated notification from LEXIA Admin.
+      </p>
+    </div>
+  </body>
+</html>

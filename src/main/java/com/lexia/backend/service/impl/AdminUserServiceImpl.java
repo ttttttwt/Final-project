@@ -253,7 +253,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                                 .email(user.getEmail())
                                 .firstName(profile != null ? profile.getFirstName() : null)
                                 .lastName(profile != null ? profile.getLastName() : null)
-                                .avatarUrl(profile != null ? profile.getAvatarUrl() : null)
+                                .avatarUrl(profile != null ? profile.getEffectiveAvatarUrl() : null)
                                 .phoneNumber(profile != null ? profile.getPhoneNumber() : null)
                                 .bio(profile != null ? profile.getBio() : null)
                                 .timezone(profile != null ? profile.getTimezone() : null)

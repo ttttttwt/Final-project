@@ -188,4 +188,35 @@ class AIUsageLogServiceTest {
         assertThat(result.getContent()).hasSize(1);
         verify(aiUsageLogRepository).findAll(any(Specification.class), eq(pageable));
     }
+
+    @Test
+    @DisplayName("Should map contentType to featureName when featureName is null")
+    void getLogs_ShouldMapContentTypeToFeatureName() {
+        // Given
+        AIUsageLog logWithContentType = AIUsageLog.builder()
+                .id(2L)
+                .userId(userId)
+                .featureName(null)
+                .contentType("magic_flashcard")
+                .inputTokens(100)
+                .outputTokens(50)
+                .estimatedCostUsd(new BigDecimal("0.000250"))
+                .createdAt(Instant.now())
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 10);
+        List<AIUsageLog> logs = Arrays.asList(logWithContentType);
+        Page<AIUsageLog> page = new PageImpl<>(logs, pageable, 1);
+
+        when(aiUsageLogRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // When
+        Page<AIUsageLogDTO> result = aiUsageLogService.getLogs(null, null, null, null, pageable);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getFeatureName()).isEqualTo("MAGIC_FLASHCARD");
+    }
 }

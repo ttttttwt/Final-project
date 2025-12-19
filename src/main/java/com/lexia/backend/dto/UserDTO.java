@@ -106,7 +106,7 @@ public class UserDTO {
         // Include profile information if available
         if (user.getProfile() != null) {
             builder.fullName(user.getProfile().getFullName())
-                    .avatarUrl(user.getProfile().getAvatarUrl())
+                    .avatarUrl(user.getProfile().getEffectiveAvatarUrl())
                     .currentLevel(user.getProfile().getCurrentLevel())
                     .learningGoal(user.getProfile().getLearningGoal());
         }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base/layout :: layout(~{::content})}" lang="en">
+
+<head>
+    <title>AI Budget Exceeded - LEXIA Admin</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <div style="text-align: center;">
+            <span style="font-size: 64px;">🚨</span>
+        </div>
+
+        <h1 style="text-align: center; color: #dc2626;">
+            🚨 AI Budget EXCEEDED
+        </h1>
+
+        <p>
+            <span>Hi</span>
+            <strong th:text="${adminName ?: 'Admin'}">Admin</strong>,
+        </p>
+
+        <p style="color: #dc2626; font-weight: 600;">
+            CRITICAL: Your monthly AI budget has been exceeded. Immediate action may be required.
+        </p>
+
+        <!-- Budget Details -->
+        <div class="card" style="border-color: #fca5a5; background: #fef2f2;">
+            <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #dc2626;">💸 Budget Exceeded</h3>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Current Cost</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #dc2626;"
+                        th:text="${currentCost}">
+                        $125.00
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Budget Limit</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${budgetLimit}">
+                        $100.00
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Overage Amount</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #dc2626;"
+                        th:text="${overage}">
+                        $25.00
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Urgent Actions -->
+        <div class="card card-warning">
+            <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #92400e;">⚡ Recommended Actions</h3>
+            <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px;">
+                <li><strong>Increase your monthly budget limit</strong></li>
+                <li>Temporarily reduce user quotas</li>
+                <li>Review and optimize AI feature usage</li>
+                <li>Consider temporarily disabling non-essential AI features</li>
+            </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="btn-container" style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+            <a href="/admin/ai/costs" class="btn" style="background: #dc2626;">
+                View Costs
+            </a>
+            <a href="/admin/ai/config" class="btn btn-secondary">
+                Adjust Budget
+            </a>
+        </div>
+
+        <hr class="divider" />
+
+        <p class="small-text muted" style="text-align: center;">
+            This is a critical notification from LEXIA Admin. Please take action promptly.
+        </p>
+    </div>
+</body>
+
+</html>

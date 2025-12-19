@@ -35,8 +35,6 @@ public interface AiUsageTracker {
     String CONTENT_TYPE_FLASHCARD = "flashcard";
     String CONTENT_TYPE_CONTENT_GENERATION = "content_generation";
     String CONTENT_TYPE_PRONUNCIATION = "pronunciation_feedback";
-    String CONTENT_TYPE_MAGIC_FLASHCARD = "magic_flashcard";
-    String CONTENT_TYPE_GRAMMAR_SANDBOX = "grammar_sandbox";
 
     /**
      * Tracks an AI usage event synchronously.

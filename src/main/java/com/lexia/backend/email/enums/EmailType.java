@@ -34,7 +34,13 @@ public enum EmailType {
     MAINTENANCE_NOTICE("Maintenance Notice", "system/maintenance", false),
     SECURITY_ALERT("Security Alert", "system/security-alert", true),
     PASSWORD_CHANGED("Password Changed", "auth/password-changed", true),
-    DEVICE_LOGIN("New Device Login", "auth/device-login", false);
+    DEVICE_LOGIN("New Device Login", "auth/device-login", false),
+
+    // AI Alert emails (admin notifications)
+    AI_BUDGET_WARNING("AI Budget Warning", "admin/ai-budget-warning", true),
+    AI_BUDGET_EXCEEDED("AI Budget Exceeded", "admin/ai-budget-exceeded", true),
+    AI_QUOTA_WARNING("AI Quota Warning", "admin/ai-quota-warning", true),
+    AI_QUOTA_EXCEEDED("AI Quota Exceeded", "admin/ai-quota-exceeded", true);
 
     private final String displayName;
     private final String templateName;
@@ -88,6 +94,7 @@ public enum EmailType {
             case LEVEL_UP -> "Achievement";
             case ACCOUNT_DEACTIVATION -> "Account";
             case SYSTEM_ANNOUNCEMENT, MAINTENANCE_NOTICE, SECURITY_ALERT -> "System";
+            case AI_BUDGET_WARNING, AI_BUDGET_EXCEEDED, AI_QUOTA_WARNING, AI_QUOTA_EXCEEDED -> "Admin";
         };
     }
 }

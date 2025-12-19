@@ -1,5 +1,6 @@
 package com.lexia.backend.controller;
 
+import com.lexia.backend.config.QuotaLimitsConfig;
 import com.lexia.backend.dto.ai.UserAiQuotaDTO;
 import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.service.ai.AIQuotaService;
@@ -12,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @RestController
@@ -23,6 +26,7 @@ public class AdminAIQuotaController {
 
     private final AIQuotaService quotaService;
     private final UserRepository userRepository;
+    private final QuotaLimitsConfig quotaLimitsConfig;
 
     @GetMapping
     public ResponseEntity<Page<UserAiQuotaDTO>> getAllQuotas(Pageable pageable) {
@@ -35,7 +39,8 @@ public class AdminAIQuotaController {
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<UserAiQuotaDTO> updateQuota(@PathVariable UUID userId, @RequestBody com.lexia.backend.dto.ai.UpdateQuotaRequest request) {
+    public ResponseEntity<UserAiQuotaDTO> updateQuota(@PathVariable UUID userId,
+            @RequestBody com.lexia.backend.dto.ai.UpdateQuotaRequest request) {
         return ResponseEntity.ok(mapToDTO(quotaService.updateQuota(userId, request)));
     }
 
@@ -46,20 +51,22 @@ public class AdminAIQuotaController {
     }
 
     @PostMapping("/bulk")
-    public ResponseEntity<java.util.Map<String, Object>> bulkUpdateQuotas(@RequestBody com.lexia.backend.dto.ai.BulkUpdateQuotaRequest request) {
+    public ResponseEntity<java.util.Map<String, Object>> bulkUpdateQuotas(
+            @RequestBody com.lexia.backend.dto.ai.BulkUpdateQuotaRequest request) {
         quotaService.bulkUpdateQuotas(request.getUserIds(), request.getQuotaDetails());
         return ResponseEntity.ok(java.util.Map.of("updated", request.getUserIds().size(), "failed", 0));
     }
 
     @PatchMapping("/{userId}/unlimited")
-    public ResponseEntity<UserAiQuotaDTO> setUnlimited(@PathVariable UUID userId, @RequestBody java.util.Map<String, Boolean> body) {
+    public ResponseEntity<UserAiQuotaDTO> setUnlimited(@PathVariable UUID userId,
+            @RequestBody java.util.Map<String, Boolean> body) {
         return ResponseEntity.ok(mapToDTO(quotaService.setUnlimited(userId, body.get("isUnlimited"))));
     }
 
     private UserAiQuotaDTO mapToDTO(UserAiQuota entity) {
         UserAiQuotaDTO dto = new UserAiQuotaDTO();
         dto.setUserId(entity.getUserId());
-        
+
         // Fetch user details
         userRepository.findById(entity.getUserId()).ifPresent(user -> {
             dto.setUserEmail(user.getEmail());
@@ -67,6 +74,60 @@ public class AdminAIQuotaController {
                 dto.setUserFullName(user.getProfile().getFullName());
             }
         });
+
+        // ========== Subscription-Based Quota (NEW) ==========
+
+        // Plan type
+        dto.setPlanType(entity.getPlanType() != null ? entity.getPlanType().name() : "FREE");
+
+        // Quota reset date and days until reset
+        LocalDate resetDate = entity.getQuotaResetDate();
+        dto.setQuotaResetDate(resetDate);
+        if (resetDate != null) {
+            long daysUntil = ChronoUnit.DAYS.between(LocalDate.now(), resetDate);
+            dto.setDaysUntilReset((int) Math.max(0, daysUntil));
+        }
+
+        // Get plan-specific limits
+        QuotaLimitsConfig.QuotaLimits limits = quotaLimitsConfig.getForPlan(entity.getPlanType());
+
+        // Session/deck/exercise counters (monthly)
+        dto.setRoleplaySessionsUsed(entity.getRoleplaySessionsUsed());
+        dto.setRoleplaySessionsLimit(limits.getRoleplaySessions());
+
+        dto.setFlashcardDecksUsed(entity.getFlashcardDecksUsed());
+        dto.setFlashcardDecksLimit(limits.getFlashcardDecks());
+
+        dto.setGrammarExercisesUsed(entity.getGrammarExercisesUsed());
+        dto.setGrammarExercisesLimit(limits.getGrammarExercises());
+
+        dto.setTotalRequestsUsed(entity.getMonthlyUsed());
+        dto.setTotalRequestsLimit(limits.getTotalRequests());
+
+        // Warning flags
+        double warningThreshold = quotaLimitsConfig.getWarningThreshold();
+        double criticalThreshold = quotaLimitsConfig.getCriticalThreshold();
+
+        boolean hasWarning = (limits.getRoleplaySessions() > 0
+                && (double) entity.getRoleplaySessionsUsed() / limits.getRoleplaySessions() >= warningThreshold) ||
+                (limits.getFlashcardDecks() > 0
+                        && (double) entity.getFlashcardDecksUsed() / limits.getFlashcardDecks() >= warningThreshold)
+                ||
+                (limits.getGrammarExercises() > 0 && (double) entity.getGrammarExercisesUsed()
+                        / limits.getGrammarExercises() >= warningThreshold);
+
+        boolean hasCritical = (limits.getRoleplaySessions() > 0
+                && (double) entity.getRoleplaySessionsUsed() / limits.getRoleplaySessions() >= criticalThreshold) ||
+                (limits.getFlashcardDecks() > 0
+                        && (double) entity.getFlashcardDecksUsed() / limits.getFlashcardDecks() >= criticalThreshold)
+                ||
+                (limits.getGrammarExercises() > 0 && (double) entity.getGrammarExercisesUsed()
+                        / limits.getGrammarExercises() >= criticalThreshold);
+
+        dto.setQuotaWarning(hasWarning);
+        dto.setQuotaCritical(hasCritical);
+
+        // ========== Legacy Fields (for backward compatibility) ==========
 
         dto.setDailyLimit(entity.getDailyLimit());
         dto.setDailyUsed(entity.getDailyUsed());
@@ -76,20 +137,21 @@ public class AdminAIQuotaController {
         dto.setLastResetMonthly(entity.getLastResetMonthly());
         dto.setIsPremium(entity.getIsPremium());
         dto.setSuspended(entity.getSuspended());
-        
-        // Set isUnlimited
+
+        // Set isUnlimited - only when explicitly set, NOT for Pro users automatically
+        // Pro users have higher limits but are still subject to quota limits
         dto.setIsUnlimited(entity.getDailyLimit() == Integer.MAX_VALUE);
 
-        // Feature specific
+        // Legacy feature specific (daily)
         dto.setRolePlayDailyLimit(entity.getFeatureDailyLimit("roleplay"));
         dto.setRolePlayUsedToday(entity.getFeatureDailyUsage("roleplay"));
-        
+
         dto.setGrammarDailyLimit(entity.getFeatureDailyLimit("grammar"));
         dto.setGrammarUsedToday(entity.getFeatureDailyUsage("grammar"));
-        
+
         dto.setFlashcardDailyLimit(entity.getFeatureDailyLimit("flashcard"));
         dto.setFlashcardUsedToday(entity.getFeatureDailyUsage("flashcard"));
-        
+
         dto.setTotalUsedToday(entity.getDailyUsed());
         dto.setTotalDailyLimit(entity.getDailyLimit());
 

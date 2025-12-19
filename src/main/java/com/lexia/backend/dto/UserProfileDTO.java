@@ -116,7 +116,7 @@ public class UserProfileDTO {
                 .lastName(profile.getLastName())
                 .bio(profile.getBio())
                 .phoneNumber(profile.getPhoneNumber())
-                .avatarUrl(profile.getAvatarUrl())
+                .avatarUrl(profile.getEffectiveAvatarUrl())
                 .timezone(profile.getTimezone())
                 .language(profile.getLanguage())
                 .currentLevel(profile.getCurrentLevel())

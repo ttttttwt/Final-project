@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base/layout :: layout(~{::content})}" lang="en">
+
+<head>
+    <title>AI Quota Warning - LEXIA Admin</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <div style="text-align: center;">
+            <span style="font-size: 64px;">👤</span>
+        </div>
+
+        <h1 style="text-align: center; color: #ca8a04;">
+            ⚠️ User Quota Warning
+        </h1>
+
+        <p>
+            <span>Hi</span>
+            <strong th:text="${adminName ?: 'Admin'}">Admin</strong>,
+        </p>
+
+        <p>
+            A user is approaching their monthly AI quota limit.
+        </p>
+
+        <!-- User Details -->
+        <div class="card card-warning">
+            <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #ca8a04;">👤 User Information</h3>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">User Name</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${userName}">
+                        John Doe
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Email</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${userEmail}">
+                        john@example.com
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Plan Type</td>
+                    <td style="padding: 8px 0; text-align: right;">
+                        <span th:if="${planType == 'PRO' or planType == 'MONTHLY' or planType == 'YEARLY'}"
+                            style="background: linear-gradient(to right, #f59e0b, #eab308); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                            PRO
+                        </span>
+                        <span th:unless="${planType == 'PRO' or planType == 'MONTHLY' or planType == 'YEARLY'}"
+                            style="background: #e5e7eb; color: #4b5563; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                            FREE
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Quota Details -->
+        <div class="card">
+            <h3 style="margin: 0 0 16px 0; font-size: 16px;">📊 Quota Usage</h3>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Feature</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${featureType}">
+                        Role-Play Sessions
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Current Usage</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;">
+                        <span th:text="${used}">8</span> / <span th:text="${limit}">10</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Usage Level</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #ca8a04;"
+                        th:text="${percentage}">
+                        80%
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Action Button -->
+        <div class="btn-container">
+            <a href="/admin/ai/quotas" class="btn" style="background: #ca8a04;">
+                View User Quotas
+            </a>
+        </div>
+
+        <hr class="divider" />
+
+        <p class="small-text muted" style="text-align: center;">
+            This is an automated notification from LEXIA Admin.
+        </p>
+    </div>
+</body>
+
+</html>

@@ -50,7 +50,7 @@ public class AIUsageLogServiceImpl implements AIUsageLogService {
         log.debug("Fetching AI usage logs with filters - feature: {}, userId: {}, startDate: {}, endDate: {}",
                 featureName, userId, startDate, endDate);
 
-        Specification<AIUsageLog> spec = Specification.allOf();
+        Specification<AIUsageLog> spec = Specification.where(null);
 
         if (featureName != null && !featureName.isBlank()) {
             spec = spec.and(AIUsageLogSpecification.hasFeatureName(featureName));
@@ -162,11 +162,16 @@ public class AIUsageLogServiceImpl implements AIUsageLogService {
                     .orElse(null);
         }
 
+        String feature = entity.getFeatureName();
+        if (feature == null && entity.getContentType() != null) {
+            feature = entity.getContentType().toUpperCase();
+        }
+
         return AIUsageLogDTO.builder()
                 .id(entity.getId())
                 .userId(entity.getUserId())
                 .userEmail(userEmail)
-                .featureName(entity.getFeatureName())
+                .featureName(feature)
                 .inputTokens(entity.getInputTokens())
                 .outputTokens(entity.getOutputTokens())
                 .cost(entity.getEstimatedCostUsd())

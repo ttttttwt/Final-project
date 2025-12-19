@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base/layout :: layout(~{::content})}" lang="en">
+
+<head>
+    <title>AI Quota Exceeded - LEXIA Admin</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <div style="text-align: center;">
+            <span style="font-size: 64px;">⚠️</span>
+        </div>
+
+        <h1 style="text-align: center; color: #dc2626;">
+            ⚠️ User Quota EXCEEDED
+        </h1>
+
+        <p>
+            <span>Hi</span>
+            <strong th:text="${adminName ?: 'Admin'}">Admin</strong>,
+        </p>
+
+        <p style="color: #dc2626; font-weight: 500;">
+            A user has reached their monthly AI quota limit and cannot access this feature until the quota resets.
+        </p>
+
+        <!-- User Details -->
+        <div class="card" style="border-color: #fca5a5; background: #fef2f2;">
+            <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #dc2626;">👤 User Information</h3>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">User Name</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${userName}">
+                        John Doe
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Email</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${userEmail}">
+                        john@example.com
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Plan Type</td>
+                    <td style="padding: 8px 0; text-align: right;">
+                        <span th:if="${planType == 'PRO' or planType == 'MONTHLY' or planType == 'YEARLY'}"
+                            style="background: linear-gradient(to right, #f59e0b, #eab308); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                            PRO
+                        </span>
+                        <span th:unless="${planType == 'PRO' or planType == 'MONTHLY' or planType == 'YEARLY'}"
+                            style="background: #e5e7eb; color: #4b5563; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                            FREE
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Quota Details -->
+        <div class="card card-warning">
+            <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #92400e;">📊 Exceeded Quota</h3>
+            <table style="width: 100%; font-size: 14px;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Feature</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;" th:text="${featureType}">
+                        Role-Play Sessions
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Usage</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #dc2626;">
+                        <span th:text="${used}">10</span> / <span th:text="${limit}">10</span> (100%)
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Admin Actions -->
+        <div class="card">
+            <h3 style="margin: 0 0 12px 0; font-size: 16px;">🛠️ Admin Options</h3>
+            <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px;">
+                <li>Grant additional quota for this user</li>
+                <li>Enable unlimited access for this user</li>
+                <li>Suggest upgrading to Pro plan (if Free user)</li>
+                <li>Wait for automatic monthly reset</li>
+            </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="btn-container" style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+            <a href="/admin/ai/quotas" class="btn" style="background: #dc2626;">
+                Manage Quotas
+            </a>
+            <a href="/admin/users" class="btn btn-secondary">
+                View User
+            </a>
+        </div>
+
+        <hr class="divider" />
+
+        <p class="small-text muted" style="text-align: center;">
+            This is an automated notification from LEXIA Admin.
+        </p>
+    </div>
+</body>
+
+</html>
