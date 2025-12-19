@@ -154,4 +154,63 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
         * Find recent AI usage logs for a user, ordered by creation date desc.
         */
        List<AIUsageLog> findTop20ByUserIdOrderByCreatedAtDesc(UUID userId);
+
+       /**
+        * Find AI usage logs for a user with pagination, ordered by creation date desc.
+        */
+       List<AIUsageLog> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
+       /**
+        * Find users with high request volume since a given time.
+        * Returns userId and request count for users exceeding threshold.
+        */
+       @Query("SELECT a.userId, COUNT(a) FROM AIUsageLog a " +
+                     "WHERE a.createdAt >= :since " +
+                     "GROUP BY a.userId " +
+                     "HAVING COUNT(a) > :threshold")
+       List<Object[]> findUsersWithHighRequestVolume(
+                     @Param("since") Instant since,
+                     @Param("threshold") int threshold);
+
+       // ==================== Analytics Methods (LocalDateTime) ====================
+
+       /**
+        * Count logs created after a specific date (for analytics)
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.createdAt >= :date")
+       long countByCreatedAtAfter(@Param("date") java.time.LocalDateTime date);
+
+       /**
+        * Count logs between dates
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.createdAt BETWEEN :start AND :end")
+       long countByCreatedAtBetween(@Param("start") java.time.LocalDateTime start,
+                     @Param("end") java.time.LocalDateTime end);
+
+       /**
+        * Count by feature/content type after date
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.contentType = :feature AND a.createdAt >= :date")
+       long countByFeatureAndCreatedAtAfter(@Param("feature") String feature,
+                     @Param("date") java.time.LocalDateTime date);
+
+       /**
+        * Count successful requests after date
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.success = :success AND a.createdAt >= :date")
+       long countBySuccessAndCreatedAtAfter(@Param("success") boolean success,
+                     @Param("date") java.time.LocalDateTime date);
+
+       /**
+        * Average response time after date
+        */
+       @Query("SELECT AVG(a.responseTimeMs) FROM AIUsageLog a WHERE a.createdAt >= :date AND a.responseTimeMs IS NOT NULL")
+       Double averageResponseTimeAfter(@Param("date") java.time.LocalDateTime date);
+
+       /**
+        * Sum tokens used between dates
+        */
+       @Query("SELECT COALESCE(SUM(a.inputTokens + a.outputTokens), 0) FROM AIUsageLog a WHERE a.createdAt BETWEEN :start AND :end")
+       Long sumTokensUsedBetween(@Param("start") java.time.LocalDateTime start,
+                     @Param("end") java.time.LocalDateTime end);
 }

@@ -37,7 +37,8 @@ out/
 .vscode/
 .shared/
 .github/
-.claude
+.claude/
+.agent/
 
 ### Environment Variables ###
 .env

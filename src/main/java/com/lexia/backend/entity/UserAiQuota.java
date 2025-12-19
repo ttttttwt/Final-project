@@ -301,13 +301,15 @@ public class UserAiQuota {
     /**
      * Increments the usage count for a specific feature.
      * Also increments global daily/monthly used counts.
+     * Note: Session counters (roleplaySessionsUsed, grammarExercisesUsed) are
+     * incremented separately by QuotaCheckAspect when a new session starts.
      */
     public void incrementFeatureUsage(String contentType) {
         // Increment global usage
         dailyUsed = (dailyUsed != null ? dailyUsed : 0) + 1;
         monthlyUsed = (monthlyUsed != null ? monthlyUsed : 0) + 1;
 
-        // Increment feature-specific usage
+        // Increment feature-specific JSONB usage
         if (featureUsage == null) {
             featureUsage = createDefaultFeatureUsage();
         }
@@ -377,6 +379,9 @@ public class UserAiQuota {
      */
     public void resetMonthlyUsage() {
         monthlyUsed = 0;
+        roleplaySessionsUsed = 0;
+        grammarExercisesUsed = 0;
+        // Note: flashcardDecksUsed is a hard limit (total decks), not reset monthly
         lastResetMonthly = Instant.now();
 
         if (featureUsage != null) {

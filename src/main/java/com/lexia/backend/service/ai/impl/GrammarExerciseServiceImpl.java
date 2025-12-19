@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lexia.backend.dto.ai.*;
 import com.lexia.backend.entity.GrammarExerciseSet;
 import com.lexia.backend.entity.GrammarTopic;
+import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.entity.UserGrammarProgress;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.ai.AiRateLimitException;
@@ -13,6 +14,7 @@ import com.lexia.backend.exception.ai.AiServiceException;
 import com.lexia.backend.mapper.GrammarExerciseMapper;
 import com.lexia.backend.repository.GrammarExerciseSetRepository;
 import com.lexia.backend.repository.GrammarTopicRepository;
+import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.repository.UserGrammarProgressRepository;
 import com.lexia.backend.service.ai.*;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +63,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
     private final GrammarExerciseSetRepository exerciseSetRepository;
     private final GrammarTopicRepository topicRepository;
     private final UserGrammarProgressRepository progressRepository;
+    private final UserAiQuotaRepository userAiQuotaRepository;
     private final ObjectMapper objectMapper;
 
     public GrammarExerciseServiceImpl(
@@ -70,6 +73,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
             GrammarExerciseSetRepository exerciseSetRepository,
             GrammarTopicRepository topicRepository,
             UserGrammarProgressRepository progressRepository,
+            UserAiQuotaRepository userAiQuotaRepository,
             ObjectMapper objectMapper) {
         this.geminiClientService = geminiClientService;
         this.promptTemplateService = promptTemplateService;
@@ -77,6 +81,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         this.exerciseSetRepository = exerciseSetRepository;
         this.topicRepository = topicRepository;
         this.progressRepository = progressRepository;
+        this.userAiQuotaRepository = userAiQuotaRepository;
         this.objectMapper = objectMapper;
 
         log.info("GrammarExerciseService initialized");
@@ -150,7 +155,31 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         log.info("Successfully generated {} exercises for user {} in {}ms",
                 exerciseSet.getExerciseCount(), userId, responseTimeMs);
 
+        // Increment grammar exercise counter
+        incrementGrammarExerciseCounter(userId);
+
         return GrammarExerciseMapper.toExerciseSetDTO(exerciseSet);
+    }
+
+    /**
+     * Increments the grammar exercise counter for a user.
+     * Called when generating a new exercise set.
+     */
+    private void incrementGrammarExerciseCounter(UUID userId) {
+        try {
+            UserAiQuota quota = userAiQuotaRepository.findByUserId(userId).orElse(null);
+            if (quota != null) {
+                int newCount = (quota.getGrammarExercisesUsed() != null ? quota.getGrammarExercisesUsed() : 0) + 1;
+                quota.setGrammarExercisesUsed(newCount);
+                userAiQuotaRepository.save(quota);
+                log.info("Incremented grammar exercise counter for user {} to {}", userId, newCount);
+            } else {
+                log.warn("No quota record found for user {} when incrementing grammar counter", userId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to increment grammar exercise counter for user {}: {}", userId, e.getMessage());
+            // Don't fail the exercise generation if quota increment fails
+        }
     }
 
     /**

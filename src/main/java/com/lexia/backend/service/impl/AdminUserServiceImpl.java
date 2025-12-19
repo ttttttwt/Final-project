@@ -1,10 +1,12 @@
 package com.lexia.backend.service.impl;
 
+import com.lexia.backend.config.QuotaLimitsConfig;
 import com.lexia.backend.dto.AdminUserDTO;
 import com.lexia.backend.dto.AdminUserDetailDTO;
 import com.lexia.backend.dto.CreateUserDTO;
 import com.lexia.backend.dto.UpdateUserDTO;
 import com.lexia.backend.entity.*;
+import com.lexia.backend.enums.PlanType;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
 import com.lexia.backend.repository.*;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,6 +44,8 @@ public class AdminUserServiceImpl implements AdminUserService {
         private final SubscriptionRepository subscriptionRepository;
         private final UserAiQuotaRepository userAiQuotaRepository;
         private final AIUsageLogRepository aiUsageLogRepository;
+        private final QuotaLimitsConfig quotaLimitsConfig;
+        private final FlashcardDeckRepository flashcardDeckRepository;
 
         @Override
         @Transactional(readOnly = true)
@@ -169,8 +175,23 @@ public class AdminUserServiceImpl implements AdminUserService {
                 AdminUserDetailDTO.AiQuotaSummaryDTO aiQuota = userAiQuotaRepository
                                 .findByUserId(user.getId())
                                 .map(q -> {
+                                        // Get plan type and limits from config
+                                        PlanType planType = q.getPlanType() != null ? q.getPlanType() : PlanType.FREE;
+                                        QuotaLimitsConfig.QuotaLimits limits = quotaLimitsConfig.getForPlan(planType);
+
+                                        // Get actual flashcard deck count (hard limit, not monthly counter)
+                                        long actualDeckCount = flashcardDeckRepository.countByUserId(user.getId());
+
+                                        // Calculate days until reset
+                                        int daysUntilReset = 30;
+                                        if (q.getQuotaResetDate() != null) {
+                                                long days = ChronoUnit.DAYS.between(LocalDate.now(),
+                                                                q.getQuotaResetDate());
+                                                daysUntilReset = (int) Math.max(0, days);
+                                        }
+
+                                        // Legacy feature quotas
                                         Map<String, AdminUserDetailDTO.FeatureQuotaDTO> featureQuotas = new HashMap<>();
-                                        // Add feature quotas for roleplay, grammar, flashcard
                                         for (String feature : List.of("roleplay", "grammar", "flashcard")) {
                                                 featureQuotas.put(feature, AdminUserDetailDTO.FeatureQuotaDTO.builder()
                                                                 .dailyLimit(q.getFeatureDailyLimit(feature))
@@ -179,8 +200,22 @@ public class AdminUserServiceImpl implements AdminUserService {
                                                                 .monthlyUsed(q.getFeatureMonthlyUsage(feature))
                                                                 .build());
                                         }
+
                                         return AdminUserDetailDTO.AiQuotaSummaryDTO.builder()
                                                         .isPremium(q.getIsPremium())
+                                                        // New subscription-based fields
+                                                        .planType(planType.name())
+                                                        .quotaResetDate(q.getQuotaResetDate())
+                                                        .daysUntilReset(daysUntilReset)
+                                                        .roleplaySessionsUsed(q.getRoleplaySessionsUsed())
+                                                        .roleplaySessionsLimit(limits.getRoleplaySessions())
+                                                        .flashcardDecksUsed((int) actualDeckCount)
+                                                        .flashcardDecksLimit(limits.getFlashcardDecks())
+                                                        .grammarExercisesUsed(q.getGrammarExercisesUsed())
+                                                        .grammarExercisesLimit(limits.getGrammarExercises())
+                                                        .totalRequestsUsed(q.getMonthlyUsed())
+                                                        .totalRequestsLimit(limits.getTotalRequests())
+                                                        // Legacy fields
                                                         .dailyLimit(q.getDailyLimit())
                                                         .dailyUsed(q.getDailyUsed())
                                                         .monthlyLimit(q.getMonthlyLimit())

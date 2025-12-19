@@ -5,11 +5,13 @@ import com.lexia.backend.config.QuotaLimitsConfig;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.exception.QuotaExceededException;
+import com.lexia.backend.repository.FlashcardDeckRepository;
 import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.service.SubscriptionQuotaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.security.core.Authentication;
@@ -33,6 +35,7 @@ import java.util.UUID;
 public class QuotaCheckAspect {
 
     private final UserAiQuotaRepository quotaRepository;
+    private final FlashcardDeckRepository flashcardDeckRepository;
     private final QuotaLimitsConfig quotaLimitsConfig;
     private final SubscriptionQuotaService subscriptionQuotaService;
 
@@ -93,7 +96,46 @@ public class QuotaCheckAspect {
                 userId, contentType, quota.getMonthlyUsed(), limits.getTotalRequests());
     }
 
+    /**
+     * After returning advice that increments session counters after successful
+     * operations.
+     * Only increments when incrementSession=true in the annotation.
+     * 
+     * @param joinPoint  The join point
+     * @param quotaCheck The annotation with quota check configuration
+     * @param result     The return value of the method (not used, but required for
+     *                   AfterReturning)
+     */
+    @AfterReturning(pointcut = "@annotation(quotaCheck)", returning = "result")
+    @Transactional
+    public void incrementQuotaAfterSuccess(JoinPoint joinPoint, QuotaCheck quotaCheck, Object result) {
+        // Only increment if incrementSession is true
+        if (!quotaCheck.incrementSession()) {
+            return;
+        }
+
+        User user = getCurrentUser();
+        if (user == null) {
+            return;
+        }
+
+        UUID userId = user.getId();
+        String sessionType = quotaCheck.sessionType();
+
+        // Flashcard quota is based on actual deck count, not a counter
+        if ("flashcard".equals(sessionType)) {
+            log.debug("Flashcard quota is based on deck count - no increment needed");
+            return;
+        }
+
+        incrementSessionCounter(userId, sessionType);
+        log.info("QuotaCheck: Incremented {} counter for user {} after successful operation",
+                sessionType, userId);
+    }
+
     private void checkSessionLimit(UserAiQuota quota, QuotaLimitsConfig.QuotaLimits limits, String sessionType) {
+        UUID userId = quota.getUserId();
+
         switch (sessionType) {
             case "roleplay":
                 if (quota.getRoleplaySessionsUsed() >= limits.getRoleplaySessions()) {
@@ -105,11 +147,16 @@ public class QuotaCheckAspect {
                 }
                 break;
             case "flashcard":
-                if (quota.getFlashcardDecksUsed() >= limits.getFlashcardDecks()) {
+                // Flashcard quota is based on actual deck count (hard limit), not monthly
+                // counter
+                long currentDeckCount = flashcardDeckRepository.countByUserId(userId);
+                if (currentDeckCount >= limits.getFlashcardDecks()) {
+                    log.info("QuotaCheck: User {} reached flashcard deck limit ({}/{})",
+                            userId, currentDeckCount, limits.getFlashcardDecks());
                     throw new QuotaExceededException(
                             "flashcard_decks",
                             limits.getFlashcardDecks(),
-                            quota.getFlashcardDecksUsed(),
+                            (int) currentDeckCount,
                             quota.getPlanType());
                 }
                 break;
@@ -130,9 +177,17 @@ public class QuotaCheckAspect {
     /**
      * Increments the appropriate session counter after a successful operation.
      * Should be called after the AI operation completes successfully.
+     * Note: Flashcard quota is no longer incremented here - it's based on actual
+     * deck count.
      */
     @Transactional
     public void incrementSessionCounter(UUID userId, String sessionType) {
+        // Flashcard quota is based on actual deck count, not a counter
+        if ("flashcard".equals(sessionType)) {
+            log.debug("Flashcard quota is based on deck count - no increment needed");
+            return;
+        }
+
         UserAiQuota quota = quotaRepository.findById(userId).orElse(null);
         if (quota == null)
             return;
@@ -140,9 +195,6 @@ public class QuotaCheckAspect {
         switch (sessionType) {
             case "roleplay":
                 quota.setRoleplaySessionsUsed(quota.getRoleplaySessionsUsed() + 1);
-                break;
-            case "flashcard":
-                quota.setFlashcardDecksUsed(quota.getFlashcardDecksUsed() + 1);
                 break;
             case "grammar":
                 quota.setGrammarExercisesUsed(quota.getGrammarExercisesUsed() + 1);

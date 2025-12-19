@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lexia.backend.dto.ai.*;
 import com.lexia.backend.entity.RolePlayConversation;
 import com.lexia.backend.entity.RolePlayScenario;
+import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.exception.ai.AiServiceException;
 import com.lexia.backend.mapper.RolePlayConversationMapper;
 import com.lexia.backend.mapper.RolePlayScenarioMapper;
 import com.lexia.backend.repository.RolePlayConversationRepository;
 import com.lexia.backend.repository.RolePlayScenarioRepository;
+import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.service.ai.AiUsageTracker;
 import com.lexia.backend.service.ai.ContextWindowManager;
 import com.lexia.backend.service.ai.FallbackContentService;
@@ -71,6 +73,7 @@ public class RolePlayServiceImpl implements RolePlayService {
     private final FallbackContentService fallbackContentService;
     private final ContextWindowManager contextWindowManager;
     private final ObjectMapper objectMapper;
+    private final UserAiQuotaRepository userAiQuotaRepository;
 
     private static final int CONTEXT_WINDOW_SIZE = 10;
     private static final long SSE_TIMEOUT_MS = 30_000L;
@@ -248,7 +251,32 @@ public class RolePlayServiceImpl implements RolePlayService {
         }
 
         conversation = conversationRepository.save(conversation);
+
+        // Increment roleplay session counter for the user
+        incrementRoleplaySessionCounter(userId);
+
         return RolePlayConversationMapper.toDTO(conversation);
+    }
+
+    /**
+     * Increments the roleplay session counter for a user.
+     * Called when starting a new conversation.
+     */
+    private void incrementRoleplaySessionCounter(UUID userId) {
+        try {
+            UserAiQuota quota = userAiQuotaRepository.findByUserId(userId).orElse(null);
+            if (quota != null) {
+                int newCount = (quota.getRoleplaySessionsUsed() != null ? quota.getRoleplaySessionsUsed() : 0) + 1;
+                quota.setRoleplaySessionsUsed(newCount);
+                userAiQuotaRepository.save(quota);
+                log.info("Incremented roleplay session counter for user {} to {}", userId, newCount);
+            } else {
+                log.warn("No quota record found for user {} when incrementing roleplay counter", userId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to increment roleplay session counter for user {}: {}", userId, e.getMessage());
+            // Don't fail the conversation start if quota increment fails
+        }
     }
 
     /**

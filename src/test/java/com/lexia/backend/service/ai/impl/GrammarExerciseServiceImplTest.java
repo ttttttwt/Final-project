@@ -10,6 +10,7 @@ import com.lexia.backend.exception.ai.AiRateLimitException;
 import com.lexia.backend.exception.ai.AiServiceException;
 import com.lexia.backend.repository.GrammarExerciseSetRepository;
 import com.lexia.backend.repository.GrammarTopicRepository;
+import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.repository.UserGrammarProgressRepository;
 import com.lexia.backend.service.ai.AiUsageTracker;
 import com.lexia.backend.service.ai.GeminiClientService;
@@ -48,826 +49,834 @@ import static org.mockito.Mockito.*;
 @DisplayName("GrammarExerciseServiceImpl Tests")
 class GrammarExerciseServiceImplTest {
 
-    @Mock
-    private GeminiClientService geminiClientService;
+        @Mock
+        private GeminiClientService geminiClientService;
 
-    @Mock
-    private PromptTemplateService promptTemplateService;
+        @Mock
+        private PromptTemplateService promptTemplateService;
 
-    @Mock
-    private AiUsageTracker aiUsageTracker;
+        @Mock
+        private AiUsageTracker aiUsageTracker;
 
-    @Mock
-    private GrammarExerciseSetRepository exerciseSetRepository;
+        @Mock
+        private GrammarExerciseSetRepository exerciseSetRepository;
 
-    @Mock
-    private GrammarTopicRepository topicRepository;
+        @Mock
+        private GrammarTopicRepository topicRepository;
 
-    @Mock
-    private UserGrammarProgressRepository progressRepository;
+        @Mock
+        private UserGrammarProgressRepository progressRepository;
 
-    @Captor
-    private ArgumentCaptor<GrammarExerciseSet> exerciseSetCaptor;
+        @Mock
+        private UserAiQuotaRepository userAiQuotaRepository;
 
-    @Captor
-    private ArgumentCaptor<UserGrammarProgress> progressCaptor;
+        @Captor
+        private ArgumentCaptor<GrammarExerciseSet> exerciseSetCaptor;
 
-    @Captor
-    private ArgumentCaptor<AiUsageTrackingRequest> trackingCaptor;
+        @Captor
+        private ArgumentCaptor<UserGrammarProgress> progressCaptor;
 
-    private GrammarExerciseServiceImpl service;
-    private ObjectMapper objectMapper;
+        @Captor
+        private ArgumentCaptor<AiUsageTrackingRequest> trackingCaptor;
 
-    // Test data
-    private static final UUID USER_ID = UUID.randomUUID();
-    private static final UUID EXERCISE_SET_ID = UUID.randomUUID();
+        private GrammarExerciseServiceImpl service;
+        private ObjectMapper objectMapper;
 
-    @BeforeEach
-    void setUp() {
-        objectMapper = new ObjectMapper();
-        service = new GrammarExerciseServiceImpl(
-                geminiClientService,
-                promptTemplateService,
-                aiUsageTracker,
-                exerciseSetRepository,
-                topicRepository,
-                progressRepository,
-                objectMapper
-        );
-    }
+        // Test data
+        private static final UUID USER_ID = UUID.randomUUID();
+        private static final UUID EXERCISE_SET_ID = UUID.randomUUID();
 
-    // ========== Test Data Builders ==========
+        @BeforeEach
+        void setUp() {
+                objectMapper = new ObjectMapper();
+                service = new GrammarExerciseServiceImpl(
+                                geminiClientService,
+                                promptTemplateService,
+                                aiUsageTracker,
+                                exerciseSetRepository,
+                                topicRepository,
+                                progressRepository,
+                                userAiQuotaRepository,
+                                objectMapper);
+        }
 
-    private GrammarRequestDTO createRequest(String topic, String level) {
-        return GrammarRequestDTO.builder()
-                .grammarTopic(topic)
-                .cefrLevel(level)
-                .exerciseCount(5)
-                .theme("workplace")
-                .timeLimitSeconds(600)
-                .build();
-    }
+        // ========== Test Data Builders ==========
 
-    private GrammarTopic createTopic(String name) {
-        return GrammarTopic.builder()
-                .id(1)
-                .name(name)
-                .category("Tenses")
-                .cefrLevels(new String[]{"A2", "B1", "B2"})
-                .description("Test topic")
-                .isActive(true)
-                .build();
-    }
+        private GrammarRequestDTO createRequest(String topic, String level) {
+                return GrammarRequestDTO.builder()
+                                .grammarTopic(topic)
+                                .cefrLevel(level)
+                                .exerciseCount(5)
+                                .theme("workplace")
+                                .timeLimitSeconds(600)
+                                .build();
+        }
 
-    private GrammarExerciseSet createExerciseSet(UUID userId) {
-        Map<String, Object> content = createValidContent();
-        return GrammarExerciseSet.builder()
-                .id(EXERCISE_SET_ID)
-                .userId(userId)
-                .grammarPoint("Present Simple")
-                .cefrLevel("B1")
-                .theme("workplace")
-                .content(content)
-                .exerciseCount(3)
-                .isFallback(false)
-                .createdAt(Instant.now())
-                .build();
-    }
+        private GrammarTopic createTopic(String name) {
+                return GrammarTopic.builder()
+                                .id(1)
+                                .name(name)
+                                .category("Tenses")
+                                .cefrLevels(new String[] { "A2", "B1", "B2" })
+                                .description("Test topic")
+                                .isActive(true)
+                                .build();
+        }
 
-    private Map<String, Object> createValidContent() {
-        Map<String, Object> content = new HashMap<>();
+        private GrammarExerciseSet createExerciseSet(UUID userId) {
+                Map<String, Object> content = createValidContent();
+                return GrammarExerciseSet.builder()
+                                .id(EXERCISE_SET_ID)
+                                .userId(userId)
+                                .grammarPoint("Present Simple")
+                                .cefrLevel("B1")
+                                .theme("workplace")
+                                .content(content)
+                                .exerciseCount(3)
+                                .isFallback(false)
+                                .createdAt(Instant.now())
+                                .build();
+        }
 
-        Map<String, Object> explanation = new HashMap<>();
-        explanation.put("rule", "Present Simple is used for habits and facts.");
-        explanation.put("examples", List.of("I work every day.", "She goes to school."));
-        explanation.put("commonMistakes", List.of("Using 'go' instead of 'goes' for third person."));
-        content.put("explanation", explanation);
+        private Map<String, Object> createValidContent() {
+                Map<String, Object> content = new HashMap<>();
 
-        List<Map<String, Object>> exercises = new ArrayList<>();
-        exercises.add(createExercise(0, "She ___ to work every day.", "goes", "A"));
-        exercises.add(createExercise(1, "They ___ English.", "speak", "B"));
-        exercises.add(createExercise(2, "He ___ coffee.", "drinks", "C"));
-        content.put("exercises", exercises);
+                Map<String, Object> explanation = new HashMap<>();
+                explanation.put("rule", "Present Simple is used for habits and facts.");
+                explanation.put("examples", List.of("I work every day.", "She goes to school."));
+                explanation.put("commonMistakes", List.of("Using 'go' instead of 'goes' for third person."));
+                content.put("explanation", explanation);
 
-        return content;
-    }
+                List<Map<String, Object>> exercises = new ArrayList<>();
+                exercises.add(createExercise(0, "She ___ to work every day.", "goes", "A"));
+                exercises.add(createExercise(1, "They ___ English.", "speak", "B"));
+                exercises.add(createExercise(2, "He ___ coffee.", "drinks", "C"));
+                content.put("exercises", exercises);
 
-    private Map<String, Object> createExercise(int index, String question, String answer, String correctOption) {
-        Map<String, Object> exercise = new HashMap<>();
-        exercise.put("type", "multiple_choice");
-        exercise.put("instruction", "Choose the correct answer");
-        exercise.put("question", question);
-        exercise.put("options", List.of("goes", "speak", "drinks", "eats"));
-        exercise.put("correctAnswer", correctOption);
-        exercise.put("explanation", "This is the correct form for third person singular.");
-        exercise.put("difficulty", "medium");
-        return exercise;
-    }
+                return content;
+        }
 
-    private String createValidJsonResponse() {
-        return """
-            {
-              "explanation": {
-                "rule": "Present Simple is used for habits.",
-                "examples": ["I work."],
-                "commonMistakes": ["Wrong form"]
-              },
-              "exercises": [
-                {
-                  "type": "multiple_choice",
-                  "instruction": "Choose",
-                  "question": "She ___ to work.",
-                  "options": ["goes", "go", "going", "went"],
-                  "correctAnswer": "goes",
-                  "explanation": "Third person singular",
-                  "difficulty": "easy"
+        private Map<String, Object> createExercise(int index, String question, String answer, String correctOption) {
+                Map<String, Object> exercise = new HashMap<>();
+                exercise.put("type", "multiple_choice");
+                exercise.put("instruction", "Choose the correct answer");
+                exercise.put("question", question);
+                exercise.put("options", List.of("goes", "speak", "drinks", "eats"));
+                exercise.put("correctAnswer", correctOption);
+                exercise.put("explanation", "This is the correct form for third person singular.");
+                exercise.put("difficulty", "medium");
+                return exercise;
+        }
+
+        private String createValidJsonResponse() {
+                return """
+                                {
+                                  "explanation": {
+                                    "rule": "Present Simple is used for habits.",
+                                    "examples": ["I work."],
+                                    "commonMistakes": ["Wrong form"]
+                                  },
+                                  "exercises": [
+                                    {
+                                      "type": "multiple_choice",
+                                      "instruction": "Choose",
+                                      "question": "She ___ to work.",
+                                      "options": ["goes", "go", "going", "went"],
+                                      "correctAnswer": "goes",
+                                      "explanation": "Third person singular",
+                                      "difficulty": "easy"
+                                    }
+                                  ]
+                                }
+                                """;
+        }
+
+        private GeminiResponseDTO createSuccessfulResponse() {
+                return GeminiResponseDTO.success(
+                                createValidJsonResponse(),
+                                "gemini-2.0-flash-exp",
+                                TokenUsageDTO.of(100, 200, 0.001),
+                                500L,
+                                "STOP");
+        }
+
+        private GrammarAnswerDTO createSubmission(List<GrammarAnswerDTO.AnswerItem> answers) {
+                return GrammarAnswerDTO.builder()
+                                .exerciseSetId(EXERCISE_SET_ID)
+                                .answers(answers)
+                                .totalTimeSeconds(120)
+                                .build();
+        }
+
+        // ========== Generate Exercises Tests ==========
+
+        @Nested
+        @DisplayName("generateExercises()")
+        class GenerateExercisesTests {
+
+                @Test
+                @DisplayName("Should generate exercises successfully with AI")
+                void shouldGenerateExercisesWithAI() {
+                        // Given
+                        GrammarRequestDTO request = createRequest("Present Simple", "B1");
+                        GrammarTopic topic = createTopic("Present Simple");
+                        GrammarExerciseSet savedSet = createExerciseSet(USER_ID);
+
+                        when(topicRepository.findByNameIgnoreCase("Present Simple"))
+                                        .thenReturn(Optional.of(topic));
+                        when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
+                                        .thenReturn(5L);
+                        when(promptTemplateService.getAndResolve(anyString(), anyMap()))
+                                        .thenReturn(Optional.of("Generated prompt"));
+                        when(geminiClientService.generateContent(anyString()))
+                                        .thenReturn(createSuccessfulResponse());
+                        when(exerciseSetRepository.save(any(GrammarExerciseSet.class)))
+                                        .thenReturn(savedSet);
+                        when(aiUsageTracker.trackUsageAsync(any()))
+                                        .thenReturn(CompletableFuture.completedFuture(null));
+
+                        // When
+                        GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getGrammarPoint()).isEqualTo("Present Simple");
+                        assertThat(result.getCefrLevel()).isEqualTo("B1");
+
+                        verify(exerciseSetRepository).save(exerciseSetCaptor.capture());
+                        GrammarExerciseSet captured = exerciseSetCaptor.getValue();
+                        assertThat(captured.getUserId()).isEqualTo(USER_ID);
+                        assertThat(captured.getGrammarPoint()).isEqualTo("Present Simple");
+
+                        verify(aiUsageTracker).trackUsageAsync(any());
                 }
-              ]
-            }
-            """;
-    }
 
-    private GeminiResponseDTO createSuccessfulResponse() {
-        return GeminiResponseDTO.success(
-                createValidJsonResponse(),
-                "gemini-2.0-flash-exp",
-                TokenUsageDTO.of(100, 200, 0.001),
-                500L,
-                "STOP"
-        );
-    }
+                @Test
+                @DisplayName("Should use fallback when explicitly requested")
+                void shouldUseFallbackWhenRequested() {
+                        // Given
+                        GrammarRequestDTO request = GrammarRequestDTO.builder()
+                                        .grammarTopic("Present Simple")
+                                        .cefrLevel("B1")
+                                        .useFallback(true)
+                                        .exerciseCount(5)
+                                        .build();
 
-    private GrammarAnswerDTO createSubmission(List<GrammarAnswerDTO.AnswerItem> answers) {
-        return GrammarAnswerDTO.builder()
-                .exerciseSetId(EXERCISE_SET_ID)
-                .answers(answers)
-                .totalTimeSeconds(120)
-                .build();
-    }
+                        GrammarTopic topic = createTopic("Present Simple");
+                        GrammarExerciseSet fallbackSet = createExerciseSet(null);
+                        fallbackSet.setIsFallback(true);
 
-    // ========== Generate Exercises Tests ==========
+                        when(topicRepository.findByNameIgnoreCase("Present Simple"))
+                                        .thenReturn(Optional.of(topic));
+                        when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
+                                        .thenReturn(List.of(fallbackSet));
 
-    @Nested
-    @DisplayName("generateExercises()")
-    class GenerateExercisesTests {
+                        // When
+                        GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
 
-        @Test
-        @DisplayName("Should generate exercises successfully with AI")
-        void shouldGenerateExercisesWithAI() {
-            // Given
-            GrammarRequestDTO request = createRequest("Present Simple", "B1");
-            GrammarTopic topic = createTopic("Present Simple");
-            GrammarExerciseSet savedSet = createExerciseSet(USER_ID);
+                        // Then
+                        assertThat(result).isNotNull();
+                        verify(geminiClientService, never()).generateContent(anyString());
+                }
 
-            when(topicRepository.findByNameIgnoreCase("Present Simple"))
-                    .thenReturn(Optional.of(topic));
-            when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
-                    .thenReturn(5L);
-            when(promptTemplateService.getAndResolve(anyString(), anyMap()))
-                    .thenReturn(Optional.of("Generated prompt"));
-            when(geminiClientService.generateContent(anyString()))
-                    .thenReturn(createSuccessfulResponse());
-            when(exerciseSetRepository.save(any(GrammarExerciseSet.class)))
-                    .thenReturn(savedSet);
-            when(aiUsageTracker.trackUsageAsync(any()))
-                    .thenReturn(CompletableFuture.completedFuture(null));
+                @Test
+                @DisplayName("Should throw AiRateLimitException when quota exceeded")
+                void shouldThrowWhenQuotaExceeded() {
+                        // Given
+                        GrammarRequestDTO request = createRequest("Present Simple", "B1");
 
-            // When
-            GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
+                        when(topicRepository.findByNameIgnoreCase("Present Simple"))
+                                        .thenReturn(Optional.empty());
+                        when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
+                                        .thenReturn(51L); // Over quota
 
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getGrammarPoint()).isEqualTo("Present Simple");
-            assertThat(result.getCefrLevel()).isEqualTo("B1");
+                        // When/Then
+                        assertThatThrownBy(() -> service.generateExercises(request, USER_ID))
+                                        .isInstanceOf(AiRateLimitException.class)
+                                        .hasMessageContaining("Daily grammar exercise limit exceeded");
+                }
 
-            verify(exerciseSetRepository).save(exerciseSetCaptor.capture());
-            GrammarExerciseSet captured = exerciseSetCaptor.getValue();
-            assertThat(captured.getUserId()).isEqualTo(USER_ID);
-            assertThat(captured.getGrammarPoint()).isEqualTo("Present Simple");
+                @Test
+                @DisplayName("Should use fallback when AI fails")
+                void shouldUseFallbackWhenAIFails() {
+                        // Given
+                        GrammarRequestDTO request = createRequest("Present Simple", "B1");
+                        GrammarTopic topic = createTopic("Present Simple");
+                        GrammarExerciseSet fallbackSet = createExerciseSet(null);
+                        fallbackSet.setIsFallback(true);
 
-            verify(aiUsageTracker).trackUsageAsync(any());
+                        when(topicRepository.findByNameIgnoreCase("Present Simple"))
+                                        .thenReturn(Optional.of(topic));
+                        when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
+                                        .thenReturn(5L);
+                        when(promptTemplateService.getAndResolve(anyString(), anyMap()))
+                                        .thenReturn(Optional.of("Prompt"));
+                        when(geminiClientService.generateContent(anyString()))
+                                        .thenThrow(new AiServiceException("API unavailable"));
+                        when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
+                                        .thenReturn(List.of(fallbackSet));
+
+                        // When
+                        GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                }
+
+                @Test
+                @DisplayName("Should create basic fallback when no fallback content exists")
+                void shouldCreateBasicFallbackWhenNoneExists() {
+                        // Given
+                        GrammarRequestDTO request = createRequest("Present Simple", "B1");
+                        GrammarTopic topic = createTopic("Present Simple");
+                        GrammarExerciseSet savedSet = createExerciseSet(USER_ID);
+                        savedSet.setIsFallback(true);
+
+                        when(topicRepository.findByNameIgnoreCase("Present Simple"))
+                                        .thenReturn(Optional.of(topic));
+                        when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
+                                        .thenReturn(5L);
+                        when(promptTemplateService.getAndResolve(anyString(), anyMap()))
+                                        .thenReturn(Optional.of("Prompt"));
+                        when(geminiClientService.generateContent(anyString()))
+                                        .thenThrow(new AiServiceException("API unavailable"));
+                        when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
+                                        .thenReturn(Collections.emptyList());
+                        when(exerciseSetRepository.save(any(GrammarExerciseSet.class)))
+                                        .thenReturn(savedSet);
+
+                        // When
+                        GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        verify(exerciseSetRepository).save(exerciseSetCaptor.capture());
+                        assertThat(exerciseSetCaptor.getValue().getIsFallback()).isTrue();
+                }
         }
 
-        @Test
-        @DisplayName("Should use fallback when explicitly requested")
-        void shouldUseFallbackWhenRequested() {
-            // Given
-            GrammarRequestDTO request = GrammarRequestDTO.builder()
-                    .grammarTopic("Present Simple")
-                    .cefrLevel("B1")
-                    .useFallback(true)
-                    .exerciseCount(5)
-                    .build();
+        // ========== Topic Listing Tests ==========
 
-            GrammarTopic topic = createTopic("Present Simple");
-            GrammarExerciseSet fallbackSet = createExerciseSet(null);
-            fallbackSet.setIsFallback(true);
+        @Nested
+        @DisplayName("Topic Listing")
+        class TopicListingTests {
 
-            when(topicRepository.findByNameIgnoreCase("Present Simple"))
-                    .thenReturn(Optional.of(topic));
-            when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
-                    .thenReturn(List.of(fallbackSet));
+                @Test
+                @DisplayName("Should get all active topics")
+                void shouldGetAllTopics() {
+                        // Given
+                        List<GrammarTopic> topics = List.of(
+                                        createTopic("Present Simple"),
+                                        createTopic("Past Simple"));
+                        when(topicRepository.findByIsActiveTrue()).thenReturn(topics);
 
-            // When
-            GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
+                        // When
+                        List<GrammarTopicDTO> result = service.getAllTopics();
 
-            // Then
-            assertThat(result).isNotNull();
-            verify(geminiClientService, never()).generateContent(anyString());
+                        // Then
+                        assertThat(result).hasSize(2);
+                        assertThat(result.get(0).name()).isEqualTo("Present Simple");
+                }
+
+                @Test
+                @DisplayName("Should get topics by CEFR level")
+                void shouldGetTopicsByLevel() {
+                        // Given
+                        GrammarTopic topic = createTopic("Present Simple");
+                        when(topicRepository.findByCefrLevel("B1")).thenReturn(List.of(topic));
+
+                        // When
+                        List<GrammarTopicDTO> result = service.getTopicsByLevel("B1");
+
+                        // Then
+                        assertThat(result).hasSize(1);
+                        assertThat(result.get(0).name()).isEqualTo("Present Simple");
+                }
+
+                @Test
+                @DisplayName("Should get topics by category")
+                void shouldGetTopicsByCategory() {
+                        // Given
+                        GrammarTopic topic = createTopic("Present Simple");
+                        when(topicRepository.findByCategoryAndIsActiveTrue("Tenses")).thenReturn(List.of(topic));
+
+                        // When
+                        List<GrammarTopicDTO> result = service.getTopicsByCategory("Tenses");
+
+                        // Then
+                        assertThat(result).hasSize(1);
+                        assertThat(result.get(0).category()).isEqualTo("Tenses");
+                }
+
+                @Test
+                @DisplayName("Should get all categories")
+                void shouldGetCategories() {
+                        // Given
+                        List<String> categories = List.of("Tenses", "Modals", "Articles");
+                        when(topicRepository.findDistinctActiveCategories()).thenReturn(categories);
+
+                        // When
+                        List<String> result = service.getCategories();
+
+                        // Then
+                        assertThat(result).containsExactly("Tenses", "Modals", "Articles");
+                }
         }
 
-        @Test
-        @DisplayName("Should throw AiRateLimitException when quota exceeded")
-        void shouldThrowWhenQuotaExceeded() {
-            // Given
-            GrammarRequestDTO request = createRequest("Present Simple", "B1");
+        // ========== Exercise Set Retrieval Tests ==========
 
-            when(topicRepository.findByNameIgnoreCase("Present Simple"))
-                    .thenReturn(Optional.empty());
-            when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
-                    .thenReturn(51L); // Over quota
+        @Nested
+        @DisplayName("Exercise Set Retrieval")
+        class ExerciseSetRetrievalTests {
 
-            // When/Then
-            assertThatThrownBy(() -> service.generateExercises(request, USER_ID))
-                    .isInstanceOf(AiRateLimitException.class)
-                    .hasMessageContaining("Daily grammar exercise limit exceeded");
+                @Test
+                @DisplayName("Should get exercise set by ID")
+                void shouldGetExerciseSetById() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+
+                        // When
+                        GrammarExerciseSetDTO result = service.getExerciseSet(EXERCISE_SET_ID);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getId()).isEqualTo(EXERCISE_SET_ID);
+                }
+
+                @Test
+                @DisplayName("Should throw ResourceNotFoundException for missing exercise set")
+                void shouldThrowForMissingExerciseSet() {
+                        // Given
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+
+                        // When/Then
+                        assertThatThrownBy(() -> service.getExerciseSet(EXERCISE_SET_ID))
+                                        .isInstanceOf(ResourceNotFoundException.class)
+                                        .hasMessageContaining("Exercise set not found");
+                }
+
+                @Test
+                @DisplayName("Should get user exercise sets with pagination")
+                void shouldGetUserExerciseSets() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        Page<GrammarExerciseSet> page = new PageImpl<>(List.of(exerciseSet));
+                        Pageable pageable = PageRequest.of(0, 10);
+
+                        when(exerciseSetRepository.findByUserId(USER_ID, pageable)).thenReturn(page);
+
+                        // When
+                        Page<GrammarExerciseSetDTO> result = service.getUserExerciseSets(USER_ID, pageable);
+
+                        // Then
+                        assertThat(result.getContent()).hasSize(1);
+                        assertThat(result.getContent().get(0).getId()).isEqualTo(EXERCISE_SET_ID);
+                }
         }
 
-        @Test
-        @DisplayName("Should use fallback when AI fails")
-        void shouldUseFallbackWhenAIFails() {
-            // Given
-            GrammarRequestDTO request = createRequest("Present Simple", "B1");
-            GrammarTopic topic = createTopic("Present Simple");
-            GrammarExerciseSet fallbackSet = createExerciseSet(null);
-            fallbackSet.setIsFallback(true);
+        // ========== Answer Submission Tests ==========
 
-            when(topicRepository.findByNameIgnoreCase("Present Simple"))
-                    .thenReturn(Optional.of(topic));
-            when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
-                    .thenReturn(5L);
-            when(promptTemplateService.getAndResolve(anyString(), anyMap()))
-                    .thenReturn(Optional.of("Prompt"));
-            when(geminiClientService.generateContent(anyString()))
-                    .thenThrow(new AiServiceException("API unavailable"));
-            when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
-                    .thenReturn(List.of(fallbackSet));
+        @Nested
+        @DisplayName("submitAnswers()")
+        class SubmitAnswersTests {
 
-            // When
-            GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
+                @Test
+                @DisplayName("Should score all correct answers")
+                void shouldScoreAllCorrectAnswers() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        List<GrammarAnswerDTO.AnswerItem> answers = List.of(
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L)
+                                                        .build(),
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("B").timeMs(1000L)
+                                                        .build(),
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L)
+                                                        .build());
+                        GrammarAnswerDTO submission = createSubmission(answers);
 
-            // Then
-            assertThat(result).isNotNull();
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+                        when(progressRepository.save(any(UserGrammarProgress.class)))
+                                        .thenAnswer(inv -> inv.getArgument(0));
+
+                        // When
+                        GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
+
+                        // Then
+                        assertThat(result.getScore()).isEqualTo(3);
+                        assertThat(result.getMaxScore()).isEqualTo(3);
+                        assertThat(result.getPercentage()).isEqualByComparingTo(BigDecimal.valueOf(100.00));
+                        assertThat(result.getPassed()).isTrue();
+                        assertThat(result.getFeedback()).hasSize(3);
+                        assertThat(result.getFeedback()).allMatch(GrammarResultDTO.QuestionFeedback::getCorrect);
+                }
+
+                @Test
+                @DisplayName("Should score partial correct answers")
+                void shouldScorePartialCorrectAnswers() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        List<GrammarAnswerDTO.AnswerItem> answers = List.of(
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L)
+                                                        .build(),
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("D").timeMs(1000L)
+                                                        .build(), // Wrong
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L)
+                                                        .build());
+                        GrammarAnswerDTO submission = createSubmission(answers);
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+                        when(progressRepository.save(any(UserGrammarProgress.class)))
+                                        .thenAnswer(inv -> inv.getArgument(0));
+
+                        // When
+                        GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
+
+                        // Then
+                        assertThat(result.getScore()).isEqualTo(2);
+                        assertThat(result.getMaxScore()).isEqualTo(3);
+                        assertThat(result.getPercentage()).isEqualByComparingTo(BigDecimal.valueOf(66.67));
+                        assertThat(result.getPassed()).isFalse(); // Below 70%
+                }
+
+                @Test
+                @DisplayName("Should throw IllegalStateException when already submitted")
+                void shouldThrowWhenAlreadySubmitted() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        UserGrammarProgress existingProgress = UserGrammarProgress.builder()
+                                        .userId(USER_ID)
+                                        .exerciseSet(exerciseSet)
+                                        .completedAt(Instant.now())
+                                        .build();
+                        GrammarAnswerDTO submission = createSubmission(List.of());
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(existingProgress));
+
+                        // When/Then
+                        assertThatThrownBy(() -> service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission))
+                                        .isInstanceOf(IllegalStateException.class)
+                                        .hasMessageContaining("already submitted");
+                }
+
+                @Test
+                @DisplayName("Should throw ResourceNotFoundException for missing exercise set")
+                void shouldThrowForMissingExerciseSetOnSubmit() {
+                        // Given
+                        GrammarAnswerDTO submission = createSubmission(List.of());
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+
+                        // When/Then
+                        assertThatThrownBy(() -> service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission))
+                                        .isInstanceOf(ResourceNotFoundException.class);
+                }
+
+                @Test
+                @DisplayName("Should throw IllegalArgumentException when accessing another user's exercise set")
+                void shouldThrowWhenAccessingOtherUsersExerciseSet() {
+                        // Given
+                        UUID otherUserId = UUID.randomUUID();
+                        GrammarExerciseSet exerciseSet = createExerciseSet(otherUserId); // Different owner
+                        GrammarAnswerDTO submission = createSubmission(List.of());
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+
+                        // When/Then
+                        assertThatThrownBy(() -> service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission))
+                                        .isInstanceOf(IllegalArgumentException.class)
+                                        .hasMessageContaining("do not have permission");
+                }
+
+                @Test
+                @DisplayName("Should allow submitting to public/fallback exercise sets (null userId)")
+                void shouldAllowSubmittingToPublicExerciseSets() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(null); // Public/fallback set
+                        List<GrammarAnswerDTO.AnswerItem> answers = List.of(
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L)
+                                                        .build());
+                        GrammarAnswerDTO submission = createSubmission(answers);
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+                        when(progressRepository.save(any(UserGrammarProgress.class)))
+                                        .thenAnswer(inv -> inv.getArgument(0));
+
+                        // When
+                        GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        verify(progressRepository).save(any(UserGrammarProgress.class));
+                }
+
+                @Test
+                @DisplayName("Should handle out-of-order answer submissions")
+                void shouldHandleOutOfOrderAnswers() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        // Submit answers in reverse order using questionIndex
+                        List<GrammarAnswerDTO.AnswerItem> answers = List.of(
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L)
+                                                        .build(),
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L)
+                                                        .build(),
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("B").timeMs(1000L)
+                                                        .build());
+                        GrammarAnswerDTO submission = createSubmission(answers);
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+                        when(progressRepository.save(any(UserGrammarProgress.class)))
+                                        .thenAnswer(inv -> inv.getArgument(0));
+
+                        // When
+                        GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
+
+                        // Then - All answers should be correct even though submitted out of order
+                        assertThat(result.getScore()).isEqualTo(3);
+                        assertThat(result.getMaxScore()).isEqualTo(3);
+                        assertThat(result.getPercentage()).isEqualByComparingTo(BigDecimal.valueOf(100.00));
+                }
+
+                @Test
+                @DisplayName("Should save progress correctly")
+                void shouldSaveProgressCorrectly() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        List<GrammarAnswerDTO.AnswerItem> answers = List.of(
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(5000L)
+                                                        .build());
+                        GrammarAnswerDTO submission = createSubmission(answers);
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+                        when(progressRepository.save(any(UserGrammarProgress.class)))
+                                        .thenAnswer(inv -> inv.getArgument(0));
+
+                        // When
+                        service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
+
+                        // Then
+                        verify(progressRepository).save(progressCaptor.capture());
+                        UserGrammarProgress savedProgress = progressCaptor.getValue();
+                        assertThat(savedProgress.getUserId()).isEqualTo(USER_ID);
+                        assertThat(savedProgress.getScore()).isEqualTo(1);
+                        assertThat(savedProgress.getCompletedAt()).isNotNull();
+                }
+
+                @Test
+                @DisplayName("Should generate encouraging feedback for high scores")
+                void shouldGenerateEncouragingFeedback() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        List<GrammarAnswerDTO.AnswerItem> answers = List.of(
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L)
+                                                        .build(),
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("B").timeMs(1000L)
+                                                        .build(),
+                                        GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L)
+                                                        .build());
+                        GrammarAnswerDTO submission = createSubmission(answers);
+
+                        when(exerciseSetRepository.findById(EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(exerciseSet));
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.empty());
+                        when(progressRepository.save(any(UserGrammarProgress.class)))
+                                        .thenAnswer(inv -> inv.getArgument(0));
+
+                        // When
+                        GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
+
+                        // Then
+                        assertThat(result.getEncouragement()).contains("Excellent");
+                }
         }
 
-        @Test
-        @DisplayName("Should create basic fallback when no fallback content exists")
-        void shouldCreateBasicFallbackWhenNoneExists() {
-            // Given
-            GrammarRequestDTO request = createRequest("Present Simple", "B1");
-            GrammarTopic topic = createTopic("Present Simple");
-            GrammarExerciseSet savedSet = createExerciseSet(USER_ID);
-            savedSet.setIsFallback(true);
+        // ========== History and Statistics Tests ==========
 
-            when(topicRepository.findByNameIgnoreCase("Present Simple"))
-                    .thenReturn(Optional.of(topic));
-            when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
-                    .thenReturn(5L);
-            when(promptTemplateService.getAndResolve(anyString(), anyMap()))
-                    .thenReturn(Optional.of("Prompt"));
-            when(geminiClientService.generateContent(anyString()))
-                    .thenThrow(new AiServiceException("API unavailable"));
-            when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
-                    .thenReturn(Collections.emptyList());
-            when(exerciseSetRepository.save(any(GrammarExerciseSet.class)))
-                    .thenReturn(savedSet);
+        @Nested
+        @DisplayName("History and Statistics")
+        class HistoryAndStatisticsTests {
 
-            // When
-            GrammarExerciseSetDTO result = service.generateExercises(request, USER_ID);
+                @Test
+                @DisplayName("Should get user history with pagination")
+                void shouldGetHistory() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        UserGrammarProgress progress = UserGrammarProgress.builder()
+                                        .id(1L)
+                                        .userId(USER_ID)
+                                        .exerciseSet(exerciseSet)
+                                        .score(4)
+                                        .maxScore(5)
+                                        .percentage(BigDecimal.valueOf(80))
+                                        .completedAt(Instant.now())
+                                        .build();
 
-            // Then
-            assertThat(result).isNotNull();
-            verify(exerciseSetRepository).save(exerciseSetCaptor.capture());
-            assertThat(exerciseSetCaptor.getValue().getIsFallback()).isTrue();
-        }
-    }
+                        Page<UserGrammarProgress> page = new PageImpl<>(List.of(progress));
+                        Pageable pageable = PageRequest.of(0, 10);
 
-    // ========== Topic Listing Tests ==========
+                        when(progressRepository.findByUserId(USER_ID, pageable)).thenReturn(page);
 
-    @Nested
-    @DisplayName("Topic Listing")
-    class TopicListingTests {
+                        // When
+                        Page<GrammarProgressDTO> result = service.getHistory(USER_ID, pageable);
 
-        @Test
-        @DisplayName("Should get all active topics")
-        void shouldGetAllTopics() {
-            // Given
-            List<GrammarTopic> topics = List.of(
-                    createTopic("Present Simple"),
-                    createTopic("Past Simple")
-            );
-            when(topicRepository.findByIsActiveTrue()).thenReturn(topics);
+                        // Then
+                        assertThat(result.getContent()).hasSize(1);
+                        assertThat(result.getContent().get(0).getScore()).isEqualTo(4);
+                }
 
-            // When
-            List<GrammarTopicDTO> result = service.getAllTopics();
+                @Test
+                @DisplayName("Should calculate statistics correctly")
+                void shouldCalculateStatistics() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        List<UserGrammarProgress> progressList = List.of(
+                                        UserGrammarProgress.builder()
+                                                        .userId(USER_ID)
+                                                        .exerciseSet(exerciseSet)
+                                                        .score(4)
+                                                        .maxScore(5)
+                                                        .percentage(BigDecimal.valueOf(80))
+                                                        .timeSpentSeconds(120)
+                                                        .completedAt(Instant.now())
+                                                        .build(),
+                                        UserGrammarProgress.builder()
+                                                        .userId(USER_ID)
+                                                        .exerciseSet(exerciseSet)
+                                                        .score(3)
+                                                        .maxScore(5)
+                                                        .percentage(BigDecimal.valueOf(60))
+                                                        .timeSpentSeconds(180)
+                                                        .completedAt(Instant.now())
+                                                        .build());
 
-            // Then
-            assertThat(result).hasSize(2);
-            assertThat(result.get(0).name()).isEqualTo("Present Simple");
-        }
+                        when(progressRepository.findByUserIdAndCompletedAtIsNotNull(USER_ID))
+                                        .thenReturn(progressList);
 
-        @Test
-        @DisplayName("Should get topics by CEFR level")
-        void shouldGetTopicsByLevel() {
-            // Given
-            GrammarTopic topic = createTopic("Present Simple");
-            when(topicRepository.findByCefrLevel("B1")).thenReturn(List.of(topic));
+                        // When
+                        GrammarStatsDTO result = service.getStatistics(USER_ID);
 
-            // When
-            List<GrammarTopicDTO> result = service.getTopicsByLevel("B1");
+                        // Then
+                        assertThat(result.getTotalCompleted()).isEqualTo(2);
+                        assertThat(result.getTotalPassed()).isEqualTo(1); // Only 80% passed
+                        assertThat(result.getTotalTimeSpentSeconds()).isEqualTo(300);
+                        assertThat(result.getTotalQuestionsAnswered()).isEqualTo(10);
+                        assertThat(result.getTotalCorrectAnswers()).isEqualTo(7);
+                }
 
-            // Then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).name()).isEqualTo("Present Simple");
-        }
+                @Test
+                @DisplayName("Should return empty stats for user with no progress")
+                void shouldReturnEmptyStatsForNewUser() {
+                        // Given
+                        when(progressRepository.findByUserIdAndCompletedAtIsNotNull(USER_ID))
+                                        .thenReturn(Collections.emptyList());
 
-        @Test
-        @DisplayName("Should get topics by category")
-        void shouldGetTopicsByCategory() {
-            // Given
-            GrammarTopic topic = createTopic("Present Simple");
-            when(topicRepository.findByCategoryAndIsActiveTrue("Tenses")).thenReturn(List.of(topic));
+                        // When
+                        GrammarStatsDTO result = service.getStatistics(USER_ID);
 
-            // When
-            List<GrammarTopicDTO> result = service.getTopicsByCategory("Tenses");
+                        // Then
+                        assertThat(result.getTotalCompleted()).isEqualTo(0);
+                        assertThat(result.getAverageScore()).isEqualByComparingTo(BigDecimal.ZERO);
+                }
 
-            // Then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).category()).isEqualTo("Tenses");
-        }
+                @Test
+                @DisplayName("Should get progress for specific exercise set")
+                void shouldGetProgress() {
+                        // Given
+                        GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
+                        UserGrammarProgress progress = UserGrammarProgress.builder()
+                                        .userId(USER_ID)
+                                        .exerciseSet(exerciseSet)
+                                        .score(4)
+                                        .maxScore(5)
+                                        .completedAt(Instant.now())
+                                        .build();
 
-        @Test
-        @DisplayName("Should get all categories")
-        void shouldGetCategories() {
-            // Given
-            List<String> categories = List.of("Tenses", "Modals", "Articles");
-            when(topicRepository.findDistinctActiveCategories()).thenReturn(categories);
+                        when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(Optional.of(progress));
 
-            // When
-            List<String> result = service.getCategories();
+                        // When
+                        GrammarProgressDTO result = service.getProgress(EXERCISE_SET_ID, USER_ID);
 
-            // Then
-            assertThat(result).containsExactly("Tenses", "Modals", "Articles");
-        }
-    }
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getScore()).isEqualTo(4);
+                }
 
-    // ========== Exercise Set Retrieval Tests ==========
+                @Test
+                @DisplayName("Should check if user has submitted")
+                void shouldCheckIfSubmitted() {
+                        // Given
+                        when(progressRepository.existsCompletedByUserIdAndExerciseSetId(USER_ID, EXERCISE_SET_ID))
+                                        .thenReturn(true);
 
-    @Nested
-    @DisplayName("Exercise Set Retrieval")
-    class ExerciseSetRetrievalTests {
+                        // When
+                        boolean result = service.hasSubmitted(EXERCISE_SET_ID, USER_ID);
 
-        @Test
-        @DisplayName("Should get exercise set by ID")
-        void shouldGetExerciseSetById() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-
-            // When
-            GrammarExerciseSetDTO result = service.getExerciseSet(EXERCISE_SET_ID);
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(EXERCISE_SET_ID);
-        }
-
-        @Test
-        @DisplayName("Should throw ResourceNotFoundException for missing exercise set")
-        void shouldThrowForMissingExerciseSet() {
-            // Given
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-
-            // When/Then
-            assertThatThrownBy(() -> service.getExerciseSet(EXERCISE_SET_ID))
-                    .isInstanceOf(ResourceNotFoundException.class)
-                    .hasMessageContaining("Exercise set not found");
+                        // Then
+                        assertThat(result).isTrue();
+                }
         }
 
-        @Test
-        @DisplayName("Should get user exercise sets with pagination")
-        void shouldGetUserExerciseSets() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            Page<GrammarExerciseSet> page = new PageImpl<>(List.of(exerciseSet));
-            Pageable pageable = PageRequest.of(0, 10);
+        // ========== Fallback Content Tests ==========
 
-            when(exerciseSetRepository.findByUserId(USER_ID, pageable)).thenReturn(page);
+        @Nested
+        @DisplayName("Fallback Content")
+        class FallbackContentTests {
 
-            // When
-            Page<GrammarExerciseSetDTO> result = service.getUserExerciseSets(USER_ID, pageable);
+                @Test
+                @DisplayName("Should get fallback exercises when available")
+                void shouldGetFallbackExercises() {
+                        // Given
+                        GrammarExerciseSet fallbackSet = createExerciseSet(null);
+                        fallbackSet.setIsFallback(true);
 
-            // Then
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).getId()).isEqualTo(EXERCISE_SET_ID);
+                        when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
+                                        .thenReturn(List.of(fallbackSet));
+
+                        // When
+                        GrammarExerciseSetDTO result = service.getFallbackExercises("Present Simple", "B1");
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getIsFallback()).isTrue();
+                }
+
+                @Test
+                @DisplayName("Should return null when no fallback available")
+                void shouldReturnNullWhenNoFallback() {
+                        // Given
+                        when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("C2", "Subjunctive"))
+                                        .thenReturn(Collections.emptyList());
+
+                        // When
+                        GrammarExerciseSetDTO result = service.getFallbackExercises("Subjunctive", "C2");
+
+                        // Then
+                        assertThat(result).isNull();
+                }
         }
-    }
-
-    // ========== Answer Submission Tests ==========
-
-    @Nested
-    @DisplayName("submitAnswers()")
-    class SubmitAnswersTests {
-
-        @Test
-        @DisplayName("Should score all correct answers")
-        void shouldScoreAllCorrectAnswers() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            List<GrammarAnswerDTO.AnswerItem> answers = List.of(
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L).build(),
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("B").timeMs(1000L).build(),
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L).build()
-            );
-            GrammarAnswerDTO submission = createSubmission(answers);
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-            when(progressRepository.save(any(UserGrammarProgress.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            // When
-            GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
-
-            // Then
-            assertThat(result.getScore()).isEqualTo(3);
-            assertThat(result.getMaxScore()).isEqualTo(3);
-            assertThat(result.getPercentage()).isEqualByComparingTo(BigDecimal.valueOf(100.00));
-            assertThat(result.getPassed()).isTrue();
-            assertThat(result.getFeedback()).hasSize(3);
-            assertThat(result.getFeedback()).allMatch(GrammarResultDTO.QuestionFeedback::getCorrect);
-        }
-
-        @Test
-        @DisplayName("Should score partial correct answers")
-        void shouldScorePartialCorrectAnswers() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            List<GrammarAnswerDTO.AnswerItem> answers = List.of(
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L).build(),
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("D").timeMs(1000L).build(), // Wrong
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L).build()
-            );
-            GrammarAnswerDTO submission = createSubmission(answers);
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-            when(progressRepository.save(any(UserGrammarProgress.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            // When
-            GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
-
-            // Then
-            assertThat(result.getScore()).isEqualTo(2);
-            assertThat(result.getMaxScore()).isEqualTo(3);
-            assertThat(result.getPercentage()).isEqualByComparingTo(BigDecimal.valueOf(66.67));
-            assertThat(result.getPassed()).isFalse(); // Below 70%
-        }
-
-        @Test
-        @DisplayName("Should throw IllegalStateException when already submitted")
-        void shouldThrowWhenAlreadySubmitted() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            UserGrammarProgress existingProgress = UserGrammarProgress.builder()
-                    .userId(USER_ID)
-                    .exerciseSet(exerciseSet)
-                    .completedAt(Instant.now())
-                    .build();
-            GrammarAnswerDTO submission = createSubmission(List.of());
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(existingProgress));
-
-            // When/Then
-            assertThatThrownBy(() -> service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("already submitted");
-        }
-
-        @Test
-        @DisplayName("Should throw ResourceNotFoundException for missing exercise set")
-        void shouldThrowForMissingExerciseSetOnSubmit() {
-            // Given
-            GrammarAnswerDTO submission = createSubmission(List.of());
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-
-            // When/Then
-            assertThatThrownBy(() -> service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
-
-        @Test
-        @DisplayName("Should throw IllegalArgumentException when accessing another user's exercise set")
-        void shouldThrowWhenAccessingOtherUsersExerciseSet() {
-            // Given
-            UUID otherUserId = UUID.randomUUID();
-            GrammarExerciseSet exerciseSet = createExerciseSet(otherUserId); // Different owner
-            GrammarAnswerDTO submission = createSubmission(List.of());
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-
-            // When/Then
-            assertThatThrownBy(() -> service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("do not have permission");
-        }
-
-        @Test
-        @DisplayName("Should allow submitting to public/fallback exercise sets (null userId)")
-        void shouldAllowSubmittingToPublicExerciseSets() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(null); // Public/fallback set
-            List<GrammarAnswerDTO.AnswerItem> answers = List.of(
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L).build()
-            );
-            GrammarAnswerDTO submission = createSubmission(answers);
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-            when(progressRepository.save(any(UserGrammarProgress.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            // When
-            GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
-
-            // Then
-            assertThat(result).isNotNull();
-            verify(progressRepository).save(any(UserGrammarProgress.class));
-        }
-
-        @Test
-        @DisplayName("Should handle out-of-order answer submissions")
-        void shouldHandleOutOfOrderAnswers() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            // Submit answers in reverse order using questionIndex
-            List<GrammarAnswerDTO.AnswerItem> answers = List.of(
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L).build(),
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L).build(),
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("B").timeMs(1000L).build()
-            );
-            GrammarAnswerDTO submission = createSubmission(answers);
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-            when(progressRepository.save(any(UserGrammarProgress.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            // When
-            GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
-
-            // Then - All answers should be correct even though submitted out of order
-            assertThat(result.getScore()).isEqualTo(3);
-            assertThat(result.getMaxScore()).isEqualTo(3);
-            assertThat(result.getPercentage()).isEqualByComparingTo(BigDecimal.valueOf(100.00));
-        }
-
-        @Test
-        @DisplayName("Should save progress correctly")
-        void shouldSaveProgressCorrectly() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            List<GrammarAnswerDTO.AnswerItem> answers = List.of(
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(5000L).build()
-            );
-            GrammarAnswerDTO submission = createSubmission(answers);
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-            when(progressRepository.save(any(UserGrammarProgress.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            // When
-            service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
-
-            // Then
-            verify(progressRepository).save(progressCaptor.capture());
-            UserGrammarProgress savedProgress = progressCaptor.getValue();
-            assertThat(savedProgress.getUserId()).isEqualTo(USER_ID);
-            assertThat(savedProgress.getScore()).isEqualTo(1);
-            assertThat(savedProgress.getCompletedAt()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Should generate encouraging feedback for high scores")
-        void shouldGenerateEncouragingFeedback() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            List<GrammarAnswerDTO.AnswerItem> answers = List.of(
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(0).answer("A").timeMs(1000L).build(),
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(1).answer("B").timeMs(1000L).build(),
-                    GrammarAnswerDTO.AnswerItem.builder().questionIndex(2).answer("C").timeMs(1000L).build()
-            );
-            GrammarAnswerDTO submission = createSubmission(answers);
-
-            when(exerciseSetRepository.findById(EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(exerciseSet));
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.empty());
-            when(progressRepository.save(any(UserGrammarProgress.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            // When
-            GrammarResultDTO result = service.submitAnswers(EXERCISE_SET_ID, USER_ID, submission);
-
-            // Then
-            assertThat(result.getEncouragement()).contains("Excellent");
-        }
-    }
-
-    // ========== History and Statistics Tests ==========
-
-    @Nested
-    @DisplayName("History and Statistics")
-    class HistoryAndStatisticsTests {
-
-        @Test
-        @DisplayName("Should get user history with pagination")
-        void shouldGetHistory() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            UserGrammarProgress progress = UserGrammarProgress.builder()
-                    .id(1L)
-                    .userId(USER_ID)
-                    .exerciseSet(exerciseSet)
-                    .score(4)
-                    .maxScore(5)
-                    .percentage(BigDecimal.valueOf(80))
-                    .completedAt(Instant.now())
-                    .build();
-
-            Page<UserGrammarProgress> page = new PageImpl<>(List.of(progress));
-            Pageable pageable = PageRequest.of(0, 10);
-
-            when(progressRepository.findByUserId(USER_ID, pageable)).thenReturn(page);
-
-            // When
-            Page<GrammarProgressDTO> result = service.getHistory(USER_ID, pageable);
-
-            // Then
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).getScore()).isEqualTo(4);
-        }
-
-        @Test
-        @DisplayName("Should calculate statistics correctly")
-        void shouldCalculateStatistics() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            List<UserGrammarProgress> progressList = List.of(
-                    UserGrammarProgress.builder()
-                            .userId(USER_ID)
-                            .exerciseSet(exerciseSet)
-                            .score(4)
-                            .maxScore(5)
-                            .percentage(BigDecimal.valueOf(80))
-                            .timeSpentSeconds(120)
-                            .completedAt(Instant.now())
-                            .build(),
-                    UserGrammarProgress.builder()
-                            .userId(USER_ID)
-                            .exerciseSet(exerciseSet)
-                            .score(3)
-                            .maxScore(5)
-                            .percentage(BigDecimal.valueOf(60))
-                            .timeSpentSeconds(180)
-                            .completedAt(Instant.now())
-                            .build()
-            );
-
-            when(progressRepository.findByUserIdAndCompletedAtIsNotNull(USER_ID))
-                    .thenReturn(progressList);
-
-            // When
-            GrammarStatsDTO result = service.getStatistics(USER_ID);
-
-            // Then
-            assertThat(result.getTotalCompleted()).isEqualTo(2);
-            assertThat(result.getTotalPassed()).isEqualTo(1); // Only 80% passed
-            assertThat(result.getTotalTimeSpentSeconds()).isEqualTo(300);
-            assertThat(result.getTotalQuestionsAnswered()).isEqualTo(10);
-            assertThat(result.getTotalCorrectAnswers()).isEqualTo(7);
-        }
-
-        @Test
-        @DisplayName("Should return empty stats for user with no progress")
-        void shouldReturnEmptyStatsForNewUser() {
-            // Given
-            when(progressRepository.findByUserIdAndCompletedAtIsNotNull(USER_ID))
-                    .thenReturn(Collections.emptyList());
-
-            // When
-            GrammarStatsDTO result = service.getStatistics(USER_ID);
-
-            // Then
-            assertThat(result.getTotalCompleted()).isEqualTo(0);
-            assertThat(result.getAverageScore()).isEqualByComparingTo(BigDecimal.ZERO);
-        }
-
-        @Test
-        @DisplayName("Should get progress for specific exercise set")
-        void shouldGetProgress() {
-            // Given
-            GrammarExerciseSet exerciseSet = createExerciseSet(USER_ID);
-            UserGrammarProgress progress = UserGrammarProgress.builder()
-                    .userId(USER_ID)
-                    .exerciseSet(exerciseSet)
-                    .score(4)
-                    .maxScore(5)
-                    .completedAt(Instant.now())
-                    .build();
-
-            when(progressRepository.findByUserIdAndExerciseSet_Id(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(Optional.of(progress));
-
-            // When
-            GrammarProgressDTO result = service.getProgress(EXERCISE_SET_ID, USER_ID);
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getScore()).isEqualTo(4);
-        }
-
-        @Test
-        @DisplayName("Should check if user has submitted")
-        void shouldCheckIfSubmitted() {
-            // Given
-            when(progressRepository.existsCompletedByUserIdAndExerciseSetId(USER_ID, EXERCISE_SET_ID))
-                    .thenReturn(true);
-
-            // When
-            boolean result = service.hasSubmitted(EXERCISE_SET_ID, USER_ID);
-
-            // Then
-            assertThat(result).isTrue();
-        }
-    }
-
-    // ========== Fallback Content Tests ==========
-
-    @Nested
-    @DisplayName("Fallback Content")
-    class FallbackContentTests {
-
-        @Test
-        @DisplayName("Should get fallback exercises when available")
-        void shouldGetFallbackExercises() {
-            // Given
-            GrammarExerciseSet fallbackSet = createExerciseSet(null);
-            fallbackSet.setIsFallback(true);
-
-            when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
-                    .thenReturn(List.of(fallbackSet));
-
-            // When
-            GrammarExerciseSetDTO result = service.getFallbackExercises("Present Simple", "B1");
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getIsFallback()).isTrue();
-        }
-
-        @Test
-        @DisplayName("Should return null when no fallback available")
-        void shouldReturnNullWhenNoFallback() {
-            // Given
-            when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("C2", "Subjunctive"))
-                    .thenReturn(Collections.emptyList());
-
-            // When
-            GrammarExerciseSetDTO result = service.getFallbackExercises("Subjunctive", "C2");
-
-            // Then
-            assertThat(result).isNull();
-        }
-    }
 }

@@ -56,19 +56,19 @@ public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> 
      */
     @Modifying
     @Query(value = """
-        UPDATE user_ai_quotas 
-        SET daily_used = 0, 
-            last_reset_daily = NOW(),
-            feature_usage = jsonb_set(
-                jsonb_set(
-                    jsonb_set(feature_usage, '{roleplay,daily}', '0'),
-                    '{grammar,daily}', '0'
+            UPDATE user_ai_quotas
+            SET daily_used = 0,
+                last_reset_daily = NOW(),
+                feature_usage = jsonb_set(
+                    jsonb_set(
+                        jsonb_set(feature_usage, '{roleplay,daily}', '0'),
+                        '{grammar,daily}', '0'
+                    ),
+                    '{flashcard,daily}', '0'
                 ),
-                '{flashcard,daily}', '0'
-            ),
-            updated_at = NOW()
-        WHERE last_reset_daily < :resetBefore
-        """, nativeQuery = true)
+                updated_at = NOW()
+            WHERE last_reset_daily < :resetBefore
+            """, nativeQuery = true)
     int resetDailyUsageForAll(@Param("resetBefore") Instant resetBefore);
 
     /**
@@ -76,42 +76,46 @@ public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> 
      */
     @Modifying
     @Query(value = """
-        UPDATE user_ai_quotas 
-        SET monthly_used = 0, 
-            last_reset_monthly = NOW(),
-            feature_usage = jsonb_set(
-                jsonb_set(
-                    jsonb_set(feature_usage, '{roleplay,monthly}', '0'),
-                    '{grammar,monthly}', '0'
+            UPDATE user_ai_quotas
+            SET monthly_used = 0,
+                roleplay_sessions_used = 0,
+                grammar_exercises_used = 0,
+                last_reset_monthly = NOW(),
+                feature_usage = jsonb_set(
+                    jsonb_set(
+                        jsonb_set(feature_usage, '{roleplay,monthly}', '0'),
+                        '{grammar,monthly}', '0'
+                    ),
+                    '{flashcard,monthly}', '0'
                 ),
-                '{flashcard,monthly}', '0'
-            ),
-            updated_at = NOW()
-        WHERE last_reset_monthly < :resetBefore
-        """, nativeQuery = true)
+                updated_at = NOW()
+            WHERE last_reset_monthly < :resetBefore
+            """, nativeQuery = true)
     int resetMonthlyUsageForAll(@Param("resetBefore") Instant resetBefore);
 
     /**
      * Increments usage for a specific user and feature.
      * Uses native query for atomic update of JSONB fields.
+     * Note: Session counters (roleplay_sessions_used, grammar_exercises_used) are
+     * incremented separately by QuotaCheckAspect when a new session starts.
      */
     @Modifying
     @Query(value = """
-        UPDATE user_ai_quotas 
-        SET daily_used = daily_used + 1,
-            monthly_used = monthly_used + 1,
-            feature_usage = jsonb_set(
-                jsonb_set(
-                    feature_usage,
-                    ARRAY[:feature, 'daily'],
-                    to_jsonb((feature_usage -> :feature ->> 'daily')::int + 1)
+            UPDATE user_ai_quotas
+            SET daily_used = daily_used + 1,
+                monthly_used = monthly_used + 1,
+                feature_usage = jsonb_set(
+                    jsonb_set(
+                        feature_usage,
+                        ARRAY[:feature, 'daily'],
+                        to_jsonb((feature_usage -> :feature ->> 'daily')::int + 1)
+                    ),
+                    ARRAY[:feature, 'monthly'],
+                    to_jsonb((feature_usage -> :feature ->> 'monthly')::int + 1)
                 ),
-                ARRAY[:feature, 'monthly'],
-                to_jsonb((feature_usage -> :feature ->> 'monthly')::int + 1)
-            ),
-            updated_at = NOW()
-        WHERE user_id = :userId
-        """, nativeQuery = true)
+                updated_at = NOW()
+            WHERE user_id = :userId
+            """, nativeQuery = true)
     int incrementUsage(@Param("userId") UUID userId, @Param("feature") String feature);
 
     /**
@@ -119,12 +123,14 @@ public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> 
      */
     @Modifying
     @Query("UPDATE UserAiQuota q SET q.suspended = :suspended, q.suspensionReason = :reason, q.updatedAt = :updatedAt WHERE q.userId = :userId")
-    int updateSuspensionStatus(@Param("userId") UUID userId, @Param("suspended") boolean suspended, @Param("reason") String reason, @Param("updatedAt") java.time.Instant updatedAt);
+    int updateSuspensionStatus(@Param("userId") UUID userId, @Param("suspended") boolean suspended,
+            @Param("reason") String reason, @Param("updatedAt") java.time.Instant updatedAt);
 
     /**
      * Updates premium status for a user.
      */
     @Modifying
     @Query("UPDATE UserAiQuota q SET q.isPremium = :isPremium, q.premiumMultiplier = :multiplier, q.updatedAt = :updatedAt WHERE q.userId = :userId")
-    int updatePremiumStatus(@Param("userId") UUID userId, @Param("isPremium") boolean isPremium, @Param("multiplier") java.math.BigDecimal multiplier, @Param("updatedAt") java.time.Instant updatedAt);
+    int updatePremiumStatus(@Param("userId") UUID userId, @Param("isPremium") boolean isPremium,
+            @Param("multiplier") java.math.BigDecimal multiplier, @Param("updatedAt") java.time.Instant updatedAt);
 }

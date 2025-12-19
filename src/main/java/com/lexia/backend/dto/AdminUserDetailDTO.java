@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -194,6 +195,36 @@ public class AdminUserDetailDTO {
     @AllArgsConstructor
     public static class AiQuotaSummaryDTO {
         private Boolean isPremium;
+
+        // ========== Subscription-Based Quota (NEW) ==========
+
+        /** User's subscription plan: FREE, MONTHLY, YEARLY */
+        private String planType;
+
+        /** Date when monthly quota resets */
+        private LocalDate quotaResetDate;
+
+        /** Days until next quota reset */
+        private Integer daysUntilReset;
+
+        /** Role play sessions used/limit for current month */
+        private Integer roleplaySessionsUsed;
+        private Integer roleplaySessionsLimit;
+
+        /** Flashcard decks created used/limit */
+        private Integer flashcardDecksUsed;
+        private Integer flashcardDecksLimit;
+
+        /** Grammar exercises generated used/limit for current month */
+        private Integer grammarExercisesUsed;
+        private Integer grammarExercisesLimit;
+
+        /** Total AI requests used/limit for current month */
+        private Integer totalRequestsUsed;
+        private Integer totalRequestsLimit;
+
+        // ========== Legacy Fields (kept for backwards compatibility) ==========
+
         private Integer dailyLimit;
         private Integer dailyUsed;
         private Integer monthlyLimit;

@@ -11,6 +11,7 @@ import com.lexia.backend.dto.RefreshTokenResponseDTO;
 import com.lexia.backend.dto.RegisterDTO;
 import com.lexia.backend.dto.UserDTO;
 import com.lexia.backend.entity.User;
+import com.lexia.backend.service.UserSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -19,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +44,11 @@ public class AuthController {
   private static final Logger LOG = LoggerFactory.getLogger(AuthController.class);
 
   private final AuthService authService;
+  private final UserSessionService userSessionService;
 
-  public AuthController(AuthService authService) {
+  public AuthController(AuthService authService, UserSessionService userSessionService) {
     this.authService = authService;
+    this.userSessionService = userSessionService;
   }
 
   /**
@@ -185,16 +189,43 @@ public class AuthController {
           """)))
   })
   @PostMapping("/login")
-  public ResponseEntity<LoginResponseDTO> loginUser(@Valid @RequestBody LoginDTO loginDTO) {
+  public ResponseEntity<LoginResponseDTO> loginUser(
+      @Valid @RequestBody LoginDTO loginDTO,
+      HttpServletRequest request) {
     LOG.info("Received login request for email: {}", loginDTO.getEmail());
 
     // Authenticate user and generate tokens
     LoginResponseDTO loginResponse = authService.login(loginDTO);
 
+    // Track login session for monitoring
+    try {
+      String ipAddress = getClientIpAddress(request);
+      String userAgent = request.getHeader("User-Agent");
+      userSessionService.createSession(
+          loginResponse.getUser().getId(),
+          ipAddress,
+          userAgent);
+    } catch (Exception e) {
+      LOG.warn("Failed to create user session: {}", e.getMessage());
+      // Don't fail login if session tracking fails
+    }
+
     LOG.info("User logged in successfully: {}", loginDTO.getEmail());
 
     // Return 200 OK with tokens and user data
     return ResponseEntity.ok(loginResponse);
+  }
+
+  private String getClientIpAddress(HttpServletRequest request) {
+    String xForwardedFor = request.getHeader("X-Forwarded-For");
+    if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+      return xForwardedFor.split(",")[0].trim();
+    }
+    String xRealIp = request.getHeader("X-Real-IP");
+    if (xRealIp != null && !xRealIp.isEmpty()) {
+      return xRealIp;
+    }
+    return request.getRemoteAddr();
   }
 
   /**

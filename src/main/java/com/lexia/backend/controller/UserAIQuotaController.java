@@ -4,6 +4,7 @@ import com.lexia.backend.config.QuotaLimitsConfig;
 import com.lexia.backend.dto.ai.UserAiQuotaDTO;
 import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.entity.User;
+import com.lexia.backend.repository.FlashcardDeckRepository;
 import com.lexia.backend.service.SubscriptionQuotaService;
 import com.lexia.backend.service.ai.AIQuotaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,7 @@ public class UserAIQuotaController {
     private final AIQuotaService quotaService;
     private final QuotaLimitsConfig quotaLimitsConfig;
     private final SubscriptionQuotaService subscriptionQuotaService;
+    private final FlashcardDeckRepository flashcardDeckRepository;
 
     private static final double WARNING_THRESHOLD = 0.80;
     private static final double CRITICAL_THRESHOLD = 0.95;
@@ -37,13 +39,17 @@ public class UserAIQuotaController {
         // Check and reset quota if needed
         subscriptionQuotaService.checkAndResetQuotaIfNeeded(user.getId());
 
-        UserAiQuota quota = quotaService.getQuotaByUserId(user.getId());
+        // Get or create quota (auto-creates for new Free users)
+        UserAiQuota quota = quotaService.getOrCreateQuota(user.getId());
         QuotaLimitsConfig.QuotaLimits limits = quotaLimitsConfig.getForPlan(quota.getPlanType());
 
-        return ResponseEntity.ok(mapToDTO(quota, limits));
+        // Get actual deck count for flashcards (hard limit, not monthly counter)
+        long actualDeckCount = flashcardDeckRepository.countByUserId(user.getId());
+
+        return ResponseEntity.ok(mapToDTO(quota, limits, (int) actualDeckCount));
     }
 
-    private UserAiQuotaDTO mapToDTO(UserAiQuota entity, QuotaLimitsConfig.QuotaLimits limits) {
+    private UserAiQuotaDTO mapToDTO(UserAiQuota entity, QuotaLimitsConfig.QuotaLimits limits, int actualDeckCount) {
         UserAiQuotaDTO dto = new UserAiQuotaDTO();
         dto.setUserId(entity.getUserId());
 
@@ -76,7 +82,8 @@ public class UserAIQuotaController {
         dto.setRoleplaySessionsUsed(entity.getRoleplaySessionsUsed());
         dto.setRoleplaySessionsLimit(limits.getRoleplaySessions());
 
-        dto.setFlashcardDecksUsed(entity.getFlashcardDecksUsed());
+        // Flashcard uses actual deck count (hard limit), not monthly counter
+        dto.setFlashcardDecksUsed(actualDeckCount);
         dto.setFlashcardDecksLimit(limits.getFlashcardDecks());
 
         dto.setGrammarExercisesUsed(entity.getGrammarExercisesUsed());
@@ -85,16 +92,16 @@ public class UserAIQuotaController {
         dto.setTotalRequestsUsed(entity.getMonthlyUsed());
         dto.setTotalRequestsLimit(limits.getTotalRequests());
 
-        // Warning flags
+        // Warning flags (flashcard uses actual count)
         boolean hasWarning = isAboveThreshold(entity.getRoleplaySessionsUsed(), limits.getRoleplaySessions(),
                 WARNING_THRESHOLD)
-                || isAboveThreshold(entity.getFlashcardDecksUsed(), limits.getFlashcardDecks(), WARNING_THRESHOLD)
+                || isAboveThreshold(actualDeckCount, limits.getFlashcardDecks(), WARNING_THRESHOLD)
                 || isAboveThreshold(entity.getGrammarExercisesUsed(), limits.getGrammarExercises(), WARNING_THRESHOLD)
                 || isAboveThreshold(entity.getMonthlyUsed(), limits.getTotalRequests(), WARNING_THRESHOLD);
 
         boolean hasCritical = isAboveThreshold(entity.getRoleplaySessionsUsed(), limits.getRoleplaySessions(),
                 CRITICAL_THRESHOLD)
-                || isAboveThreshold(entity.getFlashcardDecksUsed(), limits.getFlashcardDecks(), CRITICAL_THRESHOLD)
+                || isAboveThreshold(actualDeckCount, limits.getFlashcardDecks(), CRITICAL_THRESHOLD)
                 || isAboveThreshold(entity.getGrammarExercisesUsed(), limits.getGrammarExercises(), CRITICAL_THRESHOLD)
                 || isAboveThreshold(entity.getMonthlyUsed(), limits.getTotalRequests(), CRITICAL_THRESHOLD);
 
