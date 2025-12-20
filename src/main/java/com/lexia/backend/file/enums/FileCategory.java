@@ -47,6 +47,14 @@ public enum FileCategory {
     DOCUMENT("documents", false),
 
     /**
+     * Custom material uploads (PDF, DOCX, Images)
+     * Allowed: PDF, DOCX, JPG, PNG, WebP
+     * Max size: 10MB
+     * Access: Private (only owner can access)
+     */
+    CUSTOM_MATERIAL("custom-materials", false),
+
+    /**
      * Certificate PDFs
      * Allowed: PDF
      * Max size: 10MB

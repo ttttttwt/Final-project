@@ -715,3 +715,66 @@ Authorization: Bearer {token}
 |---------|------|--------|---------|
 | 1.0 | 2025-01-15 | - | Initial draft |
 | 2.0 | 2025-01-15 | - | Added brainstorming decisions: Chat interface, User toggles, No gamification, Premium only |
+| 2.1 | 2025-12-19 | AI | PR1 Complete: Database + API Foundation |
+
+---
+
+## 11. Implementation Progress
+
+### ✅ PR1: Database + API Foundation (Complete - 2025-12-19)
+
+**Created Files (26 total):**
+
+| Category | Files | Status |
+|----------|-------|--------|
+| Migration | V38__Create_custom_materials_tables.sql | ✅ |
+| Enums | CustomMaterialSourceType, CustomMaterialStatus, AiCorrectionMode | ✅ |
+| Entities | UserCustomMaterial, UserCustomMaterialSettings, CustomMaterialChatSession, UserShadowingAttempt, CustomMaterialJob | ✅ |
+| Repositories | All 5 repositories with custom queries | ✅ |
+| DTOs | 9 DTOs for request/response | ✅ |
+| Service | CustomMaterialService interface + impl | ✅ |
+| Controller | CustomMaterialController (7 endpoints) | ✅ |
+| Exception | AccessDeniedException | ✅ |
+| Modified | FileCategory.CUSTOM_MATERIAL | ✅ |
+
+**API Endpoints:**
+- `POST /api/v1/custom-materials` - Upload material
+- `GET /api/v1/custom-materials` - List materials
+- `GET /api/v1/custom-materials/{id}` - Get details
+- `GET /api/v1/custom-materials/{id}/status` - Poll status
+- `PATCH /api/v1/custom-materials/{id}/content` - Update content
+- `DELETE /api/v1/custom-materials/{id}` - Delete
+- `GET /api/v1/custom-materials/quota` - Check quota
+
+---
+
+### ✅ PR2: AI Content Generation (Complete - 2025-12-19)
+
+**Created Files (6 total):**
+
+| Category | Files | Status |
+|----------|-------|--------|
+| Service Interface | ContentExtractorService | ✅ |
+| Implementation | ContentExtractorServiceImpl (PDF, Image, YouTube, Website, Text) | ✅ |
+| Prompts | CustomMaterialPrompts (Vocabulary, Quiz, Summary, RolePlay, Shadowing, StyleTransform) | ✅ |
+| Processing | CustomMaterialProcessingService interface + impl | ✅ |
+| Exception | ContentExtractionException | ✅ |
+
+**Features:**
+- Content extraction from all 6 source types
+- Gemini multimodal integration for PDF/Image OCR
+- XML-tagged prompts for security (prompt injection prevention)
+- Async processing pipeline with progress tracking
+- Error handling and retry support
+
+---
+
+### 📋 PR3: Testing & Polish (Pending)
+
+**Goals:**
+- [ ] Unit tests for ContentExtractorService (≥70% coverage)
+- [ ] Unit tests for CustomMaterialProcessingService (≥70% coverage)
+- [ ] Integration tests for API endpoints
+- [ ] Add Jsoup for better HTML extraction
+- [ ] Add Apache POI for DOCX support
+

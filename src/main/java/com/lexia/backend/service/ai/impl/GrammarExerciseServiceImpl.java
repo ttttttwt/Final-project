@@ -17,6 +17,7 @@ import com.lexia.backend.repository.GrammarTopicRepository;
 import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.repository.UserGrammarProgressRepository;
 import com.lexia.backend.service.ai.*;
+import com.lexia.backend.service.ai.AIConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -65,6 +66,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
     private final UserGrammarProgressRepository progressRepository;
     private final UserAiQuotaRepository userAiQuotaRepository;
     private final ObjectMapper objectMapper;
+    private final AIConfigService aiConfigService;
 
     public GrammarExerciseServiceImpl(
             GeminiClientService geminiClientService,
@@ -74,7 +76,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
             GrammarTopicRepository topicRepository,
             UserGrammarProgressRepository progressRepository,
             UserAiQuotaRepository userAiQuotaRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            AIConfigService aiConfigService) {
         this.geminiClientService = geminiClientService;
         this.promptTemplateService = promptTemplateService;
         this.aiUsageTracker = aiUsageTracker;
@@ -83,6 +86,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         this.progressRepository = progressRepository;
         this.userAiQuotaRepository = userAiQuotaRepository;
         this.objectMapper = objectMapper;
+        this.aiConfigService = aiConfigService;
 
         log.info("GrammarExerciseService initialized");
     }
@@ -90,6 +94,12 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
     @Override
     @Transactional
     public GrammarExerciseSetDTO generateExercises(GrammarRequestDTO request, UUID userId) {
+        // Check if feature is enabled
+        var featureConfig = aiConfigService.getFeatureConfig("grammar");
+        if (!featureConfig.isEnabled()) {
+            throw new AiServiceException("Grammar feature is currently disabled by administrator");
+        }
+
         log.info("Generating grammar exercises for user: {}, topic: {}, level: {}",
                 userId, request.getGrammarTopic(), request.getCefrLevel());
 

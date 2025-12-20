@@ -12,4 +12,5 @@ public interface AICostService {
     byte[] exportReport(String period);
     java.util.List<Map<String, Object>> getCostsByUser(String period, int limit);
     Map<String, Object> updateBudget(double budget);
+    boolean isBudgetExceeded();
 }

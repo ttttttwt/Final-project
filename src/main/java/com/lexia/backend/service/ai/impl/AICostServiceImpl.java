@@ -133,4 +133,21 @@ public class AICostServiceImpl implements AICostService {
                 obj -> (BigDecimal) obj[1]
         ));
     }
+
+    @Override
+    public boolean isBudgetExceeded() {
+        try {
+            double budgetLimit = Double.parseDouble(configService.getConfig("global.monthlyBudgetLimit").getConfigValue());
+            if (budgetLimit <= 0) return false;
+
+            Instant startOfMonth = java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+            BigDecimal currentMonthCost = usageLogRepository.sumCostSince(startOfMonth);
+            if (currentMonthCost == null) currentMonthCost = BigDecimal.ZERO;
+
+            return currentMonthCost.doubleValue() >= budgetLimit;
+        } catch (Exception e) {
+            // Log error and default to false to avoid blocking on config error
+            return false;
+        }
+    }
 }

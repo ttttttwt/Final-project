@@ -3,6 +3,7 @@ package com.lexia.backend.service.ai;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentConfig;
 import com.lexia.backend.config.GeminiConfig;
+import com.lexia.backend.dto.ai.AIGlobalSettings;
 import com.lexia.backend.dto.ai.GeminiResponseDTO;
 import com.lexia.backend.dto.ai.TokenUsageDTO;
 import com.lexia.backend.exception.ai.AiConfigurationException;
@@ -64,6 +65,12 @@ class GeminiClientServiceTest {
     @Mock(lenient = true)
     private CircuitBreaker circuitBreaker;
 
+    @Mock(lenient = true)
+    private AIConfigService aiConfigService;
+
+    @Mock(lenient = true)
+    private AICostService aiCostService;
+
     private GeminiClientServiceImpl service;
 
     @BeforeEach
@@ -78,13 +85,21 @@ class GeminiClientServiceTest {
         when(circuitBreakerRegistry.circuitBreaker(anyString())).thenReturn(circuitBreaker);
         when(circuitBreaker.getState()).thenReturn(CircuitBreaker.State.CLOSED);
 
+        // Mock global settings
+        AIGlobalSettings settings = new AIGlobalSettings();
+        settings.setGlobalEnabled(true);
+        when(aiConfigService.getSettings()).thenReturn(settings);
+        when(aiCostService.isBudgetExceeded()).thenReturn(false);
+
         service = new GeminiClientServiceImpl(
                 geminiClient,
                 geminiConfig,
                 defaultContentConfig,
                 structuredContentConfig,
                 creativeContentConfig,
-                circuitBreakerRegistry
+                circuitBreakerRegistry,
+                aiConfigService,
+                aiCostService
         );
     }
 
@@ -109,7 +124,9 @@ class GeminiClientServiceTest {
                     defaultContentConfig,
                     structuredContentConfig,
                     creativeContentConfig,
-                    circuitBreakerRegistry
+                    circuitBreakerRegistry,
+                    aiConfigService,
+                    aiCostService
             );
 
             assertThat(unconfiguredService.isConfigured()).isFalse();
@@ -124,7 +141,9 @@ class GeminiClientServiceTest {
                     defaultContentConfig,
                     structuredContentConfig,
                     creativeContentConfig,
-                    circuitBreakerRegistry
+                    circuitBreakerRegistry,
+                    aiConfigService,
+                    aiCostService
             );
 
             assertThat(nullClientService.isConfigured()).isFalse();
@@ -194,7 +213,9 @@ class GeminiClientServiceTest {
                     defaultContentConfig,
                     structuredContentConfig,
                     creativeContentConfig,
-                    circuitBreakerRegistry
+                    circuitBreakerRegistry,
+                    aiConfigService,
+                    aiCostService
             );
 
             assertThat(unconfiguredService.isHealthy()).isFalse();
@@ -287,7 +308,9 @@ class GeminiClientServiceTest {
                     defaultContentConfig,
                     structuredContentConfig,
                     creativeContentConfig,
-                    circuitBreakerRegistry
+                    circuitBreakerRegistry,
+                    aiConfigService,
+                    aiCostService
             );
 
             assertThatThrownBy(() -> unconfiguredService.generateContent("test"))
@@ -328,7 +351,9 @@ class GeminiClientServiceTest {
                     defaultContentConfig,
                     structuredContentConfig,
                     creativeContentConfig,
-                    circuitBreakerRegistry
+                    circuitBreakerRegistry,
+                    aiConfigService,
+                    aiCostService
             );
 
             assertThatThrownBy(() -> nullClientService.generateContent("test"))
@@ -359,7 +384,9 @@ class GeminiClientServiceTest {
                     defaultContentConfig,
                     structuredContentConfig,
                     creativeContentConfig,
-                    circuitBreakerRegistry
+                    circuitBreakerRegistry,
+                    aiConfigService,
+                    aiCostService
             );
 
             CompletableFuture<GeminiResponseDTO> future = unconfiguredService.generateContentAsync("Test");
@@ -417,7 +444,9 @@ class GeminiClientServiceTest {
                     defaultContentConfig,
                     structuredContentConfig,
                     creativeContentConfig,
-                    circuitBreakerRegistry
+                    circuitBreakerRegistry,
+                    aiConfigService,
+                    aiCostService
             );
 
             assertThatThrownBy(() -> unconfiguredService.streamContent("Test"))

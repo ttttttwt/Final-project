@@ -1,6 +1,7 @@
 package com.lexia.backend.service.ai;
 
 import com.lexia.backend.dto.ai.AiUsageTrackingRequest;
+import com.lexia.backend.dto.ai.AIGlobalSettings;
 import com.lexia.backend.entity.AIUsageLog;
 import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.repository.AIUsageLogRepository;
@@ -43,6 +44,9 @@ class AiUsageTrackerImplTest {
     @Mock
     private UserAiQuotaRepository userAiQuotaRepository;
 
+    @Mock
+    private AIConfigService aiConfigService;
+
     @InjectMocks
     private AiUsageTrackerImpl aiUsageTracker;
 
@@ -53,6 +57,12 @@ class AiUsageTrackerImplTest {
     @BeforeEach
     void setUp() {
         testUserId = UUID.randomUUID();
+        
+        // Mock config settings
+        AIGlobalSettings settings = new AIGlobalSettings();
+        settings.setCostPerInputToken(0.000001); // $1 per million
+        settings.setCostPerOutputToken(0.000002); // $2 per million
+        lenient().when(aiConfigService.getSettings()).thenReturn(settings);
         
         successRequest = AiUsageTrackingRequest.builder()
                 .userId(testUserId)
@@ -158,47 +168,34 @@ class AiUsageTrackerImplTest {
     class CalculateCostTests {
 
         @Test
-        @DisplayName("Should calculate cost for Gemini 2.0 Flash")
-        void calculateCost_Gemini2Flash_CorrectCalculation() {
-            // Gemini 2.0 Flash: $0.075/M input, $0.30/M output
-            // 1000 input tokens = 0.000075, 500 output tokens = 0.00015
+        @DisplayName("Should calculate cost using global settings")
+        void calculateCost_UsesGlobalSettings() {
+            // Input: 1000, Output: 500
+            // Cost: (1000 * 0.000001) + (500 * 0.000002) = 0.001 + 0.001 = 0.002
             BigDecimal cost = aiUsageTracker.calculateCost(
                     "gemini-2.0-flash-exp", 1000, 500);
             
-            // Expected: (1000 * 0.075 / 1000000) + (500 * 0.30 / 1000000) = 0.000225
-            assertThat(cost).isEqualByComparingTo(new BigDecimal("0.000225"));
+            assertThat(cost).isEqualByComparingTo(new BigDecimal("0.002000"));
         }
 
         @Test
-        @DisplayName("Should calculate cost for Gemini 1.5 Pro")
-        void calculateCost_Gemini15Pro_CorrectCalculation() {
-            // Gemini 1.5 Pro: $1.25/M input, $5.00/M output
+        @DisplayName("Should ignore model ID and use global settings")
+        void calculateCost_IgnoresModelId() {
+            // Same tokens, different model -> same cost
             BigDecimal cost = aiUsageTracker.calculateCost(
-                    "gemini-1.5-pro", 10000, 5000);
+                    "gemini-1.5-pro", 1000, 500);
             
-            // Expected: (10000 * 1.25 / 1000000) + (5000 * 5.00 / 1000000) = 0.0375
-            assertThat(cost).isEqualByComparingTo(new BigDecimal("0.037500"));
-        }
-
-        @Test
-        @DisplayName("Should use default pricing for unknown model")
-        void calculateCost_UnknownModel_UsesDefaultPricing() {
-            // Default: $0.10/M input, $0.30/M output
-            BigDecimal cost = aiUsageTracker.calculateCost(
-                    "unknown-model", 1000000, 1000000);
-            
-            // Expected: (1M * 0.10 / 1M) + (1M * 0.30 / 1M) = 0.40
-            assertThat(cost).isEqualByComparingTo(new BigDecimal("0.400000"));
+            assertThat(cost).isEqualByComparingTo(new BigDecimal("0.002000"));
         }
 
         @Test
         @DisplayName("Should handle null model ID")
-        void calculateCost_NullModel_UsesDefaultPricing() {
-            BigDecimal cost = aiUsageTracker.calculateCost(null, 1000, 1000);
+        void calculateCost_NullModel_UsesGlobalSettings() {
+            BigDecimal cost = aiUsageTracker.calculateCost(null, 1000, 500);
             
-            assertThat(cost).isNotNull();
-            assertThat(cost.compareTo(BigDecimal.ZERO)).isGreaterThan(0);
+            assertThat(cost).isEqualByComparingTo(new BigDecimal("0.002000"));
         }
+
 
         @Test
         @DisplayName("Should return zero for zero tokens")

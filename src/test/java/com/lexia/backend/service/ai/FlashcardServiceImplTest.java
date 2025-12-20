@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lexia.backend.dto.ai.*;
 import com.lexia.backend.entity.*;
 import com.lexia.backend.exception.ResourceNotFoundException;
+import com.lexia.backend.exception.ai.AiServiceException;
 import com.lexia.backend.repository.FlashcardDeckRepository;
 import com.lexia.backend.repository.LessonRepository;
 import com.lexia.backend.repository.UserFlashcardProgressRepository;
 import com.lexia.backend.service.ai.impl.FlashcardServiceImpl;
+import com.lexia.backend.service.ai.AIConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -60,6 +62,9 @@ class FlashcardServiceImplTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private AIConfigService aiConfigService;
+
     @InjectMocks
     private FlashcardServiceImpl flashcardService;
 
@@ -93,6 +98,11 @@ class FlashcardServiceImplTest {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
+
+        // Mock default config behavior
+        AIFeatureConfig featureConfig = new AIFeatureConfig();
+        featureConfig.setEnabled(true);
+        lenient().when(aiConfigService.getFeatureConfig("flashcards")).thenReturn(featureConfig);
     }
 
     private List<FlashcardCard> createTestCards() {
@@ -656,6 +666,25 @@ class FlashcardServiceImplTest {
     @Nested
     @DisplayName("AI Generation Tests")
     class AIGenerationTests {
+
+        @Test
+        @DisplayName("Should throw exception when feature is disabled")
+        void generateFromLesson_FeatureDisabled_ThrowsException() {
+            Long lessonId = 100L;
+            GenerateFlashcardsDTO request = GenerateFlashcardsDTO.builder()
+                    .lessonId(lessonId)
+                    .build();
+
+            AIFeatureConfig disabledConfig = new AIFeatureConfig();
+            disabledConfig.setEnabled(false);
+            when(aiConfigService.getFeatureConfig("flashcards")).thenReturn(disabledConfig);
+
+            assertThatThrownBy(() -> flashcardService.generateFromLesson(request, userId))
+                    .isInstanceOf(AiServiceException.class)
+                    .hasMessageContaining("disabled");
+
+            verify(geminiClientService, never()).generateContent(anyString());
+        }
 
         @Test
         @DisplayName("Should throw exception when lesson deck already exists")

@@ -47,6 +47,7 @@ public class AiUsageTrackerImpl implements AiUsageTracker {
 
     private final AIUsageLogRepository aiUsageLogRepository;
     private final UserAiQuotaRepository userAiQuotaRepository;
+    private final AIConfigService aiConfigService;
 
     // ========== Pricing Constants (per million tokens) ==========
     
@@ -218,35 +219,14 @@ public class AiUsageTrackerImpl implements AiUsageTracker {
 
     @Override
     public BigDecimal calculateCost(String modelId, int inputTokens, int outputTokens) {
-        BigDecimal inputCost;
-        BigDecimal outputCost;
+        var settings = aiConfigService.getSettings();
         
-        // Determine pricing based on model
-        if (modelId == null) {
-            inputCost = DEFAULT_INPUT_COST;
-            outputCost = DEFAULT_OUTPUT_COST;
-        } else if (modelId.contains("gemini-2") && modelId.contains("flash")) {
-            inputCost = GEMINI_2_FLASH_INPUT_COST;
-            outputCost = GEMINI_2_FLASH_OUTPUT_COST;
-        } else if (modelId.contains("gemini-1.5") && modelId.contains("flash")) {
-            inputCost = GEMINI_15_FLASH_INPUT_COST;
-            outputCost = GEMINI_15_FLASH_OUTPUT_COST;
-        } else if (modelId.contains("gemini-1.5") && modelId.contains("pro")) {
-            inputCost = GEMINI_15_PRO_INPUT_COST;
-            outputCost = GEMINI_15_PRO_OUTPUT_COST;
-        } else {
-            inputCost = DEFAULT_INPUT_COST;
-            outputCost = DEFAULT_OUTPUT_COST;
-        }
+        // Use configured global cost per token
+        BigDecimal inputCostPerToken = BigDecimal.valueOf(settings.getCostPerInputToken());
+        BigDecimal outputCostPerToken = BigDecimal.valueOf(settings.getCostPerOutputToken());
         
-        // Calculate: (tokens / 1,000,000) * costPerMillion
-        BigDecimal inputTotal = inputCost
-                .multiply(BigDecimal.valueOf(inputTokens))
-                .divide(ONE_MILLION, 10, RoundingMode.HALF_UP);
-        
-        BigDecimal outputTotal = outputCost
-                .multiply(BigDecimal.valueOf(outputTokens))
-                .divide(ONE_MILLION, 10, RoundingMode.HALF_UP);
+        BigDecimal inputTotal = inputCostPerToken.multiply(BigDecimal.valueOf(inputTokens));
+        BigDecimal outputTotal = outputCostPerToken.multiply(BigDecimal.valueOf(outputTokens));
         
         return inputTotal.add(outputTotal).setScale(6, RoundingMode.HALF_UP);
     }

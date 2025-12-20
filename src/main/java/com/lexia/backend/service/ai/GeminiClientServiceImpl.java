@@ -18,6 +18,8 @@ import com.lexia.backend.exception.ai.AiConfigurationException;
 import com.lexia.backend.exception.ai.AiRateLimitException;
 import com.lexia.backend.exception.ai.AiServiceException;
 import com.lexia.backend.exception.ai.AiTimeoutException;
+import com.lexia.backend.service.ai.AIConfigService;
+import com.lexia.backend.service.ai.AICostService;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -84,6 +86,8 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final ExecutorService streamExecutor;
     private final ObjectMapper objectMapper;
+    private final AIConfigService aiConfigService;
+    private final AICostService aiCostService;
 
     public GeminiClientServiceImpl(
             @Nullable Client geminiClient,
@@ -91,13 +95,17 @@ public class GeminiClientServiceImpl implements GeminiClientService {
             GenerateContentConfig defaultContentConfig,
             GenerateContentConfig structuredContentConfig,
             GenerateContentConfig creativeContentConfig,
-            CircuitBreakerRegistry circuitBreakerRegistry) {
+            CircuitBreakerRegistry circuitBreakerRegistry,
+            AIConfigService aiConfigService,
+            AICostService aiCostService) {
         this.geminiClient = geminiClient;
         this.geminiConfig = geminiConfig;
         this.defaultContentConfig = defaultContentConfig;
         this.structuredContentConfig = structuredContentConfig;
         this.creativeContentConfig = creativeContentConfig;
         this.circuitBreakerRegistry = circuitBreakerRegistry;
+        this.aiConfigService = aiConfigService;
+        this.aiCostService = aiCostService;
         this.streamExecutor = Executors.newCachedThreadPool();
         this.objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
@@ -148,6 +156,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
     @RateLimiter(name = CIRCUIT_BREAKER_NAME)
     public GeminiResponseDTO generateContent(String prompt, String model, float temperature, int maxTokens) {
+        validateGlobalConstraints();
         validateConfiguration();
         validatePrompt(prompt);
 
@@ -195,6 +204,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
     @RateLimiter(name = CIRCUIT_BREAKER_NAME)
     public GeminiResponseDTO generateStructuredContent(String prompt, String model, float temperature, int maxTokens) {
+        validateGlobalConstraints();
         validateConfiguration();
         validatePrompt(prompt);
 
@@ -632,6 +642,21 @@ public class GeminiClientServiceImpl implements GeminiClientService {
             }
         }
         return "UNKNOWN";
+    }
+
+    /**
+     * Validates global AI constraints (enabled status, budget).
+     */
+    private void validateGlobalConstraints() {
+        var settings = aiConfigService.getSettings();
+        
+        if (!settings.isGlobalEnabled()) {
+            throw new AiServiceException("AI services are currently disabled by administrator");
+        }
+        
+        if (aiCostService.isBudgetExceeded()) {
+            throw new AiServiceException("Monthly AI budget limit exceeded");
+        }
     }
 
     /**

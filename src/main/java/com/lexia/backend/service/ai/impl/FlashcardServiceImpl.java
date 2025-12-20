@@ -16,6 +16,7 @@ import com.lexia.backend.repository.UserFlashcardProgressRepository;
 import com.lexia.backend.service.ai.AiUsageTracker;
 import com.lexia.backend.service.ai.FlashcardService;
 import com.lexia.backend.service.ai.GeminiClientService;
+import com.lexia.backend.service.ai.AIConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -56,6 +57,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     private final GeminiClientService geminiClientService;
     private final AiUsageTracker aiUsageTracker;
     private final ObjectMapper objectMapper;
+    private final AIConfigService aiConfigService;
 
     /** Default number of cards to include in a study session */
     private static final int DEFAULT_STUDY_SESSION_SIZE = 20;
@@ -142,6 +144,12 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     @Override
     public FlashcardDeckDTO generateFromLesson(GenerateFlashcardsDTO request, UUID userId) {
+        // Check if feature is enabled
+        var featureConfig = aiConfigService.getFeatureConfig("flashcards");
+        if (!featureConfig.isEnabled()) {
+            throw new AiServiceException("Flashcards feature is currently disabled by administrator");
+        }
+
         log.info("Generating flashcards from lesson {} for user {}", request.getLessonId(), userId);
 
         // Check if deck already exists for this lesson
@@ -199,6 +207,12 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     @Override
     public FlashcardDeckDTO generateFromTopic(GenerateFlashcardsByTopicDTO request, UUID userId) {
+        // Check if feature is enabled
+        var featureConfig = aiConfigService.getFeatureConfig("flashcards");
+        if (!featureConfig.isEnabled()) {
+            throw new AiServiceException("Flashcards feature is currently disabled by administrator");
+        }
+
         log.info("Generating flashcards from topic '{}' for user {}", request.getTopic(), userId);
 
         String cefrLevel = request.getCefrLevelOrDefault();

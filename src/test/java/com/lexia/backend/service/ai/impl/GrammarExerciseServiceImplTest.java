@@ -12,6 +12,7 @@ import com.lexia.backend.repository.GrammarExerciseSetRepository;
 import com.lexia.backend.repository.GrammarTopicRepository;
 import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.repository.UserGrammarProgressRepository;
+import com.lexia.backend.service.ai.AIConfigService;
 import com.lexia.backend.service.ai.AiUsageTracker;
 import com.lexia.backend.service.ai.GeminiClientService;
 import com.lexia.backend.service.ai.PromptTemplateService;
@@ -59,6 +60,9 @@ class GrammarExerciseServiceImplTest {
         private AiUsageTracker aiUsageTracker;
 
         @Mock
+        private AIConfigService aiConfigService;
+
+        @Mock
         private GrammarExerciseSetRepository exerciseSetRepository;
 
         @Mock
@@ -89,6 +93,12 @@ class GrammarExerciseServiceImplTest {
         @BeforeEach
         void setUp() {
                 objectMapper = new ObjectMapper();
+
+                // Mock default config behavior
+                AIFeatureConfig featureConfig = new AIFeatureConfig();
+                featureConfig.setEnabled(true);
+                lenient().when(aiConfigService.getFeatureConfig("grammar")).thenReturn(featureConfig);
+
                 service = new GrammarExerciseServiceImpl(
                                 geminiClientService,
                                 promptTemplateService,
@@ -97,7 +107,8 @@ class GrammarExerciseServiceImplTest {
                                 topicRepository,
                                 progressRepository,
                                 userAiQuotaRepository,
-                                objectMapper);
+                                objectMapper,
+                                aiConfigService);
         }
 
         // ========== Test Data Builders ==========
@@ -215,6 +226,24 @@ class GrammarExerciseServiceImplTest {
         class GenerateExercisesTests {
 
                 @Test
+                @DisplayName("Should throw exception when feature is disabled")
+                void shouldThrowWhenFeatureIsDisabled() {
+                        // Given
+                        GrammarRequestDTO request = createRequest("Present Simple", "B1");
+
+                        AIFeatureConfig disabledConfig = new AIFeatureConfig();
+                        disabledConfig.setEnabled(false);
+                        when(aiConfigService.getFeatureConfig("grammar")).thenReturn(disabledConfig);
+
+                        // When & Then
+                        assertThatThrownBy(() -> service.generateExercises(request, USER_ID))
+                                        .isInstanceOf(AiServiceException.class)
+                                        .hasMessageContaining("disabled");
+
+                        verify(geminiClientService, never()).generateStructuredContent(anyString());
+                }
+
+                @Test
                 @DisplayName("Should generate exercises successfully with AI")
                 void shouldGenerateExercisesWithAI() {
                         // Given
@@ -228,7 +257,7 @@ class GrammarExerciseServiceImplTest {
                                         .thenReturn(5L);
                         when(promptTemplateService.getAndResolve(anyString(), anyMap()))
                                         .thenReturn(Optional.of("Generated prompt"));
-                        when(geminiClientService.generateContent(anyString()))
+                        when(geminiClientService.generateStructuredContent(anyString()))
                                         .thenReturn(createSuccessfulResponse());
                         when(exerciseSetRepository.save(any(GrammarExerciseSet.class)))
                                         .thenReturn(savedSet);
@@ -276,7 +305,7 @@ class GrammarExerciseServiceImplTest {
 
                         // Then
                         assertThat(result).isNotNull();
-                        verify(geminiClientService, never()).generateContent(anyString());
+                        verify(geminiClientService, never()).generateStructuredContent(anyString());
                 }
 
                 @Test
@@ -311,7 +340,7 @@ class GrammarExerciseServiceImplTest {
                                         .thenReturn(5L);
                         when(promptTemplateService.getAndResolve(anyString(), anyMap()))
                                         .thenReturn(Optional.of("Prompt"));
-                        when(geminiClientService.generateContent(anyString()))
+                        when(geminiClientService.generateStructuredContent(anyString()))
                                         .thenThrow(new AiServiceException("API unavailable"));
                         when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
                                         .thenReturn(List.of(fallbackSet));
@@ -338,7 +367,7 @@ class GrammarExerciseServiceImplTest {
                                         .thenReturn(5L);
                         when(promptTemplateService.getAndResolve(anyString(), anyMap()))
                                         .thenReturn(Optional.of("Prompt"));
-                        when(geminiClientService.generateContent(anyString()))
+                        when(geminiClientService.generateStructuredContent(anyString()))
                                         .thenThrow(new AiServiceException("API unavailable"));
                         when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
                                         .thenReturn(Collections.emptyList());

@@ -13,6 +13,7 @@ import com.lexia.backend.mapper.RolePlayScenarioMapper;
 import com.lexia.backend.repository.RolePlayConversationRepository;
 import com.lexia.backend.repository.RolePlayScenarioRepository;
 import com.lexia.backend.repository.UserAiQuotaRepository;
+import com.lexia.backend.service.ai.AIConfigService;
 import com.lexia.backend.service.ai.AiUsageTracker;
 import com.lexia.backend.service.ai.ContextWindowManager;
 import com.lexia.backend.service.ai.FallbackContentService;
@@ -74,6 +75,7 @@ public class RolePlayServiceImpl implements RolePlayService {
     private final ContextWindowManager contextWindowManager;
     private final ObjectMapper objectMapper;
     private final UserAiQuotaRepository userAiQuotaRepository;
+    private final AIConfigService aiConfigService;
 
     private static final int CONTEXT_WINDOW_SIZE = 10;
     private static final long SSE_TIMEOUT_MS = 30_000L;
@@ -152,6 +154,12 @@ public class RolePlayServiceImpl implements RolePlayService {
     @Override
     @Transactional
     public RolePlayScenarioDTO generateScenario(RolePlayRequestDTO request) {
+        // Check if feature is enabled
+        var featureConfig = aiConfigService.getFeatureConfig("roleplay");
+        if (!featureConfig.isEnabled()) {
+            throw new AiServiceException("Role-play feature is currently disabled by administrator");
+        }
+
         String prompt = String.format(SCENARIO_GENERATION_PROMPT,
                 request.getCefrLevel(),
                 request.getDomain(),
@@ -223,6 +231,12 @@ public class RolePlayServiceImpl implements RolePlayService {
     @Override
     @Transactional
     public RolePlayConversationDTO startConversation(UUID scenarioId, UUID userId, String mode) {
+        // Check if feature is enabled
+        var featureConfig = aiConfigService.getFeatureConfig("roleplay");
+        if (!featureConfig.isEnabled()) {
+            throw new AiServiceException("Role-play feature is currently disabled by administrator");
+        }
+
         RolePlayScenario scenario = scenarioRepository.findById(scenarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("RolePlayScenario", scenarioId));
 
