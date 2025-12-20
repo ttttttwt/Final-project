@@ -1,6 +1,7 @@
 package com.lexia.backend.config;
 
 import com.lexia.backend.auth.JwtAuthFilter;
+import com.lexia.backend.filter.UserActivityFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,9 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
+
+    @Autowired
+    private UserActivityFilter userActivityFilter;
 
     /**
      * Configure HTTP security for the application.
@@ -103,6 +107,9 @@ public class SecurityConfig {
 
                 // Add JWT filter before the username/password authentication filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                
+                // Add User Activity filter after JWT filter to track active users
+                .addFilterAfter(userActivityFilter, JwtAuthFilter.class)
 
                 // Allow frames for H2 console (development only)
                 .headers(headers -> headers

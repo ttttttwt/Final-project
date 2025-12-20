@@ -14,4 +14,6 @@ public interface AIConfigService {
     com.lexia.backend.dto.ai.AIGlobalSettings updateSettings(com.lexia.backend.dto.ai.AIGlobalSettings settings);
     com.lexia.backend.dto.ai.AIFeatureConfig updateFeatureConfig(String featureName, com.lexia.backend.dto.ai.AIFeatureConfig config);
     com.lexia.backend.dto.ai.AIFeatureConfig toggleFeature(String featureName, boolean isEnabled);
+    com.lexia.backend.dto.ai.PlanLimitsDTO getPlanLimits();
+    com.lexia.backend.dto.ai.PlanLimitsDTO updatePlanLimits(com.lexia.backend.dto.ai.PlanLimitsDTO planLimits);
 }

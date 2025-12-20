@@ -45,9 +45,7 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
             "(?:youtube\\.com/watch\\?v=|youtu\\.be/)([a-zA-Z0-9_-]{11})");
 
     private final GeminiClientService geminiClient;
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
-            .build();
+    private final HttpClient httpClient;
 
     @Override
     public String extractContent(UserCustomMaterial material) {

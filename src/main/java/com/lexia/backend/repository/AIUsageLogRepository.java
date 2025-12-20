@@ -172,45 +172,60 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
                      @Param("since") Instant since,
                      @Param("threshold") int threshold);
 
-       // ==================== Analytics Methods (LocalDateTime) ====================
+       // ==================== Analytics Methods (Instant) ====================
 
        /**
         * Count logs created after a specific date (for analytics)
         */
        @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.createdAt >= :date")
-       long countByCreatedAtAfter(@Param("date") java.time.LocalDateTime date);
+       long countByCreatedAtAfter(@Param("date") Instant date);
 
        /**
         * Count logs between dates
         */
        @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.createdAt BETWEEN :start AND :end")
-       long countByCreatedAtBetween(@Param("start") java.time.LocalDateTime start,
-                     @Param("end") java.time.LocalDateTime end);
+       long countByCreatedAtBetween(@Param("start") Instant start,
+                     @Param("end") Instant end);
 
        /**
         * Count by feature/content type after date
         */
        @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.contentType = :feature AND a.createdAt >= :date")
        long countByFeatureAndCreatedAtAfter(@Param("feature") String feature,
-                     @Param("date") java.time.LocalDateTime date);
+                     @Param("date") Instant date);
 
        /**
         * Count successful requests after date
         */
        @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.success = :success AND a.createdAt >= :date")
        long countBySuccessAndCreatedAtAfter(@Param("success") boolean success,
-                     @Param("date") java.time.LocalDateTime date);
+                     @Param("date") Instant date);
 
        /**
         * Average response time after date
         */
        @Query("SELECT AVG(a.responseTimeMs) FROM AIUsageLog a WHERE a.createdAt >= :date AND a.responseTimeMs IS NOT NULL")
-       Double averageResponseTimeAfter(@Param("date") java.time.LocalDateTime date);
+       Double averageResponseTimeAfter(@Param("date") Instant date);
 
        /**
         * Sum tokens used between dates
         */
        @Query("SELECT COALESCE(SUM(a.inputTokens + a.outputTokens), 0) FROM AIUsageLog a WHERE a.createdAt BETWEEN :start AND :end")
-       Long sumTokensUsedBetween(@Param("start") java.time.LocalDateTime start,
-                     @Param("end") java.time.LocalDateTime end);
+       Long sumTokensUsedBetween(@Param("start") Instant start,
+                     @Param("end") Instant end);
+
+       /**
+        * Find logs with dynamic filters for export
+        */
+       @Query("SELECT a FROM AIUsageLog a WHERE " +
+              "(:featureName IS NULL OR a.featureName = :featureName) AND " +
+              "(:userId IS NULL OR a.userId = :userId) AND " +
+              "(:startDate IS NULL OR a.createdAt >= :startDate) AND " +
+              "(:endDate IS NULL OR a.createdAt <= :endDate) " +
+              "ORDER BY a.createdAt DESC")
+       List<AIUsageLog> findWithFilters(
+               @Param("featureName") String featureName,
+               @Param("userId") UUID userId,
+               @Param("startDate") Instant startDate,
+               @Param("endDate") Instant endDate);
 }

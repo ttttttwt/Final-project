@@ -769,12 +769,24 @@ Authorization: Bearer {token}
 
 ---
 
-### 📋 PR3: Testing & Polish (Pending)
+### ⚠️ PR3: Testing & Polish (Partial Complete - 2025-12-20)
 
-**Goals:**
-- [ ] Unit tests for ContentExtractorService (≥70% coverage)
-- [ ] Unit tests for CustomMaterialProcessingService (≥70% coverage)
+**Completed Goals:**
+- [x] Unit tests for ContentExtractorService (≥70% coverage) ✅
+- [x] Unit tests for CustomMaterialProcessingService (≥70% coverage) ✅
+- [x] Controller Tests Context Load Fixes (`AuthControllerTest`, `FlashcardControllerTest`, `ProgressControllerTest`) ✅
+- [x] Refactored `ContentExtractorService` for better testability (HttpClient injection) ✅
+
+**Pending Goals:**
 - [ ] Integration tests for API endpoints
 - [ ] Add Jsoup for better HTML extraction
-- [ ] Add Apache POI for DOCX support
+- [ ] **DOCX Support** (Add Apache POI + Implement `extractFromDocx`)
+
+**Created Test Files:**
+| Category | Files | Status |
+|----------|-------|--------|
+| Unit Tests | `ContentExtractorServiceImplTest`, `CustomMaterialProcessingServiceImplTest` | ✅ |
+| Unit Tests | `CustomMaterialPromptsTest`, `AICostServiceTest` | ✅ |
+| Config | `HttpClientConfig` (for testability) | ✅ |
+
 

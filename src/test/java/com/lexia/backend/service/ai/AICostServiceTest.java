@@ -23,20 +23,28 @@ class AICostServiceTest {
     @Mock
     private AIUsageLogRepository usageLogRepository;
 
+    @Mock
+    private AIConfigService configService;
+
     @InjectMocks
     private AICostServiceImpl costService;
 
     @Test
     void getCostAnalytics_ShouldReturnData() {
         when(usageLogRepository.sumCostSince(any(Instant.class))).thenReturn(BigDecimal.TEN);
-        
+
         java.util.List<Object[]> modelCosts = new java.util.ArrayList<>();
-        modelCosts.add(new Object[]{"gpt-4", BigDecimal.ONE});
+        modelCosts.add(new Object[] { "gpt-4", BigDecimal.ONE });
         when(usageLogRepository.sumCostByModelSince(any(Instant.class))).thenReturn(modelCosts);
-        
+
         java.util.List<Object[]> featureCosts = new java.util.ArrayList<>();
-        featureCosts.add(new Object[]{"chat", BigDecimal.ONE});
+        featureCosts.add(new Object[] { "chat", BigDecimal.ONE });
         when(usageLogRepository.sumCostByContentTypeSince(any(Instant.class))).thenReturn(featureCosts);
+
+        // Mock config service
+        com.lexia.backend.entity.AIConfig mockConfig = new com.lexia.backend.entity.AIConfig();
+        mockConfig.setConfigValue("100.0");
+        when(configService.getConfig("global.monthlyBudgetLimit")).thenReturn(mockConfig);
 
         Map<String, Object> result = costService.getCostAnalytics("monthly");
 

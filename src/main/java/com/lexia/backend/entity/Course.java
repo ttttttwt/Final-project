@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -95,6 +96,20 @@ public class Course {
     @Column(name = "is_published", nullable = false)
     @Builder.Default
     private Boolean isPublished = false;
+
+    /**
+     * Number of enrolled users.
+     * Calculated via subquery.
+     */
+    @Formula("(SELECT count(*) FROM enrollments e WHERE e.course_id = id)")
+    private Integer enrollmentCount;
+
+    /**
+     * Number of users who completed the course.
+     * Calculated via subquery.
+     */
+    @Formula("(SELECT count(*) FROM enrollments e WHERE e.course_id = id AND e.completed_at IS NOT NULL)")
+    private Integer completionCount;
 
     /**
      * Timestamp when course was created.

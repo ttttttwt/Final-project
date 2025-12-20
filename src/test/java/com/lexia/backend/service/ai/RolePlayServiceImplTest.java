@@ -6,7 +6,10 @@ import com.lexia.backend.entity.RolePlayConversation;
 import com.lexia.backend.entity.RolePlayScenario;
 import com.lexia.backend.repository.RolePlayConversationRepository;
 import com.lexia.backend.repository.RolePlayScenarioRepository;
+import com.lexia.backend.repository.UserAiQuotaRepository;
+import com.lexia.backend.service.ai.AIConfigService;
 import com.lexia.backend.service.ai.impl.RolePlayServiceImpl;
+import com.lexia.backend.dto.ai.AIFeatureConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,102 +31,125 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RolePlayServiceImplTest {
 
-    @Mock
-    private RolePlayScenarioRepository scenarioRepository;
+        @Mock
+        private RolePlayScenarioRepository scenarioRepository;
 
-    @Mock
-    private RolePlayConversationRepository conversationRepository;
+        @Mock
+        private RolePlayConversationRepository conversationRepository;
 
-    @Mock
-    private GeminiClientService geminiClientService;
+        @Mock
+        private GeminiClientService geminiClientService;
 
-    @Mock
-    private AiUsageTracker aiUsageTracker;
+        @Mock
+        private AiUsageTracker aiUsageTracker;
 
-    @Mock
-    private FallbackContentService fallbackContentService;
+        @Mock
+        private FallbackContentService fallbackContentService;
 
-    @Mock
-    private ContextWindowManager contextWindowManager;
+        @Mock
+        private ContextWindowManager contextWindowManager;
 
-    @Mock
-    private ObjectMapper objectMapper;
+        @Mock
+        private UserAiQuotaRepository userAiQuotaRepository;
 
-    @InjectMocks
-    private RolePlayServiceImpl rolePlayService;
+        @Mock
+        private AIConfigService aiConfigService;
 
-    private RolePlayScenario scenario;
-    private RolePlayConversation conversation;
+        @Mock
+        private ObjectMapper objectMapper;
 
-    @BeforeEach
-    void setUp() {
-        scenario = RolePlayScenario.builder()
-                .id(UUID.randomUUID())
-                .title("Test Scenario")
-                .context("Test Context")
-                .yourRole("User")
-                .aiRole("AI")
-                .cefrLevel("B1")
-                .domain("Business")
-                .openingLine("Hello")
-                .build();
+        @InjectMocks
+        private RolePlayServiceImpl rolePlayService;
 
-        conversation = RolePlayConversation.builder()
-                .id(UUID.randomUUID())
-                .userId(UUID.randomUUID())
-                .scenario(scenario)
-                .status(RolePlayConversation.STATUS_IN_PROGRESS)
-                .messages(new ArrayList<>())
-                .build();
-    }
+        private RolePlayScenario scenario;
+        private RolePlayConversation conversation;
 
-    @Test
-    void generateScenario_Success() throws Exception {
-        RolePlayRequestDTO request = RolePlayRequestDTO.builder()
-                .cefrLevel("B1")
-                .domain("Business")
-                .build();
+        @BeforeEach
+        void setUp() {
+                scenario = RolePlayScenario.builder()
+                                .id(UUID.randomUUID())
+                                .title("Test Scenario")
+                                .context("Test Context")
+                                .yourRole("User")
+                                .aiRole("AI")
+                                .cefrLevel("B1")
+                                .domain("Business")
+                                .openingLine("Hello")
+                                .build();
 
-        String jsonResponse = "{\"title\":\"Test Scenario\"}";
-        GeminiResponseDTO geminiResponse = new GeminiResponseDTO(jsonResponse, "model", null, Instant.now(), 100, false, "STOP");
+                conversation = RolePlayConversation.builder()
+                                .id(UUID.randomUUID())
+                                .userId(UUID.randomUUID())
+                                .scenario(scenario)
+                                .status(RolePlayConversation.STATUS_IN_PROGRESS)
+                                .messages(new ArrayList<>())
+                                .build();
+        }
 
-        when(geminiClientService.generateContent(anyString())).thenReturn(geminiResponse);
-        when(objectMapper.readValue(anyString(), eq(RolePlayScenarioDTO.class))).thenReturn(RolePlayScenarioDTO.builder().title("Test Scenario").build());
-        when(scenarioRepository.save(any(RolePlayScenario.class))).thenReturn(scenario);
+        @Test
+        void generateScenario_Success() throws Exception {
+                AIFeatureConfig config = new AIFeatureConfig();
+                config.setEnabled(true);
+                config.setModelId("model");
+                config.setTemperature(1.0);
+                config.setMaxTokens(100);
+                when(aiConfigService.getFeatureConfig("roleplay")).thenReturn(config);
 
-        RolePlayScenarioDTO result = rolePlayService.generateScenario(request);
+                RolePlayRequestDTO request = RolePlayRequestDTO.builder()
+                                .cefrLevel("B1")
+                                .domain("Business")
+                                .build();
 
-        assertNotNull(result);
-        assertEquals("Test Scenario", result.getTitle());
-        verify(geminiClientService).generateContent(anyString());
-        verify(scenarioRepository).save(any(RolePlayScenario.class));
-    }
+                String jsonResponse = "{\"title\":\"Test Scenario\"}";
+                GeminiResponseDTO geminiResponse = new GeminiResponseDTO(jsonResponse, "model", null, Instant.now(),
+                                100, false, "STOP");
 
-    @Test
-    void startConversation_Success() {
-        when(scenarioRepository.findById(scenario.getId())).thenReturn(Optional.of(scenario));
-        when(conversationRepository.save(any(RolePlayConversation.class))).thenReturn(conversation);
+                when(geminiClientService.generateContent(anyString())).thenReturn(geminiResponse);
+                when(objectMapper.readValue(anyString(), eq(RolePlayScenarioDTO.class)))
+                                .thenReturn(RolePlayScenarioDTO.builder().title("Test Scenario").build());
+                when(scenarioRepository.save(any(RolePlayScenario.class))).thenReturn(scenario);
 
-        RolePlayConversationDTO result = rolePlayService.startConversation(scenario.getId(), conversation.getUserId(), "immersive");
+                RolePlayScenarioDTO result = rolePlayService.generateScenario(request);
 
-        assertNotNull(result);
-        verify(conversationRepository).save(any(RolePlayConversation.class));
-    }
+                assertNotNull(result);
+                assertEquals("Test Scenario", result.getTitle());
+                verify(geminiClientService).generateContent(anyString());
+                verify(scenarioRepository).save(any(RolePlayScenario.class));
+        }
 
-    @Test
-    void sendMessage_Success() {
-        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
-        when(contextWindowManager.buildContextWindow(any(RolePlayConversation.class))).thenReturn("Previous context");
-        
-        GeminiResponseDTO geminiResponse = new GeminiResponseDTO("AI Response", "model", null, Instant.now(), 100, false, "STOP");
-        when(geminiClientService.generateContent(anyString())).thenReturn(geminiResponse);
+        @Test
+        void startConversation_Success() {
+                AIFeatureConfig config = new AIFeatureConfig();
+                config.setEnabled(true);
+                when(aiConfigService.getFeatureConfig("roleplay")).thenReturn(config);
 
-        RolePlayMessageDTO result = rolePlayService.sendMessage(conversation.getId(), conversation.getUserId(), "Hello AI");
+                when(scenarioRepository.findById(scenario.getId())).thenReturn(Optional.of(scenario));
+                when(conversationRepository.save(any(RolePlayConversation.class))).thenReturn(conversation);
 
-        assertNotNull(result);
-        assertEquals("AI Response", result.getContent());
-        assertEquals("ai", result.getRole());
-        verify(conversationRepository).save(any(RolePlayConversation.class));
-        verify(aiUsageTracker).trackUsage(any());
-    }
+                RolePlayConversationDTO result = rolePlayService.startConversation(scenario.getId(),
+                                conversation.getUserId(), "immersive");
+
+                assertNotNull(result);
+                verify(conversationRepository).save(any(RolePlayConversation.class));
+        }
+
+        @Test
+        void sendMessage_Success() {
+                when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+                when(contextWindowManager.buildContextWindow(any(RolePlayConversation.class)))
+                                .thenReturn("Previous context");
+
+                GeminiResponseDTO geminiResponse = new GeminiResponseDTO("AI Response", "model", null, Instant.now(),
+                                100, false, "STOP");
+                when(geminiClientService.generateContent(anyString())).thenReturn(geminiResponse);
+
+                RolePlayMessageDTO result = rolePlayService.sendMessage(conversation.getId(), conversation.getUserId(),
+                                "Hello AI");
+
+                assertNotNull(result);
+                assertEquals("AI Response", result.getContent());
+                assertEquals("ai", result.getRole());
+                verify(conversationRepository).save(any(RolePlayConversation.class));
+                verify(aiUsageTracker).trackUsage(any());
+        }
 }

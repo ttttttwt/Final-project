@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -66,7 +67,7 @@ public class AdminAnalyticsService {
 
         // AI stats
         long totalAIRequests = aiUsageLogRepository.count();
-        long aiRequestsThisMonth = aiUsageLogRepository.countByCreatedAtAfter(startOfMonth);
+        long aiRequestsThisMonth = aiUsageLogRepository.countByCreatedAtAfter(startOfMonth.atZone(ZoneId.systemDefault()).toInstant());
 
         return OverviewStats.builder()
                 .totalUsers(totalUsers)
@@ -96,7 +97,9 @@ public class AdminAnalyticsService {
             long newUsers = userRepository.countUsersCreatedBetween(startOfMonth, endOfMonth);
             long activeUsers = userRepository.countActiveUsersBetween(startOfMonth, endOfMonth);
             BigDecimal revenue = paymentRepository.sumRevenueBetween(startOfMonth, endOfMonth);
-            long aiRequests = aiUsageLogRepository.countByCreatedAtBetween(startOfMonth, endOfMonth);
+            long aiRequests = aiUsageLogRepository.countByCreatedAtBetween(
+                    startOfMonth.atZone(ZoneId.systemDefault()).toInstant(),
+                    endOfMonth.atZone(ZoneId.systemDefault()).toInstant());
 
             stats.add(MonthlyStats.builder()
                     .month(yearMonth.format(formatter))
@@ -139,19 +142,20 @@ public class AdminAnalyticsService {
      */
     public AIUsageStats getAIUsageStats() {
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        java.time.Instant thirtyDaysAgoInstant = thirtyDaysAgo.atZone(ZoneId.systemDefault()).toInstant();
 
-        long totalRequests = aiUsageLogRepository.countByCreatedAtAfter(thirtyDaysAgo);
-        long roleplayRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("ROLEPLAY", thirtyDaysAgo);
-        long grammarRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("GRAMMAR", thirtyDaysAgo);
-        long flashcardRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("FLASHCARD", thirtyDaysAgo);
-        long translationRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("TRANSLATION", thirtyDaysAgo);
+        long totalRequests = aiUsageLogRepository.countByCreatedAtAfter(thirtyDaysAgoInstant);
+        long roleplayRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("ROLEPLAY", thirtyDaysAgoInstant);
+        long grammarRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("GRAMMAR", thirtyDaysAgoInstant);
+        long flashcardRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("FLASHCARD", thirtyDaysAgoInstant);
+        long translationRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("TRANSLATION", thirtyDaysAgoInstant);
 
         // Calculate success rate
-        long successfulRequests = aiUsageLogRepository.countBySuccessAndCreatedAtAfter(true, thirtyDaysAgo);
+        long successfulRequests = aiUsageLogRepository.countBySuccessAndCreatedAtAfter(true, thirtyDaysAgoInstant);
         long successRate = totalRequests > 0 ? (successfulRequests * 100) / totalRequests : 0;
 
         // Average response time
-        Double avgResponseTime = aiUsageLogRepository.averageResponseTimeAfter(thirtyDaysAgo);
+        Double avgResponseTime = aiUsageLogRepository.averageResponseTimeAfter(thirtyDaysAgoInstant);
 
         // Daily usage for chart (last 14 days)
         List<DailyAIUsage> dailyUsage = getDailyAIUsage(14);
@@ -180,8 +184,12 @@ public class AdminAnalyticsService {
             LocalDateTime startOfDay = date.atStartOfDay();
             LocalDateTime endOfDay = date.atTime(23, 59, 59);
 
-            long requests = aiUsageLogRepository.countByCreatedAtBetween(startOfDay, endOfDay);
-            Long tokens = aiUsageLogRepository.sumTokensUsedBetween(startOfDay, endOfDay);
+            long requests = aiUsageLogRepository.countByCreatedAtBetween(
+                    startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
+                    endOfDay.atZone(ZoneId.systemDefault()).toInstant());
+            Long tokens = aiUsageLogRepository.sumTokensUsedBetween(
+                    startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
+                    endOfDay.atZone(ZoneId.systemDefault()).toInstant());
 
             usage.add(DailyAIUsage.builder()
                     .date(date.format(formatter))

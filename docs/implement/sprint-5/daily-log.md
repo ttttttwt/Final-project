@@ -2354,6 +2354,39 @@ Time: 16.051 s
   - Creates sections and lessons for these courses.
   - Correctly links courses to their respective Learning Paths, fixing the "mock data" issue.
 
+---
+
+## Day 18 (December 28, 2025) - Sunday
+
+### 📋 Tasks Completed
+- [x] **Admin UI Fixes**:
+  - Fixed User Role display in Admin Panel (mapped "LEARNER" to "User").
+  - Fixed Admin permissions for creating Course Sections (added `ADMIN` role to `@PreAuthorize`).
+  - Fixed Course Enrollment/Completion counts (added `@Formula` fields to `Course` entity).
+- [x] **AI Usage Logs Export**:
+  - Implemented CSV Export for AI Usage Logs in Backend.
+  - Added `exportLogs` method to `AIUsageLogService` and `AIUsageLogServiceImpl`.
+  - Added `findWithFilters` to `AIUsageLogRepository`.
+  - Exposed `/api/v1/admin/ai-usage/export` endpoint in `AdminAIUsageController`.
+
+### 📝 Code Changes
+- **Backend**:
+  - `SectionController.java`: Updated permissions.
+  - `Course.java`, `CourseDTO.java`, `CourseMapper.java`: Added stats fields.
+  - `AIUsageLogService.java`, `AIUsageLogServiceImpl.java`: Implemented export logic.
+  - `AIUsageLogRepository.java`: Added custom query.
+  - `AdminAIUsageController.java`: Added export endpoint.
+  - `UserActivityFilter.java`: Created to track user activity.
+  - `SecurityConfig.java`: Registered `UserActivityFilter`.
+- **Frontend (Admin)**:
+  - `UserForm.tsx`, `UserTable.tsx`, `user.types.ts`: Fixed role display.
+
+### ✅ Validation
+- [x] Backend compiles successfully.
+- [x] Export endpoint matches frontend expectations.
+- [x] User activity tracking is active.
+
+
 
 
 

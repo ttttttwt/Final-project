@@ -43,6 +43,12 @@ class ProgressControllerTest {
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockitoBean
+    private com.lexia.backend.auth.JwtAuthFilter jwtAuthFilter;
+
+    @MockitoBean
+    private com.lexia.backend.filter.UserActivityFilter userActivityFilter;
+
     private CourseProgressDTO testProgress;
 
     @BeforeEach

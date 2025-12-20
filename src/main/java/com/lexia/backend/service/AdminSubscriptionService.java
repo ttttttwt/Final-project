@@ -119,7 +119,8 @@ public class AdminSubscriptionService {
             plan.setPrice(new BigDecimal(updates.get("price").toString()));
         }
         if (updates.containsKey("originalPrice")) {
-            plan.setOriginalPrice(new BigDecimal(updates.get("originalPrice").toString()));
+            Object val = updates.get("originalPrice");
+            plan.setOriginalPrice(val != null ? new BigDecimal(val.toString()) : null);
         }
         if (updates.containsKey("stripePriceId")) {
             plan.setStripePriceId((String) updates.get("stripePriceId"));

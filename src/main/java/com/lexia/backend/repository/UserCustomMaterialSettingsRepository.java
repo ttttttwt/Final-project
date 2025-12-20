@@ -2,6 +2,9 @@ package com.lexia.backend.repository;
 
 import com.lexia.backend.entity.UserCustomMaterialSettings;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -21,7 +24,8 @@ public interface UserCustomMaterialSettingsRepository extends JpaRepository<User
      * @param materialId the material ID
      * @return the settings if found
      */
-    Optional<UserCustomMaterialSettings> findByMaterialId(UUID materialId);
+    @Query("SELECT s FROM UserCustomMaterialSettings s JOIN s.material m WHERE m.id = :materialId")
+    Optional<UserCustomMaterialSettings> findByMaterialId(@Param("materialId") UUID materialId);
 
     /**
      * Checks if settings exist for a material.
@@ -29,12 +33,15 @@ public interface UserCustomMaterialSettingsRepository extends JpaRepository<User
      * @param materialId the material ID
      * @return true if settings exist
      */
-    boolean existsByMaterialId(UUID materialId);
+    @Query("SELECT COUNT(s) > 0 FROM UserCustomMaterialSettings s JOIN s.material m WHERE m.id = :materialId")
+    boolean existsByMaterialId(@Param("materialId") UUID materialId);
 
     /**
      * Deletes settings by material ID.
      * 
      * @param materialId the material ID
      */
-    void deleteByMaterialId(UUID materialId);
+    @Modifying
+    @Query("DELETE FROM UserCustomMaterialSettings s WHERE s.material.id = :materialId")
+    void deleteByMaterialId(@Param("materialId") UUID materialId);
 }

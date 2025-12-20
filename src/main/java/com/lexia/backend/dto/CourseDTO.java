@@ -66,6 +66,18 @@ public class CourseDTO {
     private Integer sectionCount;
 
     /**
+     * Number of enrolled users (derived field).
+     */
+    @Schema(description = "Number of enrolled users", example = "150", accessMode = Schema.AccessMode.READ_ONLY)
+    private Integer enrollmentCount;
+
+    /**
+     * Number of users who completed the course (derived field).
+     */
+    @Schema(description = "Number of users who completed the course", example = "45", accessMode = Schema.AccessMode.READ_ONLY)
+    private Integer completionCount;
+
+    /**
      * Timestamp when course was created.
      */
     @Schema(description = "Course creation timestamp", example = "2025-10-30T10:15:30", accessMode = Schema.AccessMode.READ_ONLY)

@@ -11,6 +11,7 @@ import com.lexia.backend.repository.CourseRepository;
 import com.lexia.backend.repository.EnrollmentRepository;
 import com.lexia.backend.repository.LessonProgressRepository;
 import com.lexia.backend.repository.LessonRepository;
+import com.lexia.backend.repository.UserProfileRepository;
 import com.lexia.backend.service.impl.EnrollmentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,8 @@ class EnrollmentServiceTest {
     @Mock
     private LessonProgressRepository lessonProgressRepository;
     @Mock
+    private UserProfileRepository userProfileRepository;
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
@@ -75,6 +78,10 @@ class EnrollmentServiceTest {
 
     @Test
     void enroll_WithNewCourse_ShouldSucceed() {
+        UserProfile profile = new UserProfile();
+        profile.setCurrentLevel("A1");
+
+        when(userProfileRepository.findById(testUser.getId())).thenReturn(Optional.of(profile));
         when(enrollmentRepository.existsByUserIdAndCourseId(testUser.getId(), testCourse.getId())).thenReturn(false);
         when(courseRepository.findById(testCourse.getId())).thenReturn(Optional.of(testCourse));
         when(enrollmentRepository.save(any(Enrollment.class))).thenReturn(testEnrollment);
@@ -89,6 +96,10 @@ class EnrollmentServiceTest {
 
     @Test
     void enroll_WhenAlreadyEnrolled_ShouldThrowIllegalStateException() {
+        UserProfile profile = new UserProfile();
+        profile.setCurrentLevel("A1");
+
+        when(userProfileRepository.findById(testUser.getId())).thenReturn(Optional.of(profile));
         when(enrollmentRepository.existsByUserIdAndCourseId(testUser.getId(), testCourse.getId())).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> enrollmentService.enroll(testUser, testCourse.getId()));
@@ -96,6 +107,10 @@ class EnrollmentServiceTest {
 
     @Test
     void enroll_WithNonExistentCourse_ShouldThrowCourseNotFoundException() {
+        UserProfile profile = new UserProfile();
+        profile.setCurrentLevel("A1");
+
+        when(userProfileRepository.findById(any(UUID.class))).thenReturn(Optional.of(profile));
         when(enrollmentRepository.existsByUserIdAndCourseId(any(UUID.class), anyLong())).thenReturn(false);
         when(courseRepository.findById(anyLong())).thenReturn(Optional.empty());
 
@@ -104,6 +119,10 @@ class EnrollmentServiceTest {
 
     @Test
     void enroll_WhenSaveFailsDueToRaceCondition_ShouldThrowIllegalStateException() {
+        UserProfile profile = new UserProfile();
+        profile.setCurrentLevel("A1");
+
+        when(userProfileRepository.findById(testUser.getId())).thenReturn(Optional.of(profile));
         when(enrollmentRepository.existsByUserIdAndCourseId(testUser.getId(), testCourse.getId())).thenReturn(false);
         when(courseRepository.findById(testCourse.getId())).thenReturn(Optional.of(testCourse));
         when(enrollmentRepository.save(any(Enrollment.class)))

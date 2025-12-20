@@ -40,6 +40,8 @@ public class CourseMapper {
                 .cefrLevel(course.getCefrLevel())
                 .isPublished(course.getIsPublished())
                 .sectionCount(course.getSections() != null ? course.getSections().size() : 0)
+                .enrollmentCount(course.getEnrollmentCount() != null ? course.getEnrollmentCount() : 0)
+                .completionCount(course.getCompletionCount() != null ? course.getCompletionCount() : 0)
                 .createdAt(course.getCreatedAt())
                 .updatedAt(course.getUpdatedAt())
                 .build();

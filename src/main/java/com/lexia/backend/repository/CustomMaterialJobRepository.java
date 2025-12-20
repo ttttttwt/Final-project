@@ -21,85 +21,72 @@ import java.util.UUID;
 @Repository
 public interface CustomMaterialJobRepository extends JpaRepository<CustomMaterialJob, UUID> {
 
-    /**
-     * Finds job by material ID.
-     * 
-     * @param materialId the material ID
-     * @return the job if found
-     */
-    Optional<CustomMaterialJob> findByMaterialId(UUID materialId);
+        /**
+         * Finds job by material ID.
+         * 
+         * @param materialId the material ID
+         * @return the job if found
+         */
+        @Query("SELECT j FROM CustomMaterialJob j JOIN j.material m WHERE m.id = :materialId")
+        Optional<CustomMaterialJob> findByMaterialId(@Param("materialId") UUID materialId);
 
-    /**
-     * Finds all queued jobs ordered by creation time (FIFO).
-     * 
-     * @param pageable pagination for batch processing
-     * @return page of queued jobs
-     */
-    @Query("SELECT j FROM CustomMaterialJob j " +
-            "WHERE j.status = 'QUEUED' " +
-            "ORDER BY j.createdAt ASC")
-    Page<CustomMaterialJob> findQueuedJobs(Pageable pageable);
+        /**
+         * Finds all queued jobs ordered by creation time (FIFO).
+         * 
+         * @param pageable pagination for batch processing
+         * @return page of queued jobs
+         */
+        @Query("SELECT j FROM CustomMaterialJob j " +
+                        "WHERE j.status = 'QUEUED' " +
+                        "ORDER BY j.createdAt ASC")
+        Page<CustomMaterialJob> findQueuedJobs(Pageable pageable);
 
-    /**
-     * Finds all jobs by status.
-     * 
-     * @param status the job status
-     * @return list of jobs
-     */
-    List<CustomMaterialJob> findByStatusOrderByCreatedAtAsc(String status);
+        /**
+         * Finds all jobs by status.
+         * 
+         * @param status the job status
+         * @return list of jobs
+         */
+        List<CustomMaterialJob> findByStatusOrderByCreatedAtAsc(String status);
 
-    /**
-     * Finds stale processing jobs (jobs stuck in processing).
-     * 
-     * @param status   should be "PROCESSING"
-     * @param pageable pagination info
-     * @return page of stale jobs
-     */
-    @Query("SELECT j FROM CustomMaterialJob j " +
-            "WHERE j.status = :status " +
-            "AND j.startedAt < :staleThreshold")
-    Page<CustomMaterialJob> findStaleJobs(
-            @Param("status") String status,
-            @Param("staleThreshold") java.time.Instant staleThreshold,
-            Pageable pageable);
+        /**
+         * Finds stale processing jobs (jobs stuck in processing).
+         * 
+         * @param status   should be "PROCESSING"
+         * @param pageable pagination info
+         * @return page of stale jobs
+         */
+        @Query("SELECT j FROM CustomMaterialJob j " +
+                        "WHERE j.status = :status " +
+                        "AND j.startedAt < :staleThreshold")
+        Page<CustomMaterialJob> findStaleJobs(
+                        @Param("status") String status,
+                        @Param("staleThreshold") java.time.Instant staleThreshold,
+                        Pageable pageable);
 
-    /**
-     * Counts jobs by status.
-     * 
-     * @param status the job status
-     * @return count of jobs
-     */
-    long countByStatus(String status);
+        /**
+         * Counts jobs by status.
+         * 
+         * @param status the job status
+         * @return count of jobs
+         */
+        long countByStatus(String status);
 
-    /**
-     * Updates job status atomically.
-     * 
-     * @param jobId         the job ID
-     * @param currentStatus expected current status
-     * @param newStatus     new status to set
-     * @return number of rows updated (1 if success, 0 if status changed)
-     */
-    @Modifying
-    @Query("UPDATE CustomMaterialJob j " +
-            "SET j.status = :newStatus, j.updatedAt = CURRENT_TIMESTAMP " +
-            "WHERE j.id = :jobId AND j.status = :currentStatus")
-    int updateStatusAtomic(
-            @Param("jobId") UUID jobId,
-            @Param("currentStatus") String currentStatus,
-            @Param("newStatus") String newStatus);
+        /**
+         * Checks if job exists for material.
+         * 
+         * @param materialId the material ID
+         * @return true if job exists
+         */
+        @Query("SELECT COUNT(j) > 0 FROM CustomMaterialJob j JOIN j.material m WHERE m.id = :materialId")
+        boolean existsByMaterialId(@Param("materialId") UUID materialId);
 
-    /**
-     * Checks if job exists for material.
-     * 
-     * @param materialId the material ID
-     * @return true if job exists
-     */
-    boolean existsByMaterialId(UUID materialId);
-
-    /**
-     * Deletes job by material ID.
-     * 
-     * @param materialId the material ID
-     */
-    void deleteByMaterialId(UUID materialId);
+        /**
+         * Deletes job by material ID.
+         * 
+         * @param materialId the material ID
+         */
+        @Modifying
+        @Query("DELETE FROM CustomMaterialJob j WHERE j.material.id = :materialId")
+        void deleteByMaterialId(@Param("materialId") UUID materialId);
 }

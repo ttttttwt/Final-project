@@ -13,11 +13,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 /**
@@ -75,5 +79,27 @@ public class AdminAIUsageController {
         AIUsageStatsDTO stats = aiUsageLogService.getStats(period);
 
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export AI usage logs", description = "Export AI usage logs to CSV")
+    public ResponseEntity<byte[]> exportLogs(
+            @Parameter(description = "Filter by feature name") @RequestParam(required = false) String featureName,
+            @Parameter(description = "Filter by user ID") @RequestParam(required = false) UUID userId,
+            @Parameter(description = "Filter by start date (ISO 8601)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
+            @Parameter(description = "Filter by end date (ISO 8601)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate) {
+        
+        log.debug("GET /api/v1/admin/ai-usage/export - Exporting AI usage logs");
+
+        byte[] csvData = aiUsageLogService.exportLogs(featureName, userId, startDate, endDate);
+        
+        String filename = "ai-usage-logs-" + DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+                .withZone(ZoneId.of("UTC"))
+                .format(Instant.now()) + ".csv";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csvData);
     }
 }

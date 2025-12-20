@@ -16,11 +16,23 @@ import com.lexia.backend.dto.ai.AIGlobalSettings;
 
 import java.util.ArrayList;
 
+import com.lexia.backend.config.QuotaLimitsConfig;
+import com.lexia.backend.dto.ai.PlanLimitsDTO;
+import jakarta.annotation.PostConstruct;
+
 @Service
 @RequiredArgsConstructor
 public class AIConfigServiceImpl implements AIConfigService {
 
     private final AIConfigRepository configRepository;
+    private final QuotaLimitsConfig quotaLimitsConfig;
+
+    @PostConstruct
+    public void init() {
+        // Load plan limits from DB to memory on startup
+        PlanLimitsDTO limits = getPlanLimits();
+        updateQuotaLimitsConfig(limits);
+    }
 
     @Override
     public List<AIConfig> getAllConfigs() {
@@ -132,6 +144,66 @@ public class AIConfigServiceImpl implements AIConfigService {
     public AIFeatureConfig toggleFeature(String featureName, boolean isEnabled) {
         updateConfig("feature." + featureName + ".enabled", String.valueOf(isEnabled));
         return getFeatureConfig(featureName);
+    }
+
+    @Override
+    public PlanLimitsDTO getPlanLimits() {
+        Map<String, String> configMap = configRepository.findAll().stream()
+                .collect(Collectors.toMap(AIConfig::getConfigKey, AIConfig::getConfigValue));
+
+        return PlanLimitsDTO.builder()
+                .freeRoleplaySessions(Integer.parseInt(configMap.getOrDefault("quota.free.roleplaySessions", String.valueOf(quotaLimitsConfig.getFreeRoleplaySessions()))))
+                .freeFlashcardDecks(Integer.parseInt(configMap.getOrDefault("quota.free.flashcardDecks", String.valueOf(quotaLimitsConfig.getFreeFlashcardDecks()))))
+                .freeGrammarExercises(Integer.parseInt(configMap.getOrDefault("quota.free.grammarExercises", String.valueOf(quotaLimitsConfig.getFreeGrammarExercises()))))
+                .freeTotalRequests(Integer.parseInt(configMap.getOrDefault("quota.free.totalRequests", String.valueOf(quotaLimitsConfig.getFreeTotalRequests()))))
+                .proRoleplaySessions(Integer.parseInt(configMap.getOrDefault("quota.pro.roleplaySessions", String.valueOf(quotaLimitsConfig.getProRoleplaySessions()))))
+                .proFlashcardDecks(Integer.parseInt(configMap.getOrDefault("quota.pro.flashcardDecks", String.valueOf(quotaLimitsConfig.getProFlashcardDecks()))))
+                .proGrammarExercises(Integer.parseInt(configMap.getOrDefault("quota.pro.grammarExercises", String.valueOf(quotaLimitsConfig.getProGrammarExercises()))))
+                .proTotalRequests(Integer.parseInt(configMap.getOrDefault("quota.pro.totalRequests", String.valueOf(quotaLimitsConfig.getProTotalRequests()))))
+                .warningThresholdPercent((int) (Double.parseDouble(configMap.getOrDefault("quota.warningThreshold", String.valueOf(quotaLimitsConfig.getWarningThreshold()))) * 100))
+                .criticalThresholdPercent((int) (Double.parseDouble(configMap.getOrDefault("quota.criticalThreshold", String.valueOf(quotaLimitsConfig.getCriticalThreshold()))) * 100))
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public PlanLimitsDTO updatePlanLimits(PlanLimitsDTO dto) {
+        Map<String, AIConfig> existingConfigs = configRepository.findAll().stream()
+                .collect(Collectors.toMap(AIConfig::getConfigKey, c -> c));
+        List<AIConfig> toSave = new ArrayList<>();
+
+        updateList(toSave, existingConfigs, "quota.free.roleplaySessions", String.valueOf(dto.getFreeRoleplaySessions()));
+        updateList(toSave, existingConfigs, "quota.free.flashcardDecks", String.valueOf(dto.getFreeFlashcardDecks()));
+        updateList(toSave, existingConfigs, "quota.free.grammarExercises", String.valueOf(dto.getFreeGrammarExercises()));
+        updateList(toSave, existingConfigs, "quota.free.totalRequests", String.valueOf(dto.getFreeTotalRequests()));
+        
+        updateList(toSave, existingConfigs, "quota.pro.roleplaySessions", String.valueOf(dto.getProRoleplaySessions()));
+        updateList(toSave, existingConfigs, "quota.pro.flashcardDecks", String.valueOf(dto.getProFlashcardDecks()));
+        updateList(toSave, existingConfigs, "quota.pro.grammarExercises", String.valueOf(dto.getProGrammarExercises()));
+        updateList(toSave, existingConfigs, "quota.pro.totalRequests", String.valueOf(dto.getProTotalRequests()));
+        
+        updateList(toSave, existingConfigs, "quota.warningThreshold", String.valueOf(dto.getWarningThresholdPercent() / 100.0));
+        updateList(toSave, existingConfigs, "quota.criticalThreshold", String.valueOf(dto.getCriticalThresholdPercent() / 100.0));
+
+        configRepository.saveAll(toSave);
+        
+        // Update in-memory config
+        updateQuotaLimitsConfig(dto);
+        
+        return dto;
+    }
+
+    private void updateQuotaLimitsConfig(PlanLimitsDTO dto) {
+        quotaLimitsConfig.setFreeRoleplaySessions(dto.getFreeRoleplaySessions());
+        quotaLimitsConfig.setFreeFlashcardDecks(dto.getFreeFlashcardDecks());
+        quotaLimitsConfig.setFreeGrammarExercises(dto.getFreeGrammarExercises());
+        quotaLimitsConfig.setFreeTotalRequests(dto.getFreeTotalRequests());
+        quotaLimitsConfig.setProRoleplaySessions(dto.getProRoleplaySessions());
+        quotaLimitsConfig.setProFlashcardDecks(dto.getProFlashcardDecks());
+        quotaLimitsConfig.setProGrammarExercises(dto.getProGrammarExercises());
+        quotaLimitsConfig.setProTotalRequests(dto.getProTotalRequests());
+        quotaLimitsConfig.setWarningThreshold(dto.getWarningThresholdPercent() / 100.0);
+        quotaLimitsConfig.setCriticalThreshold(dto.getCriticalThresholdPercent() / 100.0);
     }
 
     private void updateFeatureConfigInternal(List<AIConfig> toSave, Map<String, AIConfig> existingConfigs, AIFeatureConfig fc) {

@@ -149,7 +149,7 @@ public class SectionController {
             @ApiResponse(responseCode = "404", description = "Course not found")
     })
     @PostMapping
-    @PreAuthorize("hasRole('CONTENT_MANAGER')")
+    @PreAuthorize("hasAnyRole('CONTENT_MANAGER', 'ADMIN')")
     public ResponseEntity<SectionDTO> createSection(
             @Parameter(description = "Course ID", required = true, example = "1") @PathVariable Long courseId,
             @Valid @RequestBody CreateSectionDTO dto) {
@@ -181,7 +181,7 @@ public class SectionController {
             @ApiResponse(responseCode = "404", description = "Section not found")
     })
     @PutMapping("/{sectionId}")
-    @PreAuthorize("hasRole('CONTENT_MANAGER')")
+    @PreAuthorize("hasAnyRole('CONTENT_MANAGER', 'ADMIN')")
     public ResponseEntity<SectionDTO> updateSection(
             @Parameter(description = "Course ID", required = true, example = "1") @PathVariable Long courseId,
             @Parameter(description = "Section ID", required = true, example = "1") @PathVariable Long sectionId,
@@ -209,7 +209,7 @@ public class SectionController {
             @ApiResponse(responseCode = "404", description = "Section not found")
     })
     @DeleteMapping("/{sectionId}")
-    @PreAuthorize("hasRole('CONTENT_MANAGER')")
+    @PreAuthorize("hasAnyRole('CONTENT_MANAGER', 'ADMIN')")
     public ResponseEntity<Void> deleteSection(
             @Parameter(description = "Course ID", required = true, example = "1") @PathVariable Long courseId,
             @Parameter(description = "Section ID", required = true, example = "1") @PathVariable Long sectionId) {
@@ -241,7 +241,7 @@ public class SectionController {
             @ApiResponse(responseCode = "404", description = "Course not found")
     })
     @PostMapping("/reorder")
-    @PreAuthorize("hasRole('CONTENT_MANAGER')")
+    @PreAuthorize("hasAnyRole('CONTENT_MANAGER', 'ADMIN')")
     public ResponseEntity<List<SectionDTO>> reorderSections(
             @Parameter(description = "Course ID", required = true, example = "1") @PathVariable Long courseId,
             @Valid @RequestBody ReorderSectionsDTO dto) {

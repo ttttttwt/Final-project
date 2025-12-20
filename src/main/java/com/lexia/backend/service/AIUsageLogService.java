@@ -43,4 +43,15 @@ public interface AIUsageLogService {
      * @return Created AI usage log DTO
      */
     AIUsageLogDTO logUsage(UUID userId, String featureName, int inputTokens, int outputTokens);
+
+    /**
+     * Export AI usage logs to CSV format.
+     *
+     * @param featureName Optional filter by feature name
+     * @param userId      Optional filter by user ID
+     * @param startDate   Optional filter by start date
+     * @param endDate     Optional filter by end date
+     * @return Byte array containing CSV data
+     */
+    byte[] exportLogs(String featureName, UUID userId, Instant startDate, Instant endDate);
 }

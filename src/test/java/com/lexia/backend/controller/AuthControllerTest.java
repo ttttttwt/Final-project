@@ -55,6 +55,15 @@ class AuthControllerTest {
         @MockitoBean
         private CustomUserDetailsService customUserDetailsService;
 
+        @MockitoBean
+        private com.lexia.backend.auth.JwtAuthFilter jwtAuthFilter;
+
+        @MockitoBean
+        private com.lexia.backend.filter.UserActivityFilter userActivityFilter;
+
+        @MockitoBean
+        private com.lexia.backend.service.UserSessionService userSessionService;
+
         private RegisterDTO validRegisterDTO;
         private LoginDTO validLoginDTO;
         private RefreshTokenDTO validRefreshTokenDTO;
