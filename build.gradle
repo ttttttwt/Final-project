@@ -68,6 +68,9 @@ dependencies {
 	// Google Gemini AI SDK (Official)
 	implementation 'com.google.genai:google-genai:1.30.0'
 	
+	// Apache POI for DOCX extraction
+	implementation 'org.apache.poi:poi-ooxml:5.2.5'
+	
 	// Resilience4j for circuit breaker, retry, rate limiter
 	implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
 	implementation 'org.springframework.boot:spring-boot-starter-aop'

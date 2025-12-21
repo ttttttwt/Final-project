@@ -105,7 +105,11 @@ public class Notification {
 
         // System notifications
         SYSTEM_ANNOUNCEMENT,
-        MAINTENANCE_NOTICE;
+        MAINTENANCE_NOTICE,
+
+        // Custom Material notifications
+        CUSTOM_MATERIAL_READY,
+        CUSTOM_MATERIAL_FAILED;
 
         /**
          * Get the category of this notification type.
@@ -120,6 +124,7 @@ public class Notification {
                     NotificationCategory.ACHIEVEMENT;
                 case STREAK_REMINDER, STREAK_LOST -> NotificationCategory.ENGAGEMENT;
                 case SYSTEM_ANNOUNCEMENT, MAINTENANCE_NOTICE -> NotificationCategory.SYSTEM;
+                case CUSTOM_MATERIAL_READY, CUSTOM_MATERIAL_FAILED -> NotificationCategory.LEARNING;
             };
         }
     }

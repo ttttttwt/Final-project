@@ -9,14 +9,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 /**
  * Implementation of ContentExtractorService handling all source types.
@@ -158,10 +164,79 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
     }
 
     private String extractFromDocx(UserCustomMaterial material) {
-        // TODO: Implement with Apache POI
-        // For now, return placeholder
-        throw new ContentExtractionException("DOCX",
-                "DOCX extraction not yet implemented. Please use PDF format.");
+        String fileUrl = material.getOriginalFileUrl();
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new ContentExtractionException("DOCX", "No file URL provided");
+        }
+
+        log.info("Extracting DOCX content from: {}", fileUrl);
+
+        try {
+            // Download the DOCX file
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(fileUrl))
+                    .timeout(Duration.ofSeconds(60))
+                    .GET()
+                    .build();
+
+            HttpResponse<InputStream> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofInputStream());
+
+            if (response.statusCode() != 200) {
+                throw new ContentExtractionException("DOCX",
+                        "Failed to download file: HTTP " + response.statusCode());
+            }
+
+            // Parse DOCX with Apache POI
+            try (InputStream is = response.body();
+                    XWPFDocument document = new XWPFDocument(is)) {
+
+                List<XWPFParagraph> paragraphs = document.getParagraphs();
+                if (paragraphs.isEmpty()) {
+                    throw new ContentExtractionException("DOCX", "No content found in document");
+                }
+
+                // Get page range from metadata (approximate by paragraph chunks)
+                Map<String, Object> metadata = material.getInputMetadata();
+                int startPara = 0;
+                int endPara = paragraphs.size();
+
+                if (metadata != null) {
+                    // Approximate: ~10 paragraphs per page
+                    int parasPerPage = 10;
+                    if (metadata.get("pageStart") instanceof Number start) {
+                        startPara = Math.max(0, (start.intValue() - 1) * parasPerPage);
+                    }
+                    if (metadata.get("pageEnd") instanceof Number end) {
+                        endPara = Math.min(paragraphs.size(), end.intValue() * parasPerPage);
+                    }
+                }
+
+                // Extract text from paragraphs
+                StringBuilder content = new StringBuilder();
+                for (int i = startPara; i < endPara && i < paragraphs.size(); i++) {
+                    String text = paragraphs.get(i).getText();
+                    if (text != null && !text.isBlank()) {
+                        content.append(text.trim()).append("\n\n");
+                    }
+                }
+
+                String result = content.toString().trim();
+                if (result.isEmpty()) {
+                    throw new ContentExtractionException("DOCX", "No text extracted from document");
+                }
+
+                log.info("Extracted {} characters from DOCX", result.length());
+                return result;
+            }
+
+        } catch (ContentExtractionException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new ContentExtractionException("DOCX", "Failed to read document: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ContentExtractionException("DOCX", "Failed to extract text: " + e.getMessage(), e);
+        }
     }
 
     private String extractFromImage(UserCustomMaterial material) {
@@ -203,7 +278,37 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
         String videoId = matcher.group(1);
 
         try {
-            // Try to fetch transcript via public API
+            // Tier 1: Try primary transcript API
+            String transcript = fetchTranscriptPrimary(videoId);
+            if (transcript != null && !transcript.isBlank()) {
+                log.info("Got transcript from primary API for video {}", videoId);
+                return applyTimeRange(transcript, metadata);
+            }
+
+            // Tier 2: Try alternative transcript source (YouTube's timedtext API)
+            transcript = fetchTranscriptAlternative(videoId);
+            if (transcript != null && !transcript.isBlank()) {
+                log.info("Got transcript from alternative API for video {}", videoId);
+                return applyTimeRange(transcript, metadata);
+            }
+
+            // Tier 3: Extract video metadata and generate content with Gemini
+            log.warn("Transcript not available for video {}, using metadata fallback", videoId);
+            return generateContentFromMetadata(videoId);
+
+        } catch (ContentExtractionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ContentExtractionException("YOUTUBE",
+                    "Failed to extract content: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Tier 1: Primary transcript API (YouTubeTranscript.com)
+     */
+    private String fetchTranscriptPrimary(String videoId) {
+        try {
             String transcriptUrl = "https://youtubetranscript.com/?server_vid2=" + videoId;
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -216,20 +321,180 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                     HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200 && !response.body().isEmpty()) {
-                // Parse transcript from response
                 String transcript = parseTranscript(response.body());
-                if (transcript != null && !transcript.isBlank()) {
-                    return applyTimeRange(transcript, metadata);
+                if (transcript != null && !transcript.isBlank()
+                        && !transcript.contains("Transcript extraction failed")) {
+                    return transcript;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Primary transcript API failed: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Tier 2: Alternative transcript source - try YouTube's internal API
+     */
+    private String fetchTranscriptAlternative(String videoId) {
+        try {
+            // Try YouTube's oEmbed to get basic info first
+            String oEmbedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v="
+                    + videoId + "&format=json";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(oEmbedUrl))
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+
+            // If oEmbed works, the video exists - try alternative transcript format
+            if (response.statusCode() == 200) {
+                // Try a different transcript endpoint format
+                String altUrl = "https://video.google.com/timedtext?lang=en&v=" + videoId;
+
+                HttpRequest altRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(altUrl))
+                        .timeout(Duration.ofSeconds(15))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> altResponse = httpClient.send(altRequest,
+                        HttpResponse.BodyHandlers.ofString());
+
+                if (altResponse.statusCode() == 200 && !altResponse.body().isEmpty()
+                        && altResponse.body().contains("<text")) {
+                    return parseTimedText(altResponse.body());
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Alternative transcript API failed: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Parse timedtext XML format from YouTube
+     */
+    private String parseTimedText(String xml) {
+        try {
+            // Simple parsing of <text start="..." dur="...">content</text>
+            StringBuilder transcript = new StringBuilder();
+            Pattern textPattern = Pattern.compile("<text[^>]*>([^<]*)</text>");
+            Matcher m = textPattern.matcher(xml);
+
+            while (m.find()) {
+                String text = m.group(1)
+                        .replace("&amp;", "&")
+                        .replace("&lt;", "<")
+                        .replace("&gt;", ">")
+                        .replace("&quot;", "\"")
+                        .replace("&#39;", "'")
+                        .trim();
+                if (!text.isBlank()) {
+                    if (!transcript.isEmpty()) {
+                        transcript.append(" ");
+                    }
+                    transcript.append(text);
                 }
             }
 
-            // Fallback: Ask Gemini to describe the video (limited capability)
-            log.warn("Transcript not available for video {}, using fallback", videoId);
-            return "Video ID: " + videoId + "\n[Transcript extraction failed - manual input required]";
+            return transcript.isEmpty() ? null : transcript.toString();
+        } catch (Exception e) {
+            log.debug("Failed to parse timedtext XML: {}", e.getMessage());
+            return null;
+        }
+    }
 
+    /**
+     * Tier 3: Generate learning content from video metadata using Gemini
+     */
+    private String generateContentFromMetadata(String videoId) {
+        try {
+            // Get video metadata from oEmbed
+            String oEmbedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v="
+                    + videoId + "&format=json";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(oEmbedUrl))
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new ContentExtractionException("YOUTUBE",
+                        "Could not fetch video metadata");
+            }
+
+            // Parse oEmbed JSON for title and channel
+            String body = response.body();
+            String title = extractJsonField(body, "title");
+            String author = extractJsonField(body, "author_name");
+
+            if (title == null || title.isBlank()) {
+                throw new ContentExtractionException("YOUTUBE",
+                        "Could not extract video title");
+            }
+
+            // Use Gemini to generate learning content based on metadata
+            String prompt = String.format("""
+                    You are helping create English learning content based on a YouTube video.
+
+                    Video Information:
+                    - Title: %s
+                    - Channel: %s
+                    - Video URL: https://www.youtube.com/watch?v=%s
+
+                    Since no transcript is available, create educational content based on what the video
+                    is likely about, given its title and channel. Generate:
+
+                    1. A brief summary of the likely topic (100-150 words)
+                    2. 10 vocabulary words related to this topic with definitions
+                    3. 5 discussion questions for English practice
+
+                    Format as plain text with clear sections.
+
+                    Note: Mark this as "Content generated from video metadata (transcript unavailable)"
+                    """, title, author != null ? author : "Unknown", videoId);
+
+            var geminiResponse = geminiClient.generateContent(prompt);
+            String generated = geminiResponse.content();
+
+            if (generated != null && !generated.isBlank()) {
+                log.info("Generated learning content from metadata for video {}", videoId);
+                return "[Content generated from video metadata - transcript unavailable]\n\n"
+                        + "Video: " + title + "\n"
+                        + "Channel: " + (author != null ? author : "Unknown") + "\n\n"
+                        + generated;
+            }
+
+            throw new ContentExtractionException("YOUTUBE",
+                    "Failed to generate content from video metadata");
+
+        } catch (ContentExtractionException e) {
+            throw e;
         } catch (Exception e) {
             throw new ContentExtractionException("YOUTUBE",
-                    "Failed to extract transcript: " + e.getMessage(), e);
+                    "Fallback content generation failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Simple JSON field extraction (avoids dependency on Jackson in this context)
+     */
+    private String extractJsonField(String json, String field) {
+        try {
+            String pattern = "\"" + field + "\"\\s*:\\s*\"([^\"]+)\"";
+            Matcher m = Pattern.compile(pattern).matcher(json);
+            return m.find() ? m.group(1) : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 
@@ -286,10 +551,95 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                 .trim();
     }
 
+    /**
+     * Applies time range filter to transcript if timeStart/timeEnd are specified.
+     * Attempts to parse timestamp patterns like [00:00], (0:00), or 0:00 - text
+     * format.
+     */
     private String applyTimeRange(String transcript, Map<String, Object> metadata) {
-        // If time range specified, we'd need to parse timestamps from transcript
-        // For now, return full transcript
-        return transcript;
+        if (metadata == null) {
+            return transcript;
+        }
+
+        Integer timeStart = null;
+        Integer timeEnd = null;
+
+        if (metadata.get("timeStart") instanceof Number start) {
+            timeStart = start.intValue();
+        }
+        if (metadata.get("timeEnd") instanceof Number end) {
+            timeEnd = end.intValue();
+        }
+
+        // If no range specified, return full transcript
+        if (timeStart == null && timeEnd == null) {
+            return transcript;
+        }
+
+        // Default values if only one is specified
+        if (timeStart == null)
+            timeStart = 0;
+        if (timeEnd == null)
+            timeEnd = Integer.MAX_VALUE;
+
+        // Try to parse and filter timestamped content
+        // Common patterns: [00:00], (0:00), 00:00 - text, or newline-separated with
+        // timestamps
+        StringBuilder filtered = new StringBuilder();
+
+        // Pattern for timestamps: [HH:MM:SS] or [MM:SS] or (HH:MM:SS) or MM:SS at line
+        // start
+        Pattern timestampPattern = Pattern.compile(
+                "(?:\\[|\\()?(?:(\\d{1,2}):)?(\\d{1,2}):(\\d{2})(?:\\]|\\))?\\s*[-–:]?\\s*([^\\[\\(\\n]+)");
+
+        Matcher matcher = timestampPattern.matcher(transcript);
+        boolean hasTimestamps = false;
+
+        while (matcher.find()) {
+            hasTimestamps = true;
+            int hours = matcher.group(1) != null ? Integer.parseInt(matcher.group(1)) : 0;
+            int minutes = Integer.parseInt(matcher.group(2));
+            int secs = Integer.parseInt(matcher.group(3));
+            int totalSeconds = hours * 3600 + minutes * 60 + secs;
+            String text = matcher.group(4).trim();
+
+            // Check if within range
+            if (totalSeconds >= timeStart && totalSeconds <= timeEnd) {
+                if (!filtered.isEmpty()) {
+                    filtered.append(" ");
+                }
+                filtered.append(text);
+            }
+        }
+
+        // If we successfully parsed timestamps, return filtered content
+        if (hasTimestamps && !filtered.isEmpty()) {
+            log.info("Filtered transcript from {}s to {}s, result length: {} chars",
+                    timeStart, timeEnd, filtered.length());
+            return filtered.toString();
+        }
+
+        // Fallback: if no timestamps found, estimate by position
+        // Assuming ~150 words per minute speaking rate
+        log.warn("No timestamps found in transcript, using position-based estimate");
+        String[] words = transcript.split("\\s+");
+        int wordsPerSecond = 3; // ~180 wpm
+        int startWord = timeStart * wordsPerSecond;
+        int endWord = Math.min(timeEnd * wordsPerSecond, words.length);
+
+        if (startWord >= words.length) {
+            return transcript; // Range beyond content, return full
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (int i = Math.max(0, startWord); i < endWord && i < words.length; i++) {
+            if (!result.isEmpty()) {
+                result.append(" ");
+            }
+            result.append(words[i]);
+        }
+
+        return result.isEmpty() ? transcript : result.toString();
     }
 
     private boolean isAllowedDomain(String url) {

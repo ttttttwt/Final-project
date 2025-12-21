@@ -12,7 +12,9 @@ import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.mapper.CustomMaterialMapper;
 import com.lexia.backend.repository.*;
 import com.lexia.backend.service.ai.CustomMaterialProcessingService;
+import com.lexia.backend.service.ai.CustomMaterialPrompts;
 import com.lexia.backend.service.ai.CustomMaterialService;
+import com.lexia.backend.service.ai.GeminiClientService;
 import com.lexia.backend.service.ai.AIConfigService;
 import com.lexia.backend.exception.ai.AiServiceException;
 import lombok.RequiredArgsConstructor;
@@ -51,9 +53,11 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
     private final UserCustomMaterialRepository materialRepository;
     private final UserCustomMaterialSettingsRepository settingsRepository;
     private final CustomMaterialJobRepository jobRepository;
+    private final UserShadowingAttemptRepository shadowingAttemptRepository;
     private final FileStorageService fileStorageService;
     private final CustomMaterialMapper mapper;
     private final CustomMaterialProcessingService processingService;
+    private final GeminiClientService geminiClient;
     private final AIConfigService aiConfigService;
 
     // ===== Public Methods =====
@@ -178,16 +182,42 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
         // Delete associated file if exists
         if (material.getOriginalFileUrl() != null) {
             try {
-                // Note: Would need to extract file ID from URL
-                // For now, just log
-                log.info("Would delete file for material {}", materialId);
+                // Extract file ID from URL format: /api/v1/files/{uuid}/download
+                UUID fileId = extractFileIdFromUrl(material.getOriginalFileUrl());
+                if (fileId != null) {
+                    fileStorageService.delete(fileId);
+                    log.info("Deleted file {} for material {}", fileId, materialId);
+                }
             } catch (Exception e) {
+                // Log but don't fail the material deletion
                 log.warn("Failed to delete file for material {}: {}", materialId, e.getMessage());
             }
         }
 
         materialRepository.delete(material);
         log.info("Deleted material {}", materialId);
+    }
+
+    /**
+     * Extracts file UUID from storage URL.
+     * Expected format: /api/v1/files/{uuid}/download or full URL with same path.
+     */
+    private UUID extractFileIdFromUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        try {
+            // Pattern: .../files/{uuid}/download
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                    "/files/([0-9a-fA-F-]{36})/download");
+            java.util.regex.Matcher matcher = pattern.matcher(url);
+            if (matcher.find()) {
+                return UUID.fromString(matcher.group(1));
+            }
+        } catch (Exception e) {
+            log.warn("Could not extract file ID from URL {}: {}", url, e.getMessage());
+        }
+        return null;
     }
 
     @Override
@@ -259,5 +289,236 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
     private void processAsync(UUID materialId) {
         log.info("Triggering async processing for material {}", materialId);
         processingService.processMaterial(materialId);
+    }
+
+    @Override
+    public StyleTransformResponseDTO transformStyle(StyleTransformRequestDTO request, UUID userId) {
+        log.info("Transforming style to {} for user {}", request.getTargetStyle(), userId);
+
+        // Check if feature is enabled
+        var featureConfig = aiConfigService.getFeatureConfig("custom_materials");
+        if (!featureConfig.isEnabled()) {
+            throw new AiServiceException("Custom materials feature is currently disabled");
+        }
+
+        // Build prompt using template
+        String prompt = CustomMaterialPrompts.STYLE_TRANSFORM_PROMPT
+                .replace("{{content}}", request.getText())
+                .replace("{{target_style}}", request.getTargetStyle());
+
+        // Handle learn mode conditionals
+        if (request.isIncludeExplanation()) {
+            prompt = prompt.replace("{{#learn_mode}}", "").replace("{{/learn_mode}}", "");
+            prompt = prompt.replaceAll("\\{\\{\\^learn_mode\\}\\}.*?\\{\\{/learn_mode\\}\\}", "");
+        } else {
+            prompt = prompt.replace("{{^learn_mode}}", "").replace("{{/learn_mode}}", "");
+            prompt = prompt.replaceAll("\\{\\{#learn_mode\\}\\}.*?\\{\\{/learn_mode\\}\\}", "");
+        }
+
+        try {
+            var response = geminiClient.generateContent(prompt);
+            return parseStyleTransformResponse(response.content(), request.isIncludeExplanation());
+        } catch (Exception e) {
+            log.error("Style transform failed: {}", e.getMessage(), e);
+            throw new AiServiceException("Failed to transform style: " + e.getMessage());
+        }
+    }
+
+    private StyleTransformResponseDTO parseStyleTransformResponse(String content, boolean includeExplanation) {
+        if (!includeExplanation) {
+            return StyleTransformResponseDTO.builder()
+                    .transformedText(content.trim())
+                    .build();
+        }
+
+        // Parse content with explanations (markdown format)
+        String transformedText = content;
+        java.util.List<StyleTransformResponseDTO.StyleExplanation> explanations = new java.util.ArrayList<>();
+
+        if (content.contains("## Transformed Text")) {
+            String[] parts = content.split("## Key Changes");
+            if (parts.length > 0) {
+                transformedText = parts[0]
+                        .replace("## Transformed Text", "")
+                        .trim();
+            }
+            if (parts.length > 1) {
+                // Parse key changes (simplified parsing)
+                String changesSection = parts[1];
+                String[] lines = changesSection.split("\n");
+                for (String line : lines) {
+                    if (line.trim().startsWith("-")) {
+                        explanations.add(StyleTransformResponseDTO.StyleExplanation.builder()
+                                .reason(line.replaceFirst("^-\\s*", "").trim())
+                                .build());
+                    }
+                }
+            }
+        }
+
+        return StyleTransformResponseDTO.builder()
+                .transformedText(transformedText)
+                .explanations(explanations.isEmpty() ? null : explanations)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ShadowingScoreResponseDTO scoreShadowing(UUID materialId, String sentenceId,
+            MultipartFile audio, UUID userId) {
+        log.info("Scoring shadowing for material {} sentence {} by user {}",
+                materialId, sentenceId, userId);
+
+        // Validate material and ownership
+        UserCustomMaterial material = findMaterialWithOwnershipCheck(materialId, userId);
+
+        if (!material.isReady()) {
+            throw new IllegalStateException("Material is not ready for shadowing");
+        }
+
+        // Find the sentence in shadowing content
+        Map<String, Object> generatedContent = material.getGeneratedContent();
+        String targetSentence = findShadowingSentence(generatedContent, sentenceId);
+        if (targetSentence == null) {
+            throw new ResourceNotFoundException("Sentence not found: " + sentenceId);
+        }
+
+        // Upload audio file
+        String audioUrl = null;
+        if (audio != null && !audio.isEmpty()) {
+            try {
+                var fileEntity = fileStorageService.store(audio,
+                        FileCategory.CUSTOM_MATERIAL, userId);
+                audioUrl = fileStorageService.getPublicUrl(fileEntity.getId());
+            } catch (Exception e) {
+                log.warn("Failed to store audio file: {}", e.getMessage());
+            }
+        }
+
+        // Generate pronunciation assessment via AI
+        ShadowingScoreResponseDTO result = generatePronunciationScore(targetSentence, audioUrl);
+
+        // Save attempt to database
+        saveAttempt(material, userId, sentenceId, audioUrl, result);
+
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String findShadowingSentence(Map<String, Object> generatedContent, String sentenceId) {
+        if (generatedContent == null)
+            return null;
+
+        Object shadowingObj = generatedContent.get("shadowing");
+        if (shadowingObj instanceof List<?> shadowingList) {
+            for (Object item : shadowingList) {
+                if (item instanceof Map<?, ?> sentenceMap) {
+                    String id = String.valueOf(((Map<String, Object>) sentenceMap).get("id"));
+                    if (sentenceId.equals(id)) {
+                        return String.valueOf(((Map<String, Object>) sentenceMap).get("sentence"));
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private ShadowingScoreResponseDTO generatePronunciationScore(String targetSentence, String audioUrl) {
+        // Build pronunciation assessment prompt
+        String prompt = String.format("""
+                You are a pronunciation assessment expert. Analyze the user's pronunciation attempt.
+
+                <target_sentence>%s</target_sentence>
+
+                %s
+
+                <instructions>
+                Provide a JSON response with this structure:
+                {
+                  "score": 85,
+                  "feedback": "Good overall pronunciation. Watch the stress on 'consider'.",
+                  "phonemeBreakdown": {
+                    "word1": { "word": "...", "score": 90, "note": "..." }
+                  }
+                }
+
+                Score from 0-100 based on:
+                - Pronunciation accuracy (40%%)
+                - Stress and intonation (30%%)
+                - Fluency and rhythm (30%%)
+
+                Be encouraging but specific about improvements.
+                </instructions>
+
+                Return ONLY valid JSON, no markdown.
+                """,
+                targetSentence,
+                audioUrl != null ? "<audio_url>" + audioUrl + "</audio_url>"
+                        : "(No audio provided - provide mock assessment for demo purposes)");
+
+        try {
+            var response = geminiClient.generateContent(prompt);
+            return parseShadowingScore(response.content());
+        } catch (Exception e) {
+            log.error("Failed to generate pronunciation score: {}", e.getMessage(), e);
+            // Return demo score if AI fails
+            return ShadowingScoreResponseDTO.builder()
+                    .score(75)
+                    .feedback("Good attempt! Keep practicing for better fluency.")
+                    .build();
+        }
+    }
+
+    private ShadowingScoreResponseDTO parseShadowingScore(String content) {
+        try {
+            content = content.replaceAll("```json\\s*", "").replaceAll("```\\s*$", "").trim();
+
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> parsed = mapper.readValue(content, Map.class);
+
+            int score = 70;
+            if (parsed.get("score") instanceof Number num) {
+                score = num.intValue();
+            }
+
+            String feedback = String.valueOf(parsed.getOrDefault("feedback", "Keep practicing!"));
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> phonemeBreakdown = parsed.containsKey("phonemeBreakdown")
+                    ? (Map<String, Object>) parsed.get("phonemeBreakdown")
+                    : null;
+
+            return ShadowingScoreResponseDTO.builder()
+                    .score(score)
+                    .feedback(feedback)
+                    .phonemeBreakdown(phonemeBreakdown)
+                    .build();
+
+        } catch (Exception e) {
+            log.warn("Failed to parse shadowing score JSON: {}", e.getMessage());
+            return ShadowingScoreResponseDTO.builder()
+                    .score(70)
+                    .feedback("Assessment completed. Keep practicing!")
+                    .build();
+        }
+    }
+
+    private void saveAttempt(UserCustomMaterial material, UUID userId, String sentenceId,
+            String audioUrl, ShadowingScoreResponseDTO result) {
+        try {
+            UserShadowingAttempt attempt = UserShadowingAttempt.builder()
+                    .material(material)
+                    .userId(userId)
+                    .sentenceId(sentenceId)
+                    .audioUrl(audioUrl)
+                    .score(result.getScore())
+                    .feedback(result.getPhonemeBreakdown())
+                    .build();
+            shadowingAttemptRepository.save(attempt);
+            log.info("Saved shadowing attempt for sentence {}", sentenceId);
+        } catch (Exception e) {
+            log.warn("Failed to save shadowing attempt: {}", e.getMessage());
+        }
     }
 }

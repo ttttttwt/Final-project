@@ -274,6 +274,8 @@ public final class CustomMaterialPrompts {
       - email: Business email format
       - presentation: Bullet points, clear structure
       - social_media: Short, engaging, hashtags
+      - diplomatic: Polite, considerate, softens demands while maintaining clarity
+      - persuasive: Convincing, uses rhetorical techniques, emphasizes benefits
 
       {{#learn_mode}}
       Also provide explanations of the key changes made and why.

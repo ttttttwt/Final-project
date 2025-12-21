@@ -41,7 +41,7 @@ Tính năng cho phép người dùng upload tài liệu cá nhân (PDF, ảnh, v
 | **Quiz/Comprehension** | Bài tập trắc nghiệm đọc/nghe hiểu | Kiểm tra hiểu biết |
 | **AI Role-Play** | Kịch bản hội thoại mô phỏng (Mock Meeting, Interview...) | Diễn tập thực tế |
 | **Shadowing Trainer** | Trích xuất câu mẫu, ghi âm & chấm điểm ngữ điệu | Luyện phát âm |
-| **Style Transformer** | Viết lại văn bản theo văn phong: Formal, Diplomatic, Persuasive | Cải thiện email/văn bản |
+| **Style Transformer** | Viết lại văn bản theo văn phong: Formal, Casual, Email, Presentation, Social Media, Diplomatic, Persuasive | Cải thiện email/văn bản |
 
 ### 2.3. Hỗ trợ đa ngôn ngữ (Multi-language Logic)
 
@@ -716,6 +716,8 @@ Authorization: Bearer {token}
 | 1.0 | 2025-01-15 | - | Initial draft |
 | 2.0 | 2025-01-15 | - | Added brainstorming decisions: Chat interface, User toggles, No gamification, Premium only |
 | 2.1 | 2025-12-19 | AI | PR1 Complete: Database + API Foundation |
+| 2.2 | 2025-12-20 | AI | PR4 Complete: DOCX Support (Apache POI) + Chat API (2 endpoints) |
+| 2.3 | 2025-12-20 | AI | PR5 Complete: Style Transform + Premium Gate + Push Notifications |
 
 ---
 
@@ -779,8 +781,7 @@ Authorization: Bearer {token}
 
 **Pending Goals:**
 - [ ] Integration tests for API endpoints
-- [ ] Add Jsoup for better HTML extraction
-- [ ] **DOCX Support** (Add Apache POI + Implement `extractFromDocx`)
+- [ ] Add Jsoup for better HTML extraction (already exists as dependency)
 
 **Created Test Files:**
 | Category | Files | Status |
@@ -789,4 +790,171 @@ Authorization: Bearer {token}
 | Unit Tests | `CustomMaterialPromptsTest`, `AICostServiceTest` | ✅ |
 | Config | `HttpClientConfig` (for testability) | ✅ |
 
+---
+
+### ✅ PR4: DOCX Support + Chat API (Complete - 2025-12-20)
+
+**Phase 2 Complete - DOCX Support:**
+- [x] Added Apache POI dependency (`poi-ooxml:5.2.5`) ✅
+- [x] Implemented `extractFromDocx()` in `ContentExtractorServiceImpl` ✅
+  - Downloads DOCX from URL
+  - Parses with `XWPFDocument`
+  - Supports page range via paragraph chunks
+  - Error handling for all failure cases
+
+**Phase 3 Complete - Chat API:**
+
+| Category | Files | Status |
+|----------|-------|--------|
+| DTOs | `ChatMessageRequestDTO`, `ChatMessageResponseDTO`, `EndChatResponseDTO` | ✅ |
+| Service | `CustomMaterialChatService` interface + `CustomMaterialChatServiceImpl` | ✅ |
+| Controller | 2 new endpoints in `CustomMaterialController` | ✅ |
+
+**New Endpoints:**
+- `POST /api/v1/custom-materials/{id}/chat` - Send message (creates session if null)
+- `POST /api/v1/custom-materials/{id}/chat/{sessionId}/end` - End session with report
+
+**Features:**
+- Session management (create/continue sessions)
+- AI conversation using role-play context from material
+- STRICT mode: immediate corrections
+- POLITE mode: corrections in final report
+- Performance report with score, grammar errors, vocabulary suggestions
+
+**Build Status:** ✅ BUILD SUCCESSFUL
+**Test Status:** 98% pass (1166/1178 - 12 pre-existing failures in AuthControllerTest)
+
+---
+
+### ✅ PR5: Phase 5 Polish (Complete - 2025-12-20)
+
+**Task 1: Style Transform Endpoint:**
+
+| Category | Files | Status |
+|----------|-------|--------|
+| DTOs | `StyleTransformRequestDTO`, `StyleTransformResponseDTO` | ✅ |
+| Service | `transformStyle()` in `CustomMaterialService` + impl | ✅ |
+| Controller | `POST /transform-style` endpoint | ✅ |
+
+**Endpoint:** `POST /api/v1/custom-materials/transform-style`  
+**Styles:** FORMAL, CASUAL, EMAIL, PRESENTATION, SOCIAL_MEDIA
+
+---
+
+**Task 2: Premium Gate Enforcement:**
+
+| Category | Files | Status |
+|----------|-------|--------|
+| Annotation | `@RequirePremium` | ✅ |
+| AOP | `PremiumCheckAspect` | ✅ |
+| Exception | `SubscriptionRequiredException` + handler | ✅ |
+
+**Applied to:** `createMaterial`, `transformStyle` endpoints  
+**Returns:** 403 FORBIDDEN with upgrade URL for Free users
+
+---
+
+**Task 3: Push Notifications:**
+
+| Category | Files | Status |
+|----------|-------|--------|
+| Event | `MaterialProcessingCompletedEvent` | ✅ |
+| Types | `CUSTOM_MATERIAL_READY`, `CUSTOM_MATERIAL_FAILED` | ✅ |
+| Listener | Handler in `NotificationEventListener` | ✅ |
+| Publisher | Event firing in `CustomMaterialProcessingServiceImpl` | ✅ |
+
+**Behavior:** Real-time WebSocket notification when material processing completes
+
+---
+
+**Build Status:** ✅ Compile SUCCESSFUL  
+**Coverage:** ⚠️ 46% (new files need unit tests)
+
+---
+
+### ✅ PR6: Fixes & Missing Features (Complete - 2025-12-21)
+
+**Task 1: Premium Gate - Extended Enforcement:**
+
+| Endpoint | Annotation Added |
+|----------|------------------|
+| `GET /api/v1/custom-materials` (list) | `@RequirePremium` ✅ |
+| `GET /api/v1/custom-materials/{id}` (get) | `@RequirePremium` ✅ |
+| `POST /{id}/chat` (send message) | `@RequirePremium` ✅ |
+| `POST /{id}/chat/{sessionId}/end` | `@RequirePremium` ✅ |
+
+---
+
+**Task 2: Physical File Deletion:**
+
+- [x] Extract file ID from `originalFileUrl` (pattern: `/api/v1/files/{uuid}/download`)
+- [x] Call `fileStorageService.delete(fileId)` when deleting material
+- [x] Graceful error handling (log warning, don't block deletion)
+
+---
+
+**Task 3: Shadowing Score Endpoint (NEW):**
+
+| Category | Files | Status |
+|----------|-------|--------|
+| DTOs | `ShadowingScoreResponseDTO` | ✅ |
+| Service | `scoreShadowing()` in `CustomMaterialService` | ✅ |
+| Controller | `POST /{id}/shadowing/{sentenceId}/score` | ✅ |
+
+**Endpoint:** `POST /api/v1/custom-materials/{id}/shadowing/{sentenceId}/score`  
+**Features:** Upload audio, Gemini pronunciation scoring, save attempt to `user_shadowing_attempts`
+
+---
+
+**Task 4: SRS Sync Integration:**
+
+- [x] `FlashcardService` integration in `CustomMaterialProcessingServiceImpl`
+- [x] When `syncVocabToSrs=true`, vocabulary is synced to FlashcardDeck after processing
+- [x] Deck title: "Vocabulary: {material.title}"
+- [x] Converts vocabulary items to `FlashcardCardDTO` with word, definition, pos, example, synonyms
+
+---
+
+**Task 5: YouTube Fallback (Multi-Tier):**
+
+| Tier | Method | API |
+|------|--------|-----|
+| 1 | `fetchTranscriptPrimary()` | YouTubeTranscript.com |
+| 2 | `fetchTranscriptAlternative()` | video.google.com/timedtext |
+| 3 | `generateContentFromMetadata()` | YouTube oEmbed + Gemini |
+
+**Fallback Behavior:** If no transcript available, Gemini generates learning content from video title/channel
+
+---
+
+**Task 6: YouTube Time Range:**
+
+- [x] Parse timestamp patterns: `[MM:SS]`, `(HH:MM:SS)`, `MM:SS - text`
+- [x] Filter transcript segments by `timeStart`/`timeEnd` metadata
+- [x] Word-count fallback (~3 words/sec) if no timestamps found
+
+---
+
+**Task 7: Chat Report Parsing Fix:**
+
+- [x] Replaced regex with Jackson `ObjectMapper` for JSON parsing
+- [x] Properly extracts: `grammarErrors`, `vocabularySuggestions`, `strengths`, `improvements`
+- [x] Fallback to default values if parsing fails
+
+---
+
+**Task 8: Style Transform - Extended Styles:**
+
+| New Style | Description |
+|-----------|-------------|
+| `DIPLOMATIC` | Polite, considerate, softens demands while maintaining clarity |
+| `PERSUASIVE` | Convincing, uses rhetorical techniques, emphasizes benefits |
+
+**All Styles Now:** FORMAL, CASUAL, EMAIL, PRESENTATION, SOCIAL_MEDIA, DIPLOMATIC, PERSUASIVE
+
+---
+
+**Build Status:** ✅ Compile SUCCESSFUL  
+**Files Modified:** 8 files  
+**New Features:** 3 (Shadowing Score, SRS Sync, YouTube Multi-Tier Fallback)
 

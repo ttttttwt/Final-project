@@ -52,6 +52,10 @@ public class UserAiQuotaDTO {
     private Integer grammarExercisesUsed;
     private Integer grammarExercisesLimit;
 
+    /** Custom materials created used/limit for current month (Premium only) */
+    private Integer customMaterialsUsed;
+    private Integer customMaterialsLimit;
+
     /** Total AI requests used/limit for current month */
     private Integer totalRequestsUsed;
     private Integer totalRequestsLimit;

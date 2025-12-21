@@ -38,6 +38,9 @@ public class QuotaLimitsConfig {
     /** Maximum total AI requests per month for Free users */
     private int freeTotalRequests = 100;
 
+    /** Maximum custom materials per month for Free users (Premium only feature) */
+    private int freeCustomMaterials = 0;
+
     // ========== Pro Tier Limits ==========
 
     /** Maximum role play sessions per month for Pro users */
@@ -51,6 +54,9 @@ public class QuotaLimitsConfig {
 
     /** Maximum total AI requests per month for Pro users */
     private int proTotalRequests = 300;
+
+    /** Maximum custom materials per month for Pro users */
+    private int proCustomMaterials = 10;
 
     // ========== Warning Thresholds ==========
 
@@ -72,13 +78,15 @@ public class QuotaLimitsConfig {
                     proRoleplaySessions,
                     proFlashcardDecks,
                     proGrammarExercises,
-                    proTotalRequests);
+                    proTotalRequests,
+                    proCustomMaterials);
         }
         return new QuotaLimits(
                 freeRoleplaySessions,
                 freeFlashcardDecks,
                 freeGrammarExercises,
-                freeTotalRequests);
+                freeTotalRequests,
+                freeCustomMaterials);
     }
 
     /**
@@ -90,13 +98,15 @@ public class QuotaLimitsConfig {
         private final int flashcardDecks;
         private final int grammarExercises;
         private final int totalRequests;
+        private final Integer customMaterialsLimit;
 
         public QuotaLimits(int roleplaySessions, int flashcardDecks,
-                int grammarExercises, int totalRequests) {
+                int grammarExercises, int totalRequests, int customMaterials) {
             this.roleplaySessions = roleplaySessions;
             this.flashcardDecks = flashcardDecks;
             this.grammarExercises = grammarExercises;
             this.totalRequests = totalRequests;
+            this.customMaterialsLimit = customMaterials;
         }
     }
 }

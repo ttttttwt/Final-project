@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -27,6 +29,7 @@ public class AdminAIQuotaController {
     private final AIQuotaService quotaService;
     private final UserRepository userRepository;
     private final QuotaLimitsConfig quotaLimitsConfig;
+    private final com.lexia.backend.repository.UserCustomMaterialRepository customMaterialRepository;
 
     @GetMapping
     public ResponseEntity<Page<UserAiQuotaDTO>> getAllQuotas(Pageable pageable) {
@@ -103,6 +106,12 @@ public class AdminAIQuotaController {
 
         dto.setTotalRequestsUsed(entity.getMonthlyUsed());
         dto.setTotalRequestsLimit(limits.getTotalRequests());
+
+        // Custom Materials quota (count from repository)
+        Instant monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+        long customMaterialsUsed = customMaterialRepository.countByUserIdThisMonth(entity.getUserId(), monthStart);
+        dto.setCustomMaterialsUsed((int) customMaterialsUsed);
+        dto.setCustomMaterialsLimit(limits.getCustomMaterialsLimit() != null ? limits.getCustomMaterialsLimit() : 10);
 
         // Warning flags
         double warningThreshold = quotaLimitsConfig.getWarningThreshold();

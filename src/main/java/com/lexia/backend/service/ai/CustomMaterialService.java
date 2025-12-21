@@ -115,4 +115,28 @@ public interface CustomMaterialService {
      * @return number of materials user can still create this month
      */
     int getRemainingQuota(UUID userId);
+
+    /**
+     * Transforms text from one style to another using AI.
+     *
+     * @param request the style transform request
+     * @param userId  the user ID
+     * @return transformed text with optional explanations
+     */
+    StyleTransformResponseDTO transformStyle(StyleTransformRequestDTO request, UUID userId);
+
+    /**
+     * Scores user's shadowing pronunciation attempt.
+     *
+     * @param materialId the material ID containing shadowing content
+     * @param sentenceId the sentence ID from shadowing content
+     * @param audio      user's recorded audio file
+     * @param userId     the user ID (for ownership check)
+     * @return scoring response with feedback
+     * @throws com.lexia.backend.exception.ResourceNotFoundException if material or
+     *                                                               sentence not
+     *                                                               found
+     * @throws com.lexia.backend.exception.AccessDeniedException     if not owner
+     */
+    ShadowingScoreResponseDTO scoreShadowing(UUID materialId, String sentenceId, MultipartFile audio, UUID userId);
 }

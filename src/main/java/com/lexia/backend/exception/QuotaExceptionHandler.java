@@ -45,4 +45,21 @@ public class QuotaExceptionHandler {
                 .header("Retry-After", "86400") // 24 hours
                 .body(response);
     }
+
+    @ExceptionHandler(SubscriptionRequiredException.class)
+    public ResponseEntity<Map<String, Object>> handleSubscriptionRequired(SubscriptionRequiredException ex) {
+        log.info("Premium subscription required: feature={}", ex.getFeatureName());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("error", "SUBSCRIPTION_REQUIRED");
+        response.put("message", ex.getMessage());
+        response.put("featureName", ex.getFeatureName());
+        response.put("upgradeUrl", "/subscription");
+        response.put("upgradeMessage", "Upgrade to Pro to unlock this feature");
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(response);
+    }
 }

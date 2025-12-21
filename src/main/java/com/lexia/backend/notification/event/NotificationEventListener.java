@@ -122,6 +122,20 @@ public class NotificationEventListener {
     }
 
     /**
+     * Handle material processing completed event.
+     */
+    @EventListener
+    @Async
+    public void handleMaterialProcessingCompleted(MaterialProcessingCompletedEvent event) {
+        log.info("Handling MaterialProcessingCompletedEvent for user: {}, material: {}, success: {}",
+                event.getUserId(), event.getMaterialTitle(), event.isSuccess());
+        NotificationType type = event.isSuccess()
+                ? NotificationType.CUSTOM_MATERIAL_READY
+                : NotificationType.CUSTOM_MATERIAL_FAILED;
+        createAndSendNotification(event, type, NotificationPriority.HIGH);
+    }
+
+    /**
      * Create notification and optionally send in real-time based on user
      * preferences.
      * <p>

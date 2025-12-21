@@ -14,10 +14,17 @@ import com.lexia.backend.repository.UserCustomMaterialSettingsRepository;
 import com.lexia.backend.service.ai.ContentExtractorService;
 import com.lexia.backend.service.ai.CustomMaterialProcessingService;
 import com.lexia.backend.service.ai.CustomMaterialPrompts;
+import com.lexia.backend.service.ai.FlashcardService;
 import com.lexia.backend.service.ai.GeminiClientService;
+import com.lexia.backend.dto.ai.CreateFlashcardDeckDTO;
+import com.lexia.backend.dto.ai.FlashcardCardDTO;
+import com.lexia.backend.dto.ai.FlashcardBackDTO;
+import com.lexia.backend.dto.ai.AiUsageTrackingRequest;
 import com.lexia.backend.validation.PromptSanitizer;
+import com.lexia.backend.notification.event.MaterialProcessingCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +64,9 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
     private final GeminiClientService geminiClient;
     private final PromptSanitizer promptSanitizer;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final FlashcardService flashcardService;
+    private final com.lexia.backend.service.ai.AiUsageTracker usageTracker;
 
     @Override
     @Async("aiProcessingExecutor")
@@ -106,7 +116,7 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
             // Step 4: Generate content with Gemini (60% of work)
             log.info("Step 3: Generating content for material {} with options {}", materialId, targetOptions);
-            Map<String, Object> generatedContent = generateContent(sanitizedContent, targetOptions);
+            Map<String, Object> generatedContent = generateContent(material, sanitizedContent, targetOptions);
             updateProgress(job, 85);
 
             // Step 5: Save generated content
@@ -121,12 +131,22 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
             jobRepository.save(job);
             log.info("Successfully completed processing for material {}", materialId);
 
+            // Step 6: Sync vocabulary to SRS if enabled
+            if (settings != null && Boolean.TRUE.equals(settings.getSyncVocabToSrs())) {
+                syncVocabularyToSrs(material, generatedContent, null); // Uses default CEFR level
+            }
+
+            // Publish success event for notification
+            publishCompletedEvent(material, true, null);
+
         } catch (ContentExtractionException e) {
             log.error("Content extraction failed for material {}: {}", materialId, e.getMessage());
             failMaterial(material, job, "Content extraction failed: " + e.getReason());
+            publishCompletedEvent(material, false, e.getReason());
         } catch (Exception e) {
             log.error("Processing failed for material {}: {}", materialId, e.getMessage(), e);
             failMaterial(material, job, "Processing failed: " + e.getMessage());
+            publishCompletedEvent(material, false, e.getMessage());
         }
     }
 
@@ -171,7 +191,8 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
     // ===== Private methods =====
 
-    private Map<String, Object> generateContent(String content, List<String> targetOptions) {
+    private Map<String, Object> generateContent(UserCustomMaterial material, String content,
+            List<String> targetOptions) {
         Map<String, Object> result = new HashMap<>();
 
         // Build combined prompt
@@ -184,8 +205,13 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
         try {
             // Call Gemini
+            long startTime = System.currentTimeMillis();
             GeminiResponseDTO response = geminiClient.generateStructuredContent(prompt);
+            long responseTimeMs = System.currentTimeMillis() - startTime;
             String responseText = response.content();
+
+            // Track usage with granular content type
+            trackContentGeneration(material, response, responseTimeMs, true, null);
 
             // Parse JSON response
             if (responseText != null && !responseText.isBlank()) {
@@ -199,19 +225,67 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
                 } catch (JsonProcessingException e) {
                     log.warn("Failed to parse JSON response, generating individually: {}", e.getMessage());
                     // Fallback: generate each type individually
-                    result = generateIndividually(content, targetOptions);
+                    result = generateIndividually(material, content, targetOptions);
                 }
             }
 
         } catch (Exception e) {
             log.error("Gemini API call failed: {}", e.getMessage(), e);
+            // Track failure
+            trackContentGeneration(material, null, 0, false, e.getMessage());
             throw new RuntimeException("AI content generation failed: " + e.getMessage(), e);
         }
 
         return result;
     }
 
-    private Map<String, Object> generateIndividually(String content, List<String> targetOptions) {
+    /**
+     * Tracks AI usage for custom material content generation.
+     */
+    private void trackContentGeneration(UserCustomMaterial material, GeminiResponseDTO response,
+            long responseTimeMs, boolean success, String errorMessage) {
+        try {
+            // Determine content type based on source type
+            String contentType = switch (material.getSourceType()) {
+                case PDF -> com.lexia.backend.service.ai.AiUsageTracker.CONTENT_TYPE_CM_PDF_EXTRACTION;
+                case DOCX -> com.lexia.backend.service.ai.AiUsageTracker.CONTENT_TYPE_CM_DOCX_EXTRACTION;
+                case IMAGE -> com.lexia.backend.service.ai.AiUsageTracker.CONTENT_TYPE_CM_IMAGE_OCR;
+                case YOUTUBE -> com.lexia.backend.service.ai.AiUsageTracker.CONTENT_TYPE_CM_YOUTUBE_TRANSCRIPT;
+                case WEBSITE -> com.lexia.backend.service.ai.AiUsageTracker.CONTENT_TYPE_CM_WEBSITE_EXTRACTION;
+                case TEXT -> com.lexia.backend.service.ai.AiUsageTracker.CONTENT_TYPE_CM_TEXT_INPUT;
+            };
+
+            int inputTokens = 0;
+            int outputTokens = 0;
+            String modelId = "gemini-1.5-pro";
+
+            if (response != null && response.tokenUsage() != null) {
+                inputTokens = response.tokenUsage().inputTokens();
+                outputTokens = response.tokenUsage().outputTokens();
+                modelId = response.model() != null ? response.model() : modelId;
+            }
+
+            // Track content generation
+            usageTracker.trackUsageAsync(AiUsageTrackingRequest.builder()
+                    .userId(material.getUserId())
+                    .contentType(com.lexia.backend.service.ai.AiUsageTracker.CONTENT_TYPE_CM_CONTENT_GENERATION)
+                    .modelId(modelId)
+                    .inputTokens(inputTokens)
+                    .outputTokens(outputTokens)
+                    .responseTimeMs((int) responseTimeMs)
+                    .success(success)
+                    .errorMessage(errorMessage)
+                    .build()
+                    .withMetadata("materialId", material.getId().toString())
+                    .withMetadata("sourceType", contentType));
+
+        } catch (Exception e) {
+            log.warn("Failed to track usage: {}", e.getMessage());
+        }
+    }
+
+    private Map<String, Object> generateIndividually(UserCustomMaterial material, String content,
+            List<String> targetOptions) {
         Map<String, Object> result = new HashMap<>();
         Map<String, Object> variables = Map.of(
                 "content", content,
@@ -289,5 +363,116 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
             jobRepository.save(job);
         }
         updateMaterialStatus(material, CustomMaterialStatus.FAILED, error);
+    }
+
+    private void publishCompletedEvent(UserCustomMaterial material, boolean success, String errorMessage) {
+        try {
+            MaterialProcessingCompletedEvent event = new MaterialProcessingCompletedEvent(
+                    this,
+                    material.getUserId(),
+                    material.getId(),
+                    material.getTitle(),
+                    success,
+                    errorMessage);
+            eventPublisher.publishEvent(event);
+            log.debug("Published MaterialProcessingCompletedEvent for material {}", material.getId());
+        } catch (Exception e) {
+            log.warn("Failed to publish completion event: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Syncs vocabulary from generated content to the Flashcard SRS system.
+     * Creates a new Flashcard deck with the extracted vocabulary items.
+     */
+    @SuppressWarnings("unchecked")
+    private void syncVocabularyToSrs(UserCustomMaterial material, Map<String, Object> generatedContent,
+            String cefrLevel) {
+        log.info("Syncing vocabulary to SRS for material {}", material.getId());
+
+        try {
+            // Extract vocabulary from generated content
+            List<Map<String, Object>> vocabulary = null;
+            Object vocabObj = generatedContent.get("vocabulary");
+            if (vocabObj instanceof List<?>) {
+                vocabulary = (List<Map<String, Object>>) vocabObj;
+            }
+
+            if (vocabulary == null || vocabulary.isEmpty()) {
+                log.info("No vocabulary found to sync for material {}", material.getId());
+                return;
+            }
+
+            // Convert to FlashcardCardDTO list
+            List<FlashcardCardDTO> cards = vocabulary.stream()
+                    .map(this::convertToFlashcardCard)
+                    .filter(card -> card != null)
+                    .limit(100) // Limit to 100 cards per deck
+                    .toList();
+
+            if (cards.isEmpty()) {
+                log.info("No valid vocabulary cards to sync for material {}", material.getId());
+                return;
+            }
+
+            // Create deck request
+            CreateFlashcardDeckDTO deckRequest = CreateFlashcardDeckDTO.builder()
+                    .title("Vocabulary: " + material.getTitle())
+                    .description("Auto-generated from Custom Material: " + material.getTitle())
+                    .sourceType("USER_CREATED") // Using USER_CREATED as there's no CUSTOM_MATERIAL type
+                    .cefrLevel(cefrLevel != null ? cefrLevel : DEFAULT_CEFR_LEVEL)
+                    .cards(cards)
+                    .build();
+
+            // Create the deck
+            flashcardService.createDeck(deckRequest, material.getUserId());
+            log.info("Successfully synced {} vocabulary items to SRS for material {}",
+                    cards.size(), material.getId());
+
+        } catch (Exception e) {
+            log.warn("Failed to sync vocabulary to SRS for material {}: {}",
+                    material.getId(), e.getMessage());
+            // Don't fail the material processing if SRS sync fails
+        }
+    }
+
+    /**
+     * Converts a vocabulary map from generated content to FlashcardCardDTO.
+     */
+    @SuppressWarnings("unchecked")
+    private FlashcardCardDTO convertToFlashcardCard(Map<String, Object> vocabItem) {
+        try {
+            String word = String.valueOf(vocabItem.get("word"));
+            String definition = String.valueOf(vocabItem.get("definition"));
+
+            if (word == null || word.isBlank() || "null".equals(word)) {
+                return null;
+            }
+
+            FlashcardBackDTO back = FlashcardBackDTO.builder()
+                    .definition(definition)
+                    .partOfSpeech((String) vocabItem.get("pos"))
+                    .pronunciation((String) vocabItem.get("pronunciation"))
+                    .exampleSentence((String) vocabItem.get("example"))
+                    .build();
+
+            // Handle synonyms if present
+            if (vocabItem.get("synonyms") instanceof List<?> synonymsList) {
+                back.setSynonyms(synonymsList.stream()
+                        .map(Object::toString)
+                        .limit(5)
+                        .toList());
+            }
+
+            return FlashcardCardDTO.builder()
+                    .front(word)
+                    .back(back)
+                    .difficulty(3) // Default difficulty
+                    .build();
+
+        } catch (Exception e) {
+            log.debug("Failed to convert vocabulary item: {}", e.getMessage());
+            return null;
+        }
     }
 }
