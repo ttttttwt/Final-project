@@ -2356,6 +2356,32 @@ Time: 16.051 s
 
 ---
 
+## Day 11 (December 21, 2025) - Sunday
+
+### 🐛 Bug Fixes
+- [x] **Async Material Processing Race Condition Fixed**:
+  - **Issue**: `Material not found` error in `CustomMaterialProcessingServiceImpl` because async processing started before the transaction creating the material committed.
+  - **Fix**: Used `TransactionSynchronizationManager` in `CustomMaterialServiceImpl.createMaterial` to ensure `processAsync` is triggered only `afterCommit`.
+- [x] **Retry Logic Synchronous Execution Fixed**:
+  - **Issue**: `retryProcessing` was calling `processMaterial` internally, bypassing `@Async` and running synchronously within the transaction.
+  - **Fix**: Used `ApplicationContext` to obtain the bean proxy and `TransactionSynchronizationManager` to trigger retry `afterCommit`.
+- [x] **Database Constraints Fixed**:
+  - **Issue**: `DataIntegrityViolationException` when inserting `CUSTOM_MATERIAL_READY` notification and `cm_content_generation` log.
+  - **Fix**: Created `V40__Update_Check_Constraints_For_Custom_Materials.sql` to update CHECK constraints on `notifications` and `ai_usage_logs` tables.
+
+### 📦 Files Created/Modified
+| File | Type | Changes | Description |
+|------|------|---------|-------------|
+| `CustomMaterialServiceImpl.java` | Modified | Fix race condition | Used TransactionSynchronizationManager |
+| `CustomMaterialProcessingServiceImpl.java` | Modified | Fix synchronous retry | Added ApplicationContext, sync manager |
+| `V40__Update_Check_Constraints_For_Custom_Materials.sql` | New | Update DB constraints | Added allowed values for notifications/usage logs |
+| `customMaterialService.ts` | Modified | Fix encoding issue | Added `charset=utf-8` to multipart JSON blob |
+
+### ✅ Validation
+- [x] `./gradlew compileJava` passed.
+- [x] Verified logic ensures data visibility for async threads.
+- [x] Frontend `customMaterialService.ts` updated to explicitly send UTF-8 charset.
+
 ## Day 18 (December 28, 2025) - Sunday
 
 ### 📋 Tasks Completed

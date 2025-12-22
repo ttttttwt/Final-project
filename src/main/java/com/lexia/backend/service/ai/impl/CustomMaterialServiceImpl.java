@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -287,8 +290,22 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
      * Delegates to CustomMaterialProcessingService.
      */
     private void processAsync(UUID materialId) {
-        log.info("Triggering async processing for material {}", materialId);
-        processingService.processMaterial(materialId);
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("Transaction committed, triggering async processing for material {}", materialId);
+                    try {
+                        processingService.processMaterial(materialId);
+                    } catch (Exception e) {
+                        log.error("Failed to trigger async processing for material {}", materialId, e);
+                    }
+                }
+            });
+        } else {
+            log.info("No active transaction, triggering async processing immediately for material {}", materialId);
+            processingService.processMaterial(materialId);
+        }
     }
 
     @Override
@@ -520,5 +537,44 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
         } catch (Exception e) {
             log.warn("Failed to save shadowing attempt: {}", e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MaterialListItemDTO> getRelatedMaterials(UUID materialId, UUID userId) {
+        // Get the current material
+        UserCustomMaterial currentMaterial = findMaterialWithOwnershipCheck(materialId, userId);
+
+        // Find related materials based on source
+        List<UserCustomMaterial> relatedMaterials = new java.util.ArrayList<>();
+
+        // Case 1: Materials from same uploaded file
+        if (currentMaterial.getOriginalFileUrl() != null && !currentMaterial.getOriginalFileUrl().isBlank()) {
+            relatedMaterials = materialRepository.findByOriginalFileUrlAndUserId(
+                    currentMaterial.getOriginalFileUrl(),
+                    userId);
+        }
+        // Case 2: Materials from same URL source (YouTube/Website)
+        else if (currentMaterial.getInputMetadata() != null
+                && currentMaterial.getInputMetadata().containsKey("sourceUrl")) {
+            String sourceUrl = String.valueOf(currentMaterial.getInputMetadata().get("sourceUrl"));
+
+            // Find all materials with same sourceUrl in metadata
+            List<UserCustomMaterial> allMaterials = materialRepository.findByUserIdOrderByCreatedAtDesc(
+                    userId,
+                    org.springframework.data.domain.PageRequest.of(0, 100)).getContent();
+
+            relatedMaterials = allMaterials.stream()
+                    .filter(m -> m.getStatus() == CustomMaterialStatus.COMPLETED)
+                    .filter(m -> m.getInputMetadata() != null
+                            && sourceUrl.equals(String.valueOf(m.getInputMetadata().get("sourceUrl"))))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        // Map to DTOs and filter out current material
+        return relatedMaterials.stream()
+                .filter(m -> !m.getId().equals(materialId))
+                .map(mapper::toListItem)
+                .collect(java.util.stream.Collectors.toList());
     }
 }

@@ -958,3 +958,260 @@ Authorization: Bearer {token}
 **Files Modified:** 8 files  
 **New Features:** 3 (Shadowing Score, SRS Sync, YouTube Multi-Tier Fallback)
 
+---
+
+### ✅ PR7: Phase 4 - Frontend Integration (Complete - 2025-12-21)
+
+**Scope:** lexia-web (Next.js 14+ / TypeScript / Tailwind CSS / Zustand)
+
+#### Files Created (23 total):
+
+| Category | Files | Status |
+|----------|-------|--------|
+| Types | `types/custom-materials.ts` (270 lines) | ✅ |
+| Service | `services/customMaterialService.ts` (200 lines) | ✅ |
+| Store | `store/customMaterialStore.ts` (340 lines) | ✅ |
+| Upload Components | `SourceTypeSelector`, `FileDropzone`, `UrlInput`, `RawTextInput`, `InputMetadataForm` | ✅ |
+| Config Components | `TargetOptionsSelector`, `SettingsPanel` | ✅ |
+| Processing Components | `useStatusPoller`, `ProcessingStatus`, `QuotaDisplay` | ✅ |
+| Chat Components | `ChatMessageBubble`, `EndSessionReport`, `MaterialChatInterface` | ✅ |
+| Library Components | `MaterialCard`, `MaterialFilters`, `MaterialsGrid` | ✅ |
+| Pages | `page.tsx`, `library/page.tsx`, `[id]/page.tsx`, `[id]/chat/page.tsx` | ✅ |
+| Navigation | `Sidebar.tsx` (modified - added Custom Materials link with PRO badge) | ✅ |
+
+---
+
+#### Feature Implementation:
+
+**1. Multi-Step Upload Wizard (`/custom-materials`):**
+- Step 1: Source type selection (PDF, DOCX, Image, YouTube, Website, Text)
+- Step 2: Content input (FileDropzone / UrlInput / RawTextInput)
+- Step 3: Configuration (TargetOptions, AI Correction Mode, SRS Sync)
+- Step 4: Processing status with real-time polling
+
+**2. Premium Gate:**
+- Non-Pro users see upgrade CTA with feature highlights
+- Pro users access full wizard
+
+**3. My Library (`/custom-materials/library`):**
+- Grid view of all materials
+- Filter by status (All, Completed, Processing, Failed)
+- Delete with confirmation dialog
+
+**4. Material Detail (`/custom-materials/[id]`):**
+- Tabs: Vocabulary, Quiz, Summary, Shadowing
+- Vocabulary: term, definition, example, IPA, part of speech
+- Quiz: multiple choice with explanations
+- "Practice Role-Play" button → Chat page
+
+**5. Role-Play Chat (`/custom-materials/[id]/chat`):**
+- Real-time chat interface
+- Grammar corrections display (STRICT mode)
+- End Session → Performance Report modal
+  - Overall score (0-100)
+  - Grammar errors with suggestions
+  - Vocabulary suggestions
+  - Strengths & Improvements
+
+**6. Navigation Integration:**
+- Added "Custom Materials" link in Sidebar under AI Features
+- PRO badge indicator
+- Collapsible opens for `/custom-materials/*` routes
+
+---
+
+#### Technical Implementation:
+
+**TypeScript Types (`types/custom-materials.ts`):**
+```typescript
+// Enums
+CustomMaterialSourceType: PDF | DOCX | IMAGE | YOUTUBE | WEBSITE | TEXT
+CustomMaterialStatus: PENDING | PROCESSING | COMPLETED | FAILED
+AiCorrectionMode: STRICT | POLITE
+TargetOption: VOCABULARY | QUIZ | SUMMARY | ROLE_PLAY | SHADOWING
+
+// Main interfaces
+CustomMaterial, MaterialListItem, GeneratedContent
+VocabularyItem, QuizQuestion, ShadowingSentence, RolePlayContext
+ChatMessage, PerformanceReport, GrammarError
+```
+
+**API Service (`services/customMaterialService.ts`):**
+- `createMaterial(data, file?)` - POST multipart/form-data
+- `listMaterials(params)` - GET with pagination
+- `getMaterial(id)` - GET single material
+- `deleteMaterial(id)` - DELETE
+- `getStatus(id)` - GET polling endpoint
+- `sendChatMessage(id, data)` - POST chat
+- `endChatSession(id, sessionId)` - POST end session
+- `transformStyle(data)` - POST style transform
+- `scoreShadowing(id, sentenceId, audio)` - POST audio scoring
+- `getQuota()` - GET user quota
+
+**Zustand Store (`store/customMaterialStore.ts`):**
+- Materials list state + pagination
+- Current material state
+- Upload/create state with error handling
+- Processing status polling (startPolling/stopPolling)
+- Chat session management (messages, sessionId, performanceReport)
+- Quota tracking
+
+---
+
+#### Code Review Issues Fixed:
+
+| Issue | Severity | Fix |
+|-------|----------|-----|
+| Processing không poll sau khi create | Critical | Gọi `startPolling()` sau `createMaterial()` |
+| Sidebar không expand cho `/custom-materials` | Major | Update `defaultOpen` condition |
+| `useStatusPoller` cascading render warning | Major | Sử dụng `setTimeout` cho initial poll |
+| `showReport` setState trong effect | Major | Derive từ `performanceReport` |
+| `Image` icon a11y warning | Minor | Rename thành `ImageIcon` |
+| Time `0` bị convert thành `undefined` | Minor | Fix `formatTime` function |
+
+---
+
+#### Design System Compliance:
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| Primary Blue | `#4285F4` | Buttons, active states |
+| Text Primary | `#202124` | Main text |
+| Text Secondary | `#5F6368` | Descriptions |
+| Success | `#4CAF50` | Completed status |
+| Error | `#D32F2F` | Failed status |
+| Warning/AI | `#FFB300` | AI Features accent |
+
+**Accessibility:** ✅ ARIA labels, keyboard navigation, focus indicators, color contrast ≥ 4.5:1
+
+---
+
+**Build Status:** ✅ No TypeScript errors  
+**Test Status:** ✅ 21 unit tests passing  
+**Lines of Code:** ~4,260 lines
+
+---
+
+### ✅ PR8: Frontend Unit Tests (Complete - 2025-12-21)
+
+**Test Files Created:**
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `tests/mocks/customMaterialMocks.ts` | - | Mock data |
+| `tests/store/customMaterialStore.test.ts` | 8 | Store actions |
+| `tests/services/customMaterialService.test.ts` | 5 | API service |
+| `tests/components/CustomMaterialLibrary.test.tsx` | 5 | Library components |
+| `tests/components/MaterialChatInterface.test.tsx` | 3 | Chat UI |
+| `tests/integration/customMaterialIntegration.test.ts` | - | Integration suite |
+
+**Test Coverage:**
+- Store: fetchMaterials, fetchMaterial, createMaterial, deleteMaterial, sendChatMessage
+- Service: All API endpoints với mock responses
+- Components: MaterialsGrid, MaterialCard, MaterialChatInterface
+
+**Additional Fixes:**
+- Added `aria-label` to chat send button for accessibility
+- Fixed `jest.setup.js` with `scrollIntoView` and `IntersectionObserver` mocks
+- Created `docs/testing/CUSTOM-MATERIALS-TESTING.md` testing guide
+
+**Test Results:** ✅ All 21 tests passing
+
+---
+
+### ✅ PR9: Admin AI Content Management (Complete - 2025-12-21)
+
+**Scope:** Backend (Spring Boot) + Admin Web (React/TypeScript)
+
+#### Backend Implementation
+
+**1. Feature Flag Registration:**
+
+| Component | File | Change |
+|-----------|------|--------|
+| Service | `AIConfigServiceImpl.java` | Added `registerFeatureIfNotExists()` method |
+| Init | `@PostConstruct init()` | Dynamically registers `custom_materials` on startup |
+
+**Default Config for `custom_materials`:**
+- `enabled`: true
+- `max_file_size`: 10485760 (10MB)
+- `max_pages`: 50
+- `monthly_limit`: 10
+
+---
+
+**2. Granular Usage Tracking:**
+
+| Constant | Content Type | Description |
+|----------|--------------|-------------|
+| `CONTENT_TYPE_CM_PDF_EXTRACTION` | `cm_pdf_extraction` | PDF file processing |
+| `CONTENT_TYPE_CM_DOCX_EXTRACTION` | `cm_docx_extraction` | DOCX file processing |
+| `CONTENT_TYPE_CM_IMAGE_OCR` | `cm_image_ocr` | Image OCR processing |
+| `CONTENT_TYPE_CM_YOUTUBE_TRANSCRIPT` | `cm_youtube_transcript` | YouTube transcript extraction |
+| `CONTENT_TYPE_CM_WEBSITE_EXTRACTION` | `cm_website_extraction` | Website content extraction |
+| `CONTENT_TYPE_CM_TEXT_INPUT` | `cm_text_input` | Raw text input |
+| `CONTENT_TYPE_CM_CONTENT_GENERATION` | `cm_content_generation` | Gemini content generation |
+
+**Integration:** `CustomMaterialProcessingServiceImpl` now calls `AiUsageTracker.trackUsageAsync()` with source-type metadata.
+
+---
+
+**3. Quota Management:**
+
+| File | Change |
+|------|--------|
+| `QuotaLimitsConfig.java` | Added `freeCustomMaterials` (0), `proCustomMaterials` (10) |
+| `UserAiQuotaDTO.java` | Added `customMaterialsUsed`, `customMaterialsLimit` fields |
+| `AdminAIQuotaController.java` | Updated `mapToDTO()` to include custom materials quota |
+
+---
+
+**4. Admin Monitoring API (NEW):**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/admin/custom-materials/materials` | List all materials (paginated) |
+| `GET` | `/api/v1/admin/custom-materials/materials/{id}` | Get material details |
+| `DELETE` | `/api/v1/admin/custom-materials/materials/{id}` | Delete material |
+| `GET` | `/api/v1/admin/custom-materials/jobs` | List all jobs (with filters) |
+| `GET` | `/api/v1/admin/custom-materials/jobs/stats` | Get job statistics |
+| `POST` | `/api/v1/admin/custom-materials/jobs/{id}/retry` | Force retry failed job |
+| `POST` | `/api/v1/admin/custom-materials/jobs/{id}/reset-retries` | Reset retry count |
+| `DELETE` | `/api/v1/admin/custom-materials/jobs/{id}` | Force delete stuck job |
+
+**New DTOs:**
+- `AdminCustomMaterialDTO` - Material admin view
+- `AdminJobDTO` - Job status with stuck detection
+- `JobStatsDTO` - Success rate, counts by status
+
+**Controller:** `AdminCustomMaterialController.java` (ROLE_ADMIN required)
+
+---
+
+#### Admin Frontend Implementation
+
+**Files Created:**
+
+| Category | File | Description |
+|----------|------|-------------|
+| Types | `types/customMaterialAdmin.ts` | TypeScript interfaces |
+| API | `api/customMaterialAdminApi.ts` | API client functions |
+| Hooks | `hooks/useCustomMaterialAdmin.ts` | React Query hooks |
+| Page | `pages/JobMonitorPage.tsx` | Job monitoring UI |
+
+**Job Monitor Page Features:**
+- Stats cards (Total, Completed, Failed, Stuck jobs)
+- Job table with progress bars, retry counts
+- Filter by status (All/Queued/Processing/Completed/Failed/Stuck)
+- Actions: Retry, Reset Retry Count, Delete (with confirmation)
+- Auto-refresh stats every 30 seconds
+- Error display section
+
+**Route:** `/ai/jobs`
+
+---
+
+**Build Status:** ✅ Backend SUCCESSFUL, ✅ Frontend SUCCESSFUL  
+**Files Created:** 7 new files  
+**Files Modified:** 8 files
+

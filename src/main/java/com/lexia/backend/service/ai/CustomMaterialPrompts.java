@@ -29,18 +29,20 @@ public final class CustomMaterialPrompts {
       Focus on: professional terms, idiomatic expressions, and contextually important words.
 
       For each word, provide:
-      1. The term/phrase
-      2. Part of speech
-      3. Definition in simple English
-      4. Example sentence from the content
-      5. Context about how it's used
+      1. The word/phrase
+      2. IPA pronunciation (International Phonetic Alphabet)
+      3. Part of speech
+      4. Definition in simple English
+      5. Example sentence from the content
+      6. Context about how it's used
 
       Return as JSON array with this exact structure:
       ```json
       [
         {
           "id": "v1",
-          "term": "stakeholder",
+          "word": "stakeholder",
+          "ipa": "ˈsteɪkˌhoʊldər",
           "partOfSpeech": "noun",
           "definition": "A person with an interest or concern in something",
           "example": "All stakeholders must approve the budget.",
@@ -230,7 +232,8 @@ public final class CustomMaterialPrompts {
       <instructions>
       Based on the target options, generate the requested learning materials for {{cefr_level}} level learners.
 
-      If VOCABULARY is requested: Extract 10-15 vocabulary items
+      If VOCABULARY is requested: Extract 10-15 vocabulary items with structure:
+        {"id": "v1", "word": "term", "ipa": "IPA pronunciation", "partOfSpeech": "noun", "definition": "...", "example": "...", "context": "..."}
       If QUIZ is requested: Create 5-8 quiz questions
       If SUMMARY is requested: Write a 3-5 paragraph summary
       If ROLE_PLAY is requested: Create a role-play scenario
@@ -240,7 +243,7 @@ public final class CustomMaterialPrompts {
       ```json
       {
         "schemaVersion": 1,
-        "vocabulary": [...],
+        "vocabulary": [{"id": "v1", "word": "...", "ipa": "...", "partOfSpeech": "...", "definition": "...", "example": "...", "context": "..."}],
         "quiz": [...],
         "summary": "...",
         "roleplay": {...},

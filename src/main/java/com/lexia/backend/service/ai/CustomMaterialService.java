@@ -139,4 +139,18 @@ public interface CustomMaterialService {
      * @throws com.lexia.backend.exception.AccessDeniedException     if not owner
      */
     ShadowingScoreResponseDTO scoreShadowing(UUID materialId, String sentenceId, MultipartFile audio, UUID userId);
+
+    /**
+     * Gets materials related to the given material (same source).
+     * Used for sidebar navigation to switch between different content types
+     * generated from the same original source.
+     * 
+     * @param materialId the current material ID
+     * @param userId     the user ID (for ownership check)
+     * @return list of related materials from same source
+     * @throws com.lexia.backend.exception.ResourceNotFoundException if material not
+     *                                                               found
+     * @throws com.lexia.backend.exception.AccessDeniedException     if not owner
+     */
+    java.util.List<MaterialListItemDTO> getRelatedMaterials(UUID materialId, UUID userId);
 }

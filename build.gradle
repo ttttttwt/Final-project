@@ -31,6 +31,15 @@ java {
 	}
 }
 
+// UTF-8 encoding for all tasks
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+tasks.named('bootRun') {
+	jvmArgs = ['-Dfile.encoding=UTF-8', '-Dconsole.encoding=UTF-8']
+}
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor

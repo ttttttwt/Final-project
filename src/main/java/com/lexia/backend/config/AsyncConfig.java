@@ -72,4 +72,23 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * Dedicated executor for AI content processing (Custom Materials).
+     * Uses larger queue to handle long-running AI generation tasks.
+     * CallerRunsPolicy ensures processing completes even under load.
+     *
+     * @since Sprint 5
+     */
+    @Bean(name = "aiProcessingExecutor")
+    public Executor aiProcessingExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("ai-processing-");
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

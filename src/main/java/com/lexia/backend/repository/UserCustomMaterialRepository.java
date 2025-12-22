@@ -95,4 +95,23 @@ public interface UserCustomMaterialRepository extends JpaRepository<UserCustomMa
          * @return true if user owns the material
          */
         boolean existsByIdAndUserId(UUID id, UUID userId);
+
+        /**
+         * Finds materials with the same original file URL (related materials from same
+         * source).
+         * Used for sidebar navigation to show all content types generated from same
+         * document.
+         * 
+         * @param originalFileUrl the file URL to match
+         * @param userId          the user ID (to ensure privacy)
+         * @return list of related materials
+         */
+        @Query("SELECT m FROM UserCustomMaterial m " +
+                        "WHERE m.originalFileUrl = :originalFileUrl " +
+                        "AND m.userId = :userId " +
+                        "AND m.status = com.lexia.backend.enums.CustomMaterialStatus.COMPLETED " +
+                        "ORDER BY m.createdAt DESC")
+        java.util.List<UserCustomMaterial> findByOriginalFileUrlAndUserId(
+                        @Param("originalFileUrl") String originalFileUrl,
+                        @Param("userId") UUID userId);
 }

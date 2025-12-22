@@ -24,10 +24,13 @@ import com.lexia.backend.validation.PromptSanitizer;
 import com.lexia.backend.notification.event.MaterialProcessingCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +70,7 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
     private final ApplicationEventPublisher eventPublisher;
     private final FlashcardService flashcardService;
     private final com.lexia.backend.service.ai.AiUsageTracker usageTracker;
+    private final ApplicationContext applicationContext;
 
     @Override
     @Async("aiProcessingExecutor")
@@ -78,15 +82,17 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
         UserCustomMaterial material = materialRepository.findById(materialId).orElse(null);
 
         if (material == null) {
-            log.error("Material {} not found", materialId);
+            log.error("Material {} not found in processMaterial", materialId);
             return;
         }
 
         if (job == null) {
-            log.error("Job not found for material {}", materialId);
+            log.error("Job not found for material {} in processMaterial", materialId);
             updateMaterialStatus(material, CustomMaterialStatus.FAILED, "Processing job not found");
             return;
         }
+
+        log.info("Found job {} for material {}, status: {}", job.getId(), materialId, job.getStatus());
 
         try {
             // Update status to processing
@@ -141,10 +147,12 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
         } catch (ContentExtractionException e) {
             log.error("Content extraction failed for material {}: {}", materialId, e.getMessage());
+            log.error("Stack trace:", e);
             failMaterial(material, job, "Content extraction failed: " + e.getReason());
             publishCompletedEvent(material, false, e.getReason());
         } catch (Exception e) {
-            log.error("Processing failed for material {}: {}", materialId, e.getMessage(), e);
+            log.error("Processing failed for material {}: {}", materialId, e.getMessage());
+            log.error("Full stack trace for processing failure:", e);
             failMaterial(material, job, "Processing failed: " + e.getMessage());
             publishCompletedEvent(material, false, e.getMessage());
         }
@@ -167,8 +175,23 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
         job.retry();
         jobRepository.save(job);
 
-        // Trigger async processing
-        processMaterial(materialId);
+        // Trigger async processing after commit
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("Transaction (retry) committed, triggering async processing for material {}", materialId);
+                    try {
+                        applicationContext.getBean(CustomMaterialProcessingService.class).processMaterial(materialId);
+                    } catch (Exception e) {
+                        log.error("Failed to trigger async retry for material {}", materialId, e);
+                    }
+                }
+            });
+        } else {
+            // Should not happen with @Transactional, but fallback
+            applicationContext.getBean(CustomMaterialProcessingService.class).processMaterial(materialId);
+        }
         return true;
     }
 
@@ -209,6 +232,7 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
             GeminiResponseDTO response = geminiClient.generateStructuredContent(prompt);
             long responseTimeMs = System.currentTimeMillis() - startTime;
             String responseText = response.content();
+            log.info("Raw AI response for material {}: {}", material.getId(), responseText);
 
             // Track usage with granular content type
             trackContentGeneration(material, response, responseTimeMs, true, null);
@@ -306,6 +330,8 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
                 if (prompt != null) {
                     GeminiResponseDTO response = geminiClient.generateStructuredContent(prompt);
+                    log.info("Raw AI response for material {} (fallback option {}): {}", material.getId(), option,
+                            response.content());
                     String responseText = cleanJsonResponse(response.content());
 
                     String key = option.toLowerCase().replace("_", "");

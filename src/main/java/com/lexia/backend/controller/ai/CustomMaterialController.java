@@ -271,4 +271,25 @@ public class CustomMaterialController {
 
                 return ResponseEntity.ok(response);
         }
+
+        // ===== Related Materials =====
+
+        @Operation(summary = "Get related materials", description = "Get materials generated from the same source (for sidebar navigation)")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Related materials retrieved"),
+                        @ApiResponse(responseCode = "403", description = "Not owner of material"),
+                        @ApiResponse(responseCode = "404", description = "Material not found")
+        })
+        @GetMapping("/{id}/related")
+        @RequirePremium(message = "Custom Materials is a Pro-only feature")
+        public ResponseEntity<java.util.List<MaterialListItemDTO>> getRelatedMaterials(
+                        @Parameter(description = "Material ID") @PathVariable UUID id,
+                        @AuthenticationPrincipal User user) {
+                log.info("User {} fetching related materials for {}", user.getId(), id);
+
+                java.util.List<MaterialListItemDTO> relatedMaterials = customMaterialService.getRelatedMaterials(id,
+                                user.getId());
+
+                return ResponseEntity.ok(relatedMaterials);
+        }
 }
