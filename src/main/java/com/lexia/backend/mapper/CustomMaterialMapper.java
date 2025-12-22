@@ -73,6 +73,7 @@ public class CustomMaterialMapper {
                 .sourceType(entity.getSourceType())
                 .status(entity.getStatus())
                 .originalFileUrl(entity.getOriginalFileUrl())
+                .contentText(entity.getContentText())
                 .inputMetadata(entity.getInputMetadata())
                 .generatedContent(content) // Return raw map for now
                 .settings(toSettingsResponse(entity.getSettings()))

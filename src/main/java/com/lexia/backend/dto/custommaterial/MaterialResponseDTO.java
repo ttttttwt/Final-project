@@ -39,6 +39,9 @@ public class MaterialResponseDTO {
     @Schema(description = "URL to original file (if applicable)")
     private String originalFileUrl;
 
+    @Schema(description = "Original text content (for TEXT source type)")
+    private String contentText;
+
     @Schema(description = "Input metadata (page/time range)")
     private Map<String, Object> inputMetadata;
 
