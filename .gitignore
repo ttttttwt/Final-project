@@ -39,6 +39,7 @@ out/
 .github/
 .claude/
 .agent/
+uploads/
 
 ### Environment Variables ###
 .env

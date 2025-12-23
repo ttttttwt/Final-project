@@ -94,6 +94,9 @@ dependencies {
 
 	// Dotenv support for loading .env files
 	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
+
+	// YouTube Transcript API
+	implementation 'io.github.thoroldvix:youtube-transcript-api:0.4.0'
 	
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'

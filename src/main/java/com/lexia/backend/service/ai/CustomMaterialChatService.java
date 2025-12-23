@@ -39,6 +39,19 @@ public interface CustomMaterialChatService {
     ChatMessageResponseDTO sendMessage(UUID materialId, String message, UUID sessionId, UUID userId);
 
     /**
+     * Starts a new chat session for a custom material.
+     * 
+     * <p>
+     * Creates a new session and returns the AI's opening message.
+     * </p>
+     *
+     * @param materialId the custom material ID
+     * @param userId     the authenticated user ID
+     * @return chat response with AI's opening message
+     */
+    ChatMessageResponseDTO startSession(UUID materialId, UUID userId);
+
+    /**
      * Ends a chat session and generates performance report.
      *
      * @param materialId the custom material ID
@@ -50,4 +63,14 @@ public interface CustomMaterialChatService {
      * @throws com.lexia.backend.exception.AccessDeniedException     if not owner
      */
     EndChatResponseDTO endSession(UUID materialId, UUID sessionId, UUID userId);
+
+    /**
+     * Generates dynamic suggested prompts based on conversation context.
+     *
+     * @param materialId the custom material ID
+     * @param sessionId  the session ID
+     * @param userId     the authenticated user ID
+     * @return list of suggested prompts
+     */
+    java.util.List<String> generateDynamicPrompts(UUID materialId, UUID sessionId, UUID userId);
 }

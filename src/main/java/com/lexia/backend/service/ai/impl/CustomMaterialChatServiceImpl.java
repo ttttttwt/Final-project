@@ -58,6 +58,8 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
             - Stay in character as {{ai_role}}
             - Respond naturally to the user's message
             - Keep responses concise (2-4 sentences typically)
+            - **Ongoing Interaction**: The conversation is an ongoing interaction or a continuation of a story based on the material. Act as if the interaction is already in progress.
+            - **Material Priority**: You MUST prioritize using vocabulary, sentence patterns, and specific content from the provided material. If the material is a list of vocabulary, use as many of those words as possible in your responses.
             {{#strict_mode}}
             - If the user makes grammar or vocabulary errors, correct them IMMEDIATELY before continuing:
               Format: "[Correction: 'X' should be 'Y' because...]" then continue the conversation.
@@ -104,6 +106,31 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
             Return ONLY valid JSON, no markdown.
             """;
 
+    private static final String DYNAMIC_PROMPTS_TEMPLATE = """
+            Based on this conversation and the provided material, generate 4-5 contextually relevant response prompts for the learner.
+
+            Scenario: %s
+            Learner's Role: %s
+            AI's Role: %s
+            CEFR Level: %s
+            
+            <material_content>
+            %s
+            </material_content>
+
+            AI's Last Message: "%s"
+
+            INSTRUCTIONS:
+            1. Generate 4-5 complete sentences the learner could say next
+            2. Prompts should be direct responses to what the AI just said
+            3. Include a variety: questions, answers, requests, statements
+            4. Match the CEFR level vocabulary and grammar complexity
+            5. **Material Priority**: You MUST prioritize using vocabulary, sentence patterns, and specific content from the <material_content>.
+
+            Output as a JSON array of strings ONLY, no explanation:
+            ["prompt1", "prompt2", "prompt3", "prompt4", "prompt5"]
+            """;
+
     private final UserCustomMaterialRepository materialRepository;
     private final CustomMaterialChatSessionRepository sessionRepository;
     private final GeminiClientService geminiClient;
@@ -129,6 +156,8 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
                 throw new IllegalStateException("Chat session is no longer active");
             }
         } else {
+            // If sessionId is null, we create a new session
+            // But we should check if the AI should have started it
             session = createNewSession(material, userId);
         }
 
@@ -157,6 +186,69 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
 
     @Override
     @Transactional
+    public ChatMessageResponseDTO startSession(UUID materialId, UUID userId) {
+        // Get and validate material
+        UserCustomMaterial material = getMaterialWithAccess(materialId, userId);
+
+        if (!material.isReady()) {
+            throw new IllegalStateException("Material is not ready for chat. Current status: " + material.getStatus());
+        }
+
+        // Create new session
+        CustomMaterialChatSession session = createNewSession(material, userId);
+
+        // Get opening line from material
+        Map<String, Object> roleplay = extractRoleplayData(material.getGeneratedContent());
+        String openingLine = (String) roleplay.get("openingLine");
+
+        if (openingLine == null || openingLine.isBlank()) {
+            openingLine = (String) roleplay.get("suggestedOpening");
+        }
+
+        // If no opening line, generate one
+        if (openingLine == null || openingLine.isBlank()) {
+            openingLine = generateOpeningLine(material);
+        }
+
+        // Add AI opening message
+        session.addMessage("ai", openingLine);
+        sessionRepository.save(session);
+
+        log.info("Chat session started for material {} session {}", materialId, session.getId());
+
+        return ChatMessageResponseDTO.builder()
+                .sessionId(session.getId())
+                .aiResponse(openingLine)
+                .corrections(new ArrayList<>())
+                .messageCount(session.getMessageCount())
+                .build();
+    }
+
+    private String generateOpeningLine(UserCustomMaterial material) {
+        Map<String, Object> roleplay = extractRoleplayData(material.getGeneratedContent());
+        String aiRole = getOrDefault(roleplay, "aiRole", "Assistant");
+        String scenario = getOrDefault(roleplay, "description", "Business conversation");
+        String content = material.getContentText() != null ? truncateContent(material.getContentText(), 1000) : "";
+
+        String prompt = String.format(
+                "You are an AI conversation partner playing the role of %s in this scenario: %s.\n\n" +
+                        "<material_content>\n%s\n</material_content>\n\n" +
+                        "The conversation is a continuation of a story based on the provided material. " +
+                        "Provide a short opening line (1-2 sentences) to start the conversation as %s. " +
+                        "You MUST prioritize using vocabulary, sentence patterns, and specific content from the <material_content>. " +
+                        "Return ONLY the opening line.",
+                aiRole, scenario, content, aiRole);
+
+        try {
+            var response = geminiClient.generateContent(prompt);
+            return response.content();
+        } catch (Exception e) {
+            return "Hello! I'm ready to start our conversation. Shall we begin?";
+        }
+    }
+
+    @Override
+    @Transactional
     public EndChatResponseDTO endSession(UUID materialId, UUID sessionId, UUID userId) {
         // Validate material access
         getMaterialWithAccess(materialId, userId);
@@ -177,6 +269,77 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
         log.info("Chat session {} ended for material {}", sessionId, materialId);
 
         return buildEndChatResponse(session, report);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> generateDynamicPrompts(UUID materialId, UUID sessionId, UUID userId) {
+        log.debug("Generating dynamic prompts for material {} session {}", materialId, sessionId);
+
+        // Validate material access
+        UserCustomMaterial material = getMaterialWithAccess(materialId, userId);
+
+        // Get session
+        CustomMaterialChatSession session = sessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("ChatSession", sessionId));
+
+        Map<String, Object> roleplay = extractRoleplayData(material.getGeneratedContent());
+        List<Map<String, Object>> messages = session.getChatHistory();
+
+        // Find the last AI message
+        String lastAiMessage = "";
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            Map<String, Object> msg = messages.get(i);
+            if ("ai".equals(msg.get("role"))) {
+                lastAiMessage = (String) msg.get("content");
+                break;
+            }
+        }
+
+        // If no AI message found, return default prompts from material
+        if (lastAiMessage.isEmpty()) {
+            log.info("No AI message found, returning material default prompts");
+            return extractSuggestedPrompts(roleplay);
+        }
+
+        try {
+            String content = material.getContentText() != null ? truncateContent(material.getContentText(), 1000) : "";
+            String prompt = String.format(DYNAMIC_PROMPTS_TEMPLATE,
+                    getOrDefault(roleplay, "description", "Business conversation"),
+                    getOrDefault(roleplay, "yourRole", "User"),
+                    getOrDefault(roleplay, "aiRole", "Assistant"),
+                    "B2", // Default level
+                    content,
+                    lastAiMessage);
+
+            var response = geminiClient.generateContent(prompt);
+            String jsonContent = cleanJsonResponse(response.content());
+
+            // Parse JSON array
+            List<String> prompts = objectMapper.readValue(jsonContent,
+                    new TypeReference<List<String>>() {
+                    });
+
+            log.info("Generated {} dynamic prompts for session {}", prompts.size(), sessionId);
+            return prompts;
+        } catch (Exception e) {
+            log.warn("Failed to generate dynamic prompts, falling back to defaults: {}", e.getMessage());
+            return extractSuggestedPrompts(roleplay);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> extractSuggestedPrompts(Map<String, Object> roleplay) {
+        Object prompts = roleplay.get("suggestedPrompts");
+        if (prompts instanceof List) {
+            return (List<String>) prompts;
+        }
+        return List.of(
+                "Could you tell me more about that?",
+                "I understand. What should I do next?",
+                "Thank you for the information.",
+                "Can you explain that in more detail?",
+                "I have a question about what you mentioned.");
     }
 
     // ===== Private Helper Methods =====
@@ -309,6 +472,20 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
         return response.replaceAll("\\[Correction: [^\\]]+\\]\\s*", "").trim();
     }
 
+    private String cleanJsonResponse(String json) {
+        if (json == null)
+            return "";
+        // Remove markdown code blocks if present
+        json = json.replaceAll("```json\\s*", "").replaceAll("```\\s*$", "").trim();
+        if (json.startsWith("```")) {
+            json = json.substring(3).trim();
+        }
+        if (json.endsWith("```")) {
+            json = json.substring(0, json.length() - 3).trim();
+        }
+        return json;
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> generatePerformanceReport(CustomMaterialChatSession session) {
         String prompt = REPORT_PROMPT.replace("{{chat_history}}", formatChatHistory(session.getChatHistory()));
@@ -330,13 +507,7 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
     private Map<String, Object> parseReportJson(String json) {
         try {
             // Remove any markdown formatting
-            json = json.replaceAll("```json\\s*", "").replaceAll("```\\s*$", "").trim();
-            if (json.startsWith("```")) {
-                json = json.substring(3).trim();
-            }
-            if (json.endsWith("```")) {
-                json = json.substring(0, json.length() - 3).trim();
-            }
+            json = cleanJsonResponse(json);
 
             // Parse using Jackson
             Map<String, Object> parsed = objectMapper.readValue(json,

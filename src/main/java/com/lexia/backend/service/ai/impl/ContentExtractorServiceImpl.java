@@ -18,9 +18,15 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.github.thoroldvix.api.TranscriptApiFactory;
+import io.github.thoroldvix.api.YoutubeTranscriptApi;
+import io.github.thoroldvix.api.TranscriptContent;
+
+import org.jsoup.Jsoup;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
@@ -277,23 +283,27 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
         }
         String videoId = matcher.group(1);
 
+        // Update material title from YouTube metadata
+        updateMaterialTitleFromYoutube(material, videoId);
+
         try {
-            // Tier 1: Try primary transcript API
-            String transcript = fetchTranscriptPrimary(videoId);
+            // Tier 1: Primary transcript API (YouTube Transcript API)
+            String transcript = fetchTranscriptTier1(videoId);
             if (transcript != null && !transcript.isBlank()) {
-                log.info("Got transcript from primary API for video {}", videoId);
+                log.info("Got transcript from Tier 1 (YouTube API) for video {}", videoId);
                 return applyTimeRange(transcript, metadata);
             }
 
-            // Tier 2: Try alternative transcript source (YouTube's timedtext API)
-            transcript = fetchTranscriptAlternative(videoId);
+            // Tier 2: Gemini AI Transcript Generation
+            log.warn("Tier 1 failed for video {}, trying Tier 2 (Gemini Transcript Generation)", videoId);
+            transcript = generateTranscriptWithGemini(videoId);
             if (transcript != null && !transcript.isBlank()) {
-                log.info("Got transcript from alternative API for video {}", videoId);
+                log.info("Got transcript from Tier 2 (Gemini) for video {}", videoId);
                 return applyTimeRange(transcript, metadata);
             }
 
-            // Tier 3: Extract video metadata and generate content with Gemini
-            log.warn("Transcript not available for video {}, using metadata fallback", videoId);
+            // Tier 3: Metadata Fallback (Gemini AI)
+            log.warn("Tier 2 failed for video {}, using metadata fallback", videoId);
             return generateContentFromMetadata(videoId);
 
         } catch (ContentExtractionException e) {
@@ -305,32 +315,134 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
     }
 
     /**
-     * Tier 1: Primary transcript API (YouTubeTranscript.com)
+     * Tier 1: Primary transcript API (using youtube-transcript-api library)
      */
-    private String fetchTranscriptPrimary(String videoId) {
+    private String fetchTranscriptTier1(String videoId) {
         try {
-            String transcriptUrl = "https://youtubetranscript.com/?server_vid2=" + videoId;
+            log.info("Tier 1: Fetching transcript for video {} using youtube-transcript-api", videoId);
+
+            YoutubeTranscriptApi youtubeTranscriptApi = TranscriptApiFactory.createDefault();
+            TranscriptContent transcriptContent = youtubeTranscriptApi.getTranscript(videoId);
+
+            if (transcriptContent != null && transcriptContent.getContent() != null) {
+                StringBuilder sb = new StringBuilder();
+                for (var fragment : transcriptContent.getContent()) {
+                    sb.append(fragment.getText()).append(" ");
+                }
+                String content = sb.toString().trim();
+
+                log.info("Tier 1: Successfully fetched transcript. Length: {} chars", content.length());
+                
+                // Log preview of content as requested
+                if (content.length() > 0) {
+                    log.info("Tier 1 Content Preview: {}", content.substring(0, Math.min(content.length(), 500)));
+                }
+                
+                return content;
+            }
+        } catch (Exception e) {
+            log.warn("Tier 1: youtube-transcript-api failed for video {}: {}", videoId, e.getMessage());
+        }
+
+        // Fallback to YouTube's internal timedtext API
+        return fetchTranscriptAlternative(videoId);
+    }
+
+    /**
+     * Tier 2: Use Gemini to generate a transcript for the video
+     */
+    private String generateTranscriptWithGemini(String videoId) {
+        try {
+            // Get video metadata first to help Gemini
+            String oEmbedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v="
+                    + videoId + "&format=json";
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(transcriptUrl))
-                    .timeout(Duration.ofSeconds(30))
+                    .uri(URI.create(oEmbedUrl))
+                    .timeout(Duration.ofSeconds(10))
                     .GET()
                     .build();
 
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() == 200 && !response.body().isEmpty()) {
-                String transcript = parseTranscript(response.body());
-                if (transcript != null && !transcript.isBlank()
-                        && !transcript.contains("Transcript extraction failed")) {
-                    return transcript;
+            String title = "Unknown Video";
+            String author = "Unknown Channel";
+            if (response.statusCode() == 200) {
+                String body = response.body();
+                title = Optional.ofNullable(extractJsonField(body, "title")).orElse(title);
+                author = Optional.ofNullable(extractJsonField(body, "author_name")).orElse(author);
+            }
+
+            String prompt = String.format("""
+                    You are an expert at transcribing and summarizing YouTube videos for English learners.
+
+                    Video Information:
+                    - Title: %s
+                    - Channel: %s
+                    - URL: https://www.youtube.com/watch?v=%s
+
+                    Task:
+                    Generate a detailed transcript for this video. If you cannot access the video content directly,
+                    provide a highly detailed reconstruction of the content based on your knowledge of this video
+                    or its likely content.
+
+                    Requirements:
+                    1. Provide the full spoken content (or a very detailed summary if full transcript is impossible).
+                    2. Include timestamps in [MM:SS] format at the beginning of each major section or paragraph.
+                    3. Maintain the flow of the original video.
+                    4. Return ONLY the transcript text with timestamps.
+
+                    Format:
+                    [00:00] Introduction...
+                    [01:30] Main point...
+                    """, title, author, videoId);
+
+            var geminiResponse = geminiClient.generateContent(prompt);
+            String content = geminiResponse.content();
+
+            if (content != null && !content.isBlank()) {
+                log.info("Tier 2: Successfully generated transcript with Gemini. Length: {} chars", content.length());
+                if (content.length() > 0) {
+                    log.info("Tier 2 Content Preview: {}", content.substring(0, Math.min(content.length(), 500)));
+                }
+                return "[Transcript generated by Gemini AI]\n\n" + content;
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Tier 2 Gemini transcript generation failed for video {}: {}", videoId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parse JSON transcript format: [{"text": "...", "start": 0.0, "duration": 1.0}, ...]
+     */
+    private String parseJsonTranscript(String json) {
+        try {
+            StringBuilder transcript = new StringBuilder();
+            // Simple regex-based parsing to avoid adding Jackson dependency if not needed
+            // Pattern matches "text": "content"
+            Pattern pattern = Pattern.compile("\"text\"\\s*:\\s*\"([^\"]+)\"");
+            Matcher matcher = pattern.matcher(json);
+
+            while (matcher.find()) {
+                String text = matcher.group(1)
+                        .replace("\\\"", "\"")
+                        .replace("\\n", " ")
+                        .trim();
+                if (!text.isBlank()) {
+                    if (!transcript.isEmpty()) {
+                        transcript.append(" ");
+                    }
+                    transcript.append(text);
                 }
             }
+            return transcript.isEmpty() ? null : transcript.toString();
         } catch (Exception e) {
-            log.debug("Primary transcript API failed: {}", e.getMessage());
+            log.debug("Failed to parse JSON transcript: {}", e.getMessage());
+            return null;
         }
-        return null;
     }
 
     /**
@@ -367,7 +479,14 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
 
                 if (altResponse.statusCode() == 200 && !altResponse.body().isEmpty()
                         && altResponse.body().contains("<text")) {
-                    return parseTimedText(altResponse.body());
+                    String content = parseTimedText(altResponse.body());
+                    if (content != null) {
+                        log.info("Tier 1 Fallback: Successfully fetched transcript from timedtext API. Length: {} chars", content.length());
+                        if (content.length() > 0) {
+                            log.info("Tier 1 Fallback Content Preview: {}", content.substring(0, Math.min(content.length(), 500)));
+                        }
+                        return content;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -467,7 +586,10 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
             String generated = geminiResponse.content();
 
             if (generated != null && !generated.isBlank()) {
-                log.info("Generated learning content from metadata for video {}", videoId);
+                log.info("Tier 3: Successfully generated content from metadata for video {}", videoId);
+                if (generated.length() > 0) {
+                    log.info("Tier 3 Content Preview: {}", generated.substring(0, Math.min(generated.length(), 500)));
+                }
                 return "[Content generated from video metadata - transcript unavailable]\n\n"
                         + "Video: " + title + "\n"
                         + "Channel: " + (author != null ? author : "Unknown") + "\n\n"
@@ -528,8 +650,13 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                         "Failed to fetch page: HTTP " + response.statusCode());
             }
 
+            String html = response.body();
+            
+            // Update material title from website <title> tag
+            updateMaterialTitleFromWebsite(material, html);
+
             // Extract main content (basic extraction)
-            return extractMainContent(response.body());
+            return extractMainContent(html);
 
         } catch (ContentExtractionException e) {
             throw e;
@@ -694,5 +821,50 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                 .trim();
 
         return content;
+    }
+
+    /**
+     * Updates the material title using YouTube oEmbed API.
+     */
+    private void updateMaterialTitleFromYoutube(UserCustomMaterial material, String videoId) {
+        try {
+            String oEmbedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v="
+                    + videoId + "&format=json";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(oEmbedUrl))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                String title = extractJsonField(response.body(), "title");
+                if (title != null && !title.isBlank()) {
+                    log.info("Updating material {} title to: {}", material.getId(), title);
+                    material.setTitle(title);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch YouTube title for material {}: {}", material.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Updates the material title using the <title> tag from HTML.
+     */
+    private void updateMaterialTitleFromWebsite(UserCustomMaterial material, String html) {
+        try {
+            org.jsoup.nodes.Document doc = Jsoup.parse(html);
+            String title = doc.title();
+            if (title != null && !title.isBlank()) {
+                log.info("Updating material {} title to: {}", material.getId(), title);
+                material.setTitle(title);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract website title for material {}: {}", material.getId(), e.getMessage());
+        }
     }
 }

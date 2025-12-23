@@ -246,6 +246,8 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
                     @SuppressWarnings("unchecked")
                     Map<String, Object> parsed = objectMapper.readValue(responseText, Map.class);
                     result.putAll(parsed);
+                    // Normalize roleplay data to match frontend expectations
+                    normalizeRoleplayData(result);
                 } catch (JsonProcessingException e) {
                     log.warn("Failed to parse JSON response, generating individually: {}", e.getMessage());
                     // Fallback: generate each type individually
@@ -500,5 +502,82 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
             log.debug("Failed to convert vocabulary item: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Normalizes roleplay data from AI response to match frontend expectations.
+     * Handles both formats: old (userRole/aiRole) and new (characters array).
+     * Adds rolePlay key (camelCase) for frontend compatibility.
+     * 
+     * @param generatedContent the map containing AI-generated content
+     * @see com.lexia.backend.dto.ai.RolePlayScenarioDTO
+     */
+    @SuppressWarnings("unchecked")
+    private void normalizeRoleplayData(Map<String, Object> generatedContent) {
+        Object roleplayData = generatedContent.get("roleplay");
+        if (roleplayData == null)
+            return;
+
+        if (!(roleplayData instanceof Map))
+            return;
+
+        Map<String, Object> roleplay = (Map<String, Object>) roleplayData;
+        Map<String, Object> normalized = new HashMap<>(roleplay);
+
+        // 1. Handle characters array -> yourRole/aiRole (match RolePlayScenarioDTO)
+        Object characters = roleplay.get("characters");
+        if (characters instanceof List<?> charList && !charList.isEmpty()) {
+            List<Map<String, Object>> chars = (List<Map<String, Object>>) charList;
+
+            if (chars.size() >= 2) {
+                Map<String, Object> userChar = chars.get(0);
+                Map<String, Object> aiChar = chars.get(1);
+
+                normalized.put("yourRole", userChar.get("role"));
+                normalized.put("aiRole", aiChar.get("role"));
+                normalized.put("userCharacter", userChar.get("name"));
+                normalized.put("aiCharacter", aiChar.get("name"));
+            } else if (chars.size() == 1) {
+                Map<String, Object> userChar = chars.get(0);
+                normalized.put("yourRole", userChar.get("role"));
+                normalized.put("aiRole", "AI Assistant");
+                normalized.put("userCharacter", userChar.get("name"));
+            }
+        }
+
+        // 2. Handle scenario array -> use description as context, keep dialogues as
+        // sample
+        Object scenario = roleplay.get("scenario");
+        if (scenario instanceof List<?> scenarioList) {
+            normalized.put("sampleDialogues", scenario);
+            // Use description or title as scenario context
+            if (roleplay.get("description") != null) {
+                normalized.put("scenario", roleplay.get("description"));
+            } else if (roleplay.get("title") != null) {
+                normalized.put("scenario", roleplay.get("title"));
+            }
+        }
+
+        // 3. Add default objectives if missing
+        if (!normalized.containsKey("objectives") || normalized.get("objectives") == null) {
+            normalized.put("objectives", List.of(
+                    "Practice the conversation scenario",
+                    "Use appropriate vocabulary",
+                    "Communicate effectively"));
+        }
+
+        // 4. Handle openingLine / suggestedOpening compatibility
+        if (normalized.get("openingLine") == null && normalized.get("suggestedOpening") != null) {
+            normalized.put("openingLine", normalized.get("suggestedOpening"));
+        } else if (normalized.get("suggestedOpening") == null && normalized.get("openingLine") != null) {
+            normalized.put("suggestedOpening", normalized.get("openingLine"));
+        }
+
+        // 5. Store with BOTH keys for compatibility
+        generatedContent.put("rolePlay", normalized); // camelCase for frontend
+        generatedContent.put("roleplay", normalized); // lowercase for backend
+
+        log.debug("Normalized roleplay data: yourRole={}, aiRole={}",
+                normalized.get("yourRole"), normalized.get("aiRole"));
     }
 }

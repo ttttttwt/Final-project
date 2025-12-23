@@ -27,6 +27,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -170,6 +171,25 @@ public class CustomMaterialController {
 
         // ===== Role-Play Chat =====
 
+        @Operation(summary = "Start chat session", description = "Initialize a new role-play chat session and get AI opening message")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Session started", content = @Content(schema = @Schema(implementation = ChatMessageResponseDTO.class))),
+                        @ApiResponse(responseCode = "400", description = "Material not ready"),
+                        @ApiResponse(responseCode = "403", description = "Not owner of material"),
+                        @ApiResponse(responseCode = "404", description = "Material not found")
+        })
+        @PostMapping("/{id}/chat/start")
+        @RequirePremium(message = "Custom Materials is a Pro-only feature")
+        public ResponseEntity<ChatMessageResponseDTO> startChat(
+                        @Parameter(description = "Material ID") @PathVariable UUID id,
+                        @AuthenticationPrincipal User user) {
+                log.info("User {} starting chat session for material {}", user.getId(), id);
+
+                ChatMessageResponseDTO response = customMaterialChatService.startSession(id, user.getId());
+
+                return ResponseEntity.ok(response);
+        }
+
         @Operation(summary = "Send chat message", description = "Send a message in a role-play chat session. Creates new session if sessionId is null.")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "AI response received", content = @Content(schema = @Schema(implementation = ChatMessageResponseDTO.class))),
@@ -209,6 +229,25 @@ public class CustomMaterialController {
                 EndChatResponseDTO response = customMaterialChatService.endSession(id, sessionId, user.getId());
 
                 return ResponseEntity.ok(response);
+        }
+
+        @Operation(summary = "Get dynamic prompts", description = "Generate contextually relevant response prompts for the user")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Prompts generated"),
+                        @ApiResponse(responseCode = "403", description = "Not owner of session"),
+                        @ApiResponse(responseCode = "404", description = "Material or session not found")
+        })
+        @GetMapping("/{id}/chat/{sessionId}/prompts")
+        @RequirePremium(message = "Custom Materials is a Pro-only feature")
+        public ResponseEntity<List<String>> getDynamicPrompts(
+                        @Parameter(description = "Material ID") @PathVariable UUID id,
+                        @Parameter(description = "Session ID") @PathVariable UUID sessionId,
+                        @AuthenticationPrincipal User user) {
+                log.info("User {} requesting dynamic prompts for material {} session {}", user.getId(), id, sessionId);
+
+                List<String> prompts = customMaterialChatService.generateDynamicPrompts(id, sessionId, user.getId());
+
+                return ResponseEntity.ok(prompts);
         }
 
         // ===== Quota =====

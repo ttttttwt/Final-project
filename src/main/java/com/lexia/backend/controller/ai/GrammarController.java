@@ -389,7 +389,9 @@ public class GrammarController {
                         @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") int size) {
 
                 int validatedSize = Math.min(size, MAX_PAGE_SIZE);
-                Pageable pageable = PageRequest.of(page, validatedSize, Sort.by("completedAt").descending());
+                // Sort by createdAt descending so that both completed and not-started 
+                // exercises appear in the order they were generated/started.
+                Pageable pageable = PageRequest.of(page, validatedSize, Sort.by("createdAt").descending());
 
                 LOG.debug("User {} retrieving exercise history (page {}, size {})", user.getEmail(), page,
                                 validatedSize);

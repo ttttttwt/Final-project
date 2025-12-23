@@ -59,7 +59,7 @@ public class FileMetadataExtractor {
 
         try {
             return switch (category) {
-                case AVATAR, COURSE_THUMBNAIL, LESSON_IMAGE -> extractImageMetadata(file);
+                case AVATAR, COURSE_THUMBNAIL, LESSON_IMAGE, CUSTOM_MATERIAL -> extractImageMetadata(file);
                 case LESSON_AUDIO -> extractAudioMetadata(file);
                 default -> ExtractedMetadata.builder().build();
             };

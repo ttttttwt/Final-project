@@ -147,18 +147,33 @@ public final class CustomMaterialPrompts {
       Create a realistic role-play scenario based on this content for {{cefr_level}} level learners.
 
       Design a scenario where:
-      1. User practices English relevant to the content topic
-      2. AI plays a role that encourages natural conversation
-      3. The scenario has clear goals and context
+      1. User practices English relevant to the content topic.
+      2. The scenario is an **ongoing conversation** or a **continuation of a story** (not starting from scratch). The AI should act as if the interaction is already in progress.
+      3. The AI **must prioritize** using vocabulary, sentence patterns, and specific content from the `<user_content>`. If the content is a list of vocabulary, the AI should aim to use as many of those words as possible in the conversation.
+      4. AI plays a role that encourages natural conversation and initiates the interaction.
+      5. The scenario has clear goals and context.
 
       Return as JSON with this exact structure:
       ```json
       {
         "title": "Quarterly Business Review Meeting",
-        "description": "Practice discussing business performance and strategy",
-        "userRole": "Marketing Manager",
-        "aiRole": "CEO",
-        "context": "You're presenting Q1 results to the CEO and need to explain the marketing performance.",
+        "context": "You are in a weekly team meeting discussing the quarterly results.",
+        "contextDetails": {
+          "setting": "Modern tech company office during a team meeting",
+          "situation": "The team is reviewing Q1 performance and planning for Q2. You have just finished your introduction and the CEO is asking for details.",
+          "keyInfo": [
+            "Project deadline is next Friday",
+            "Budget for Q2 is increased by 10%",
+            "User engagement grew by 15% in Q1"
+          ],
+          "yourGoal": "Present the marketing results and propose a new strategy for Q2",
+          "tips": [
+            "Start with a brief overview of the metrics",
+            "Be prepared to explain the dip in social media engagement"
+          ]
+        },
+        "yourRole": "Marketing Manager",
+        "aiRole": "CEO (Sarah)",
         "objectives": [
           "Explain the key marketing metrics",
           "Discuss challenges faced",
@@ -169,7 +184,21 @@ public final class CustomMaterialPrompts {
           "We faced some challenges with our target audience.",
           "For next quarter, I'm proposing a new approach."
         ],
-        "keyVocabulary": ["ROI", "conversion rate", "target audience", "engagement"]
+        "keyVocabulary": [
+          {
+            "term": "ROI",
+            "ipa": "/ˌɑːr.oʊˈaɪ/",
+            "definition": "Return on Investment; a measure of the profit made from an investment",
+            "example": "We need to improve the ROI of our ad campaigns."
+          },
+          {
+            "term": "conversion rate",
+            "ipa": "/kənˈvɜːr.ʒən reɪt/",
+            "definition": "The percentage of users who take a desired action",
+            "example": "Our landing page has a 5% conversion rate."
+          }
+        ],
+        "openingLine": "Hi there! I'm looking forward to hearing your update on the Q1 marketing performance. Shall we begin?"
       }
       ```
       </instructions>
@@ -236,7 +265,24 @@ public final class CustomMaterialPrompts {
         {"id": "v1", "word": "term", "ipa": "IPA pronunciation", "partOfSpeech": "noun", "definition": "...", "example": "...", "context": "..."}
       If QUIZ is requested: Create 5-8 quiz questions
       If SUMMARY is requested: Write a 3-5 paragraph summary
-      If ROLE_PLAY is requested: Create a role-play scenario
+      If ROLE_PLAY is requested: Create a role-play scenario with structure:
+        {
+          "title": "...",
+          "context": "...",
+          "contextDetails": {
+            "setting": "...", 
+            "situation": "... (Design this as an ongoing conversation or continuation of a story based on the content)", 
+            "keyInfo": ["..."], 
+            "yourGoal": "...", 
+            "tips": ["..."]
+          },
+          "yourRole": "...",
+          "aiRole": "...",
+          "objectives": ["..."],
+          "suggestedPrompts": ["..."],
+          "keyVocabulary": [{"term": "...", "ipa": "...", "definition": "...", "example": "..."}],
+          "openingLine": "... (The AI's first message to the user, initiating the interaction. AI must prioritize using vocabulary and patterns from the content)"
+        }
       If SHADOWING is requested: Extract 5-10 shadowing sentences
 
       Return as JSON with this structure (include only requested sections):

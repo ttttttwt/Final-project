@@ -29,7 +29,13 @@ public class FileValidator {
             FileCategory.LESSON_AUDIO, Set.of("audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-wav"),
             FileCategory.LESSON_IMAGE, Set.of("image/jpeg", "image/png", "image/gif", "image/webp"),
             FileCategory.DOCUMENT, Set.of("application/pdf"),
-            FileCategory.CERTIFICATE, Set.of("application/pdf"));
+            FileCategory.CERTIFICATE, Set.of("application/pdf"),
+            FileCategory.CUSTOM_MATERIAL, Set.of(
+                    "application/pdf",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp"));
 
     // Maximum file sizes per category (in bytes)
     private static final Map<FileCategory, Long> MAX_FILE_SIZES = Map.of(
@@ -38,7 +44,8 @@ public class FileValidator {
             FileCategory.LESSON_AUDIO, 50L * 1024 * 1024, // 50 MB
             FileCategory.LESSON_IMAGE, 10L * 1024 * 1024, // 10 MB
             FileCategory.DOCUMENT, 10L * 1024 * 1024, // 10 MB
-            FileCategory.CERTIFICATE, 10L * 1024 * 1024 // 10 MB
+            FileCategory.CERTIFICATE, 10L * 1024 * 1024, // 10 MB
+            FileCategory.CUSTOM_MATERIAL, 10L * 1024 * 1024 // 10 MB
     );
 
     // Magic bytes for file type verification

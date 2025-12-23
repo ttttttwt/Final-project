@@ -162,6 +162,9 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         GrammarExerciseSet exerciseSet = GrammarExerciseMapper.toExerciseSetEntity(request, content, userId, topic);
         exerciseSet = exerciseSetRepository.save(exerciseSet);
 
+        // Create initial progress record so it's saved in history
+        createInitialProgress(exerciseSet, userId);
+
         log.info("Successfully generated {} exercises for user {} in {}ms",
                 exerciseSet.getExerciseCount(), userId, responseTimeMs);
 
@@ -204,6 +207,10 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
             // Return random fallback
             GrammarExerciseSet fallback = fallbacks.get(new Random().nextInt(fallbacks.size()));
             log.info("Using fallback content: {}", fallback.getId());
+
+            // Create initial progress for the user if it doesn't exist
+            createInitialProgress(fallback, userId);
+
             GrammarExerciseSetDTO dto = GrammarExerciseMapper.toExerciseSetDTO(fallback);
             return dto;
         }
@@ -216,6 +223,9 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         GrammarExerciseSet exerciseSet = GrammarExerciseMapper.toExerciseSetEntity(request, content, userId, topic);
         exerciseSet.setIsFallback(true);
         exerciseSet = exerciseSetRepository.save(exerciseSet);
+
+        // Create initial progress record
+        createInitialProgress(exerciseSet, userId);
 
         return GrammarExerciseMapper.toExerciseSetDTO(exerciseSet);
     }
@@ -676,18 +686,56 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         log.info("Resetting progress for exercise set: {} by user: {}", exerciseSetId, userId);
 
         // Verify exercise set exists
-        if (!exerciseSetRepository.existsById(exerciseSetId)) {
-            throw new ResourceNotFoundException("Exercise set not found: " + exerciseSetId);
-        }
+        GrammarExerciseSet exerciseSet = exerciseSetRepository.findById(exerciseSetId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exercise set not found: " + exerciseSetId));
 
-        // Check if progress exists
-        if (!progressRepository.existsByUserIdAndExerciseSet_Id(userId, exerciseSetId)) {
-            throw new ResourceNotFoundException("No progress found for this exercise set");
-        }
+        // Find existing progress
+        UserGrammarProgress progress = progressRepository.findByUserIdAndExerciseSet_Id(userId, exerciseSetId)
+                .orElseThrow(() -> new ResourceNotFoundException("No progress found for this exercise set"));
 
-        // Delete the progress record
-        progressRepository.deleteByUserIdAndExerciseSet_Id(userId, exerciseSetId);
+        // Reset the progress record instead of deleting it
+        // This ensures the exercise stays in the user's history as "Not Started"
+        progress.setAnswers(new ArrayList<>());
+        progress.setScore(0);
+        progress.setMaxScore(exerciseSet.getExerciseCount());
+        progress.setPercentage(BigDecimal.ZERO);
+        progress.setTimeSpentSeconds(0);
+        progress.setCompletedAt(null);
+
+        progressRepository.save(progress);
 
         log.info("Successfully reset progress for exercise set: {} by user: {}", exerciseSetId, userId);
+    }
+
+    /**
+     * Creates an initial progress record for a user and exercise set.
+     * This ensures the exercise is saved in the user's history even if not yet
+     * started.
+     */
+    private void createInitialProgress(GrammarExerciseSet exerciseSet, UUID userId) {
+        try {
+            // Check if progress already exists to avoid unique constraint violation
+            if (progressRepository.existsByUserIdAndExerciseSet_Id(userId, exerciseSet.getId())) {
+                return;
+            }
+
+            UserGrammarProgress progress = UserGrammarProgress.builder()
+                    .userId(userId)
+                    .exerciseSet(exerciseSet)
+                    .answers(new ArrayList<>())
+                    .score(0)
+                    .maxScore(exerciseSet.getExerciseCount())
+                    .percentage(BigDecimal.ZERO)
+                    .timeSpentSeconds(0)
+                    .completedAt(null)
+                    .createdAt(Instant.now())
+                    .build();
+
+            progressRepository.save(progress);
+            log.info("Created initial progress record for user {} and exercise set {}", userId, exerciseSet.getId());
+        } catch (Exception e) {
+            log.error("Failed to create initial progress record for user {}: {}", userId, e.getMessage());
+            // Don't fail the generation if progress creation fails
+        }
     }
 }
