@@ -169,6 +169,15 @@ public class QuotaCheckAspect {
                             quota.getPlanType());
                 }
                 break;
+            case "custom_materials":
+                if (quota.getCustomMaterialsUsed() >= limits.getCustomMaterialsLimit()) {
+                    throw new QuotaExceededException(
+                            "custom_materials",
+                            limits.getCustomMaterialsLimit(),
+                            quota.getCustomMaterialsUsed(),
+                            quota.getPlanType());
+                }
+                break;
             default:
                 log.warn("Unknown session type: {}", sessionType);
         }
@@ -198,6 +207,9 @@ public class QuotaCheckAspect {
                 break;
             case "grammar":
                 quota.setGrammarExercisesUsed(quota.getGrammarExercisesUsed() + 1);
+                break;
+            case "custom_materials":
+                quota.setCustomMaterialsUsed(quota.getCustomMaterialsUsed() + 1);
                 break;
         }
 

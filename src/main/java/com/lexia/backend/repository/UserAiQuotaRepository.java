@@ -61,10 +61,13 @@ public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> 
                 last_reset_daily = NOW(),
                 feature_usage = jsonb_set(
                     jsonb_set(
-                        jsonb_set(feature_usage, '{roleplay,daily}', '0'),
-                        '{grammar,daily}', '0'
+                        jsonb_set(
+                            jsonb_set(feature_usage, '{roleplay,daily}', '0'),
+                            '{grammar,daily}', '0'
+                        ),
+                        '{flashcard,daily}', '0'
                     ),
-                    '{flashcard,daily}', '0'
+                    '{custom_materials,daily}', '0'
                 ),
                 updated_at = NOW()
             WHERE last_reset_daily < :resetBefore
@@ -80,13 +83,18 @@ public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> 
             SET monthly_used = 0,
                 roleplay_sessions_used = 0,
                 grammar_exercises_used = 0,
+                flashcard_decks_used = 0,
+                custom_materials_used = 0,
                 last_reset_monthly = NOW(),
                 feature_usage = jsonb_set(
                     jsonb_set(
-                        jsonb_set(feature_usage, '{roleplay,monthly}', '0'),
-                        '{grammar,monthly}', '0'
+                        jsonb_set(
+                            jsonb_set(feature_usage, '{roleplay,monthly}', '0'),
+                            '{grammar,monthly}', '0'
+                        ),
+                        '{flashcard,monthly}', '0'
                     ),
-                    '{flashcard,monthly}', '0'
+                    '{custom_materials,monthly}', '0'
                 ),
                 updated_at = NOW()
             WHERE last_reset_monthly < :resetBefore

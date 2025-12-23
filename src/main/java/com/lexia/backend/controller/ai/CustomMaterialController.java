@@ -1,5 +1,6 @@
 package com.lexia.backend.controller.ai;
 
+import com.lexia.backend.annotation.QuotaCheck;
 import com.lexia.backend.annotation.RequirePremium;
 import com.lexia.backend.dto.custommaterial.*;
 import com.lexia.backend.entity.User;
@@ -54,6 +55,8 @@ public class CustomMaterialController {
 
         private final CustomMaterialService customMaterialService;
         private final CustomMaterialChatService customMaterialChatService;
+        private final com.lexia.backend.repository.UserAiQuotaRepository quotaRepository;
+        private final com.lexia.backend.config.QuotaLimitsConfig quotaLimitsConfig;
 
         // ===== Upload & Create =====
 
@@ -69,6 +72,7 @@ public class CustomMaterialController {
         })
         @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         @RequirePremium(message = "Custom Materials is a Pro-only feature")
+        @QuotaCheck(contentType = "custom_materials", incrementSession = true, sessionType = "custom_materials")
         public ResponseEntity<MaterialCreatedDTO> createMaterial(
                         @Parameter(description = "File to upload (for PDF, DOCX, IMAGE source types)") @RequestPart(value = "file", required = false) MultipartFile file,
 
@@ -261,10 +265,24 @@ public class CustomMaterialController {
                 int remaining = customMaterialService.getRemainingQuota(user.getId());
                 boolean canCreate = customMaterialService.canCreateMaterial(user.getId());
 
+                // Get full quota info for better UI
+                com.lexia.backend.entity.UserAiQuota quota = quotaRepository.findByUserId(user.getId()).orElse(null);
+                int limit = 10; // Default
+                int used = 0;
+                String resetsAt = "";
+
+                if (quota != null) {
+                        limit = quotaLimitsConfig.getForPlan(quota.getPlanType()).getCustomMaterialsLimit();
+                        used = quota.getCustomMaterialsUsed();
+                        resetsAt = quota.getQuotaResetDate() != null ? quota.getQuotaResetDate().toString() : "";
+                }
+
                 return ResponseEntity.ok(Map.of(
                                 "remaining", remaining,
                                 "canCreate", canCreate,
-                                "monthlyLimit", 10));
+                                "limit", limit,
+                                "used", used,
+                                "resetsAt", resetsAt));
         }
 
         // ===== Style Transform =====

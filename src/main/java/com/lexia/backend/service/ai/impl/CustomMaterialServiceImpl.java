@@ -11,6 +11,7 @@ import com.lexia.backend.file.enums.FileCategory;
 import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.mapper.CustomMaterialMapper;
 import com.lexia.backend.repository.*;
+import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.service.ai.CustomMaterialProcessingService;
 import com.lexia.backend.service.ai.CustomMaterialPrompts;
 import com.lexia.backend.service.ai.CustomMaterialService;
@@ -62,6 +63,8 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
     private final CustomMaterialProcessingService processingService;
     private final GeminiClientService geminiClient;
     private final AIConfigService aiConfigService;
+    private final UserAiQuotaRepository quotaRepository;
+    private final com.lexia.backend.config.QuotaLimitsConfig quotaLimitsConfig;
 
     // ===== Public Methods =====
 
@@ -77,15 +80,17 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
         // Validate request
         request.validate();
 
-        // Check quota
+        // Quota is now checked by @QuotaCheck aspect on the controller
+        // but we still keep this as a secondary check if called from other services
         int remaining = getRemainingQuota(userId);
         if (remaining <= 0) {
+            UserAiQuota quota = quotaRepository.findByUserId(userId).orElse(null);
             throw new QuotaExceededException(
                     FEATURE_TYPE,
-                    MONTHLY_QUOTA,
-                    MONTHLY_QUOTA,
-                    PlanType.MONTHLY // Premium users (Pro tier)
-            );
+                    quotaLimitsConfig.getForPlan(quota != null ? quota.getPlanType() : PlanType.FREE)
+                            .getCustomMaterialsLimit(),
+                    quota != null ? quota.getCustomMaterialsUsed() : 0,
+                    quota != null ? quota.getPlanType() : PlanType.FREE);
         }
 
         // Handle file upload if needed
@@ -230,13 +235,13 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
 
     @Override
     public int getRemainingQuota(UUID userId) {
-        Instant monthStart = LocalDate.now(ZoneOffset.UTC)
-                .withDayOfMonth(1)
-                .atStartOfDay()
-                .toInstant(ZoneOffset.UTC);
+        UserAiQuota quota = quotaRepository.findByUserId(userId).orElse(null);
+        if (quota == null) {
+            return 0; // Should be created by aspect or login
+        }
 
-        long usedThisMonth = materialRepository.countByUserIdThisMonth(userId, monthStart);
-        return Math.max(0, MONTHLY_QUOTA - (int) usedThisMonth);
+        var limits = quotaLimitsConfig.getForPlan(quota.getPlanType());
+        return Math.max(0, limits.getCustomMaterialsLimit() - quota.getCustomMaterialsUsed());
     }
 
     // ===== Private Helpers =====

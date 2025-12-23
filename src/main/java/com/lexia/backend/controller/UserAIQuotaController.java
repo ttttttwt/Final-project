@@ -89,6 +89,9 @@ public class UserAIQuotaController {
         dto.setGrammarExercisesUsed(entity.getGrammarExercisesUsed());
         dto.setGrammarExercisesLimit(limits.getGrammarExercises());
 
+        dto.setCustomMaterialsUsed(entity.getCustomMaterialsUsed());
+        dto.setCustomMaterialsLimit(limits.getCustomMaterialsLimit());
+
         dto.setTotalRequestsUsed(entity.getMonthlyUsed());
         dto.setTotalRequestsLimit(limits.getTotalRequests());
 
@@ -97,12 +100,16 @@ public class UserAIQuotaController {
                 WARNING_THRESHOLD)
                 || isAboveThreshold(actualDeckCount, limits.getFlashcardDecks(), WARNING_THRESHOLD)
                 || isAboveThreshold(entity.getGrammarExercisesUsed(), limits.getGrammarExercises(), WARNING_THRESHOLD)
+                || isAboveThreshold(entity.getCustomMaterialsUsed(), limits.getCustomMaterialsLimit(),
+                        WARNING_THRESHOLD)
                 || isAboveThreshold(entity.getMonthlyUsed(), limits.getTotalRequests(), WARNING_THRESHOLD);
 
         boolean hasCritical = isAboveThreshold(entity.getRoleplaySessionsUsed(), limits.getRoleplaySessions(),
                 CRITICAL_THRESHOLD)
                 || isAboveThreshold(actualDeckCount, limits.getFlashcardDecks(), CRITICAL_THRESHOLD)
                 || isAboveThreshold(entity.getGrammarExercisesUsed(), limits.getGrammarExercises(), CRITICAL_THRESHOLD)
+                || isAboveThreshold(entity.getCustomMaterialsUsed(), limits.getCustomMaterialsLimit(),
+                        CRITICAL_THRESHOLD)
                 || isAboveThreshold(entity.getMonthlyUsed(), limits.getTotalRequests(), CRITICAL_THRESHOLD);
 
         dto.setQuotaWarning(hasWarning);

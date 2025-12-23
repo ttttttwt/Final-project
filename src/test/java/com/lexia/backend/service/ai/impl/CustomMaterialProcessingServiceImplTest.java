@@ -12,6 +12,8 @@ import com.lexia.backend.repository.CustomMaterialJobRepository;
 import com.lexia.backend.repository.UserCustomMaterialRepository;
 import com.lexia.backend.repository.UserCustomMaterialSettingsRepository;
 import com.lexia.backend.service.ai.ContentExtractorService;
+import com.lexia.backend.service.ai.CustomMaterialProcessingService;
+import com.lexia.backend.service.ai.FlashcardService;
 import com.lexia.backend.service.ai.GeminiClientService;
 import com.lexia.backend.validation.PromptSanitizer;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +23,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.*;
@@ -44,6 +48,14 @@ class CustomMaterialProcessingServiceImplTest {
         private GeminiClientService geminiClient;
         @Mock
         private PromptSanitizer promptSanitizer;
+        @Mock
+        private ApplicationContext applicationContext;
+        @Mock
+        private ApplicationEventPublisher eventPublisher;
+        @Mock
+        private FlashcardService flashcardService;
+        @Mock
+        private com.lexia.backend.service.ai.AiUsageTracker usageTracker;
         @Spy
         private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -192,6 +204,7 @@ class CustomMaterialProcessingServiceImplTest {
                 job.setRetryCount(0);
 
                 when(jobRepository.findByMaterialId(materialId)).thenReturn(Optional.of(job));
+                when(applicationContext.getBean(CustomMaterialProcessingService.class)).thenReturn(processingService);
                 // We also need to mock the subsequent processMaterial calls
                 when(materialRepository.findById(materialId)).thenReturn(Optional.of(material));
                 when(contentExtractor.extractContent(material)).thenReturn("Content");

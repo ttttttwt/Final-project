@@ -154,6 +154,14 @@ public class UserAiQuota {
     @Builder.Default
     private Integer grammarExercisesUsed = 0;
 
+    /**
+     * Number of custom materials generated this month.
+     * Each material generation counts as 1.
+     */
+    @Column(name = "custom_materials_used", nullable = false)
+    @Builder.Default
+    private Integer customMaterialsUsed = 0;
+
     // ========== Suspension Status ==========
 
     /**
@@ -222,6 +230,7 @@ public class UserAiQuota {
         limits.put("roleplay", Map.of("daily", 20, "monthly", 200));
         limits.put("grammar", Map.of("daily", 30, "monthly", 300));
         limits.put("flashcard", Map.of("daily", 50, "monthly", 500));
+        limits.put("custom_materials", Map.of("daily", 5, "monthly", 10));
         return limits;
     }
 
@@ -233,6 +242,7 @@ public class UserAiQuota {
         usage.put("roleplay", new HashMap<>(Map.of("daily", 0, "monthly", 0)));
         usage.put("grammar", new HashMap<>(Map.of("daily", 0, "monthly", 0)));
         usage.put("flashcard", new HashMap<>(Map.of("daily", 0, "monthly", 0)));
+        usage.put("custom_materials", new HashMap<>(Map.of("daily", 0, "monthly", 0)));
         return usage;
     }
 
@@ -381,7 +391,8 @@ public class UserAiQuota {
         monthlyUsed = 0;
         roleplaySessionsUsed = 0;
         grammarExercisesUsed = 0;
-        // Note: flashcardDecksUsed is a hard limit (total decks), not reset monthly
+        flashcardDecksUsed = 0;
+        customMaterialsUsed = 0;
         lastResetMonthly = Instant.now();
 
         if (featureUsage != null) {
