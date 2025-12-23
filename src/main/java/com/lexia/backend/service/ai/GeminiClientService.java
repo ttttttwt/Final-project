@@ -8,16 +8,21 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Service interface for Google Gemini AI client operations.
  * 
- * <p>Provides methods for:</p>
+ * <p>
+ * Provides methods for:
+ * </p>
  * <ul>
- *   <li>Synchronous content generation</li>
- *   <li>Asynchronous content generation</li>
- *   <li>SSE streaming for real-time responses</li>
- *   <li>Token estimation for cost tracking</li>
+ * <li>Synchronous content generation</li>
+ * <li>Asynchronous content generation</li>
+ * <li>SSE streaming for real-time responses</li>
+ * <li>Token estimation for cost tracking</li>
  * </ul>
  * 
- * <p>All methods include resilience patterns (retry, circuit breaker, rate limiting)
- * and fallback mechanisms for graceful degradation.</p>
+ * <p>
+ * All methods include resilience patterns (retry, circuit breaker, rate
+ * limiting)
+ * and fallback mechanisms for graceful degradation.
+ * </p>
  * 
  * @see com.lexia.backend.config.GeminiConfig
  */
@@ -26,14 +31,20 @@ public interface GeminiClientService {
     /**
      * Generates content synchronously using the default model.
      * 
-     * <p>Uses default model (gemini-2.0-flash-exp) with structured output config.
-     * Includes retry (3 attempts) and circuit breaker protection.</p>
+     * <p>
+     * Uses default model (gemini-2.0-flash-exp) with structured output config.
+     * Includes retry (3 attempts) and circuit breaker protection.
+     * </p>
      * 
      * @param prompt the prompt to send to Gemini
      * @return GeminiResponseDTO containing generated content and metadata
-     * @throws com.lexia.backend.exception.ai.AiServiceException if generation fails after retries
-     * @throws com.lexia.backend.exception.ai.AiConfigurationException if API is not configured
-     * @throws com.lexia.backend.exception.ai.AiRateLimitException if rate limit is exceeded
+     * @throws com.lexia.backend.exception.ai.AiServiceException       if generation
+     *                                                                 fails after
+     *                                                                 retries
+     * @throws com.lexia.backend.exception.ai.AiConfigurationException if API is not
+     *                                                                 configured
+     * @throws com.lexia.backend.exception.ai.AiRateLimitException     if rate limit
+     *                                                                 is exceeded
      */
     GeminiResponseDTO generateContent(String prompt);
 
@@ -41,7 +52,8 @@ public interface GeminiClientService {
      * Generates content synchronously using the specified model.
      * 
      * @param prompt the prompt to send to Gemini
-     * @param model the model to use (e.g., "gemini-2.0-flash-exp", "gemini-1.5-pro")
+     * @param model  the model to use (e.g., "gemini-2.0-flash-exp",
+     *               "gemini-1.5-pro")
      * @return GeminiResponseDTO containing generated content and metadata
      * @throws com.lexia.backend.exception.ai.AiServiceException if generation fails
      */
@@ -50,10 +62,10 @@ public interface GeminiClientService {
     /**
      * Generates content synchronously with custom configuration.
      * 
-     * @param prompt the prompt to send to Gemini
-     * @param model the model to use
+     * @param prompt      the prompt to send to Gemini
+     * @param model       the model to use
      * @param temperature creativity level (0.0-1.0)
-     * @param maxTokens maximum output tokens
+     * @param maxTokens   maximum output tokens
      * @return GeminiResponseDTO containing generated content and metadata
      */
     GeminiResponseDTO generateContent(String prompt, String model, float temperature, int maxTokens);
@@ -61,18 +73,21 @@ public interface GeminiClientService {
     /**
      * Generates structured content (JSON) synchronously.
      * 
-     * <p>Sets responseMimeType to "application/json" to ensure valid JSON output.</p>
+     * <p>
+     * Sets responseMimeType to "application/json" to ensure valid JSON output.
+     * </p>
      * 
-     * @param prompt the prompt to send to Gemini
-     * @param model the model to use
+     * @param prompt      the prompt to send to Gemini
+     * @param model       the model to use
      * @param temperature creativity level (0.0-1.0)
-     * @param maxTokens maximum output tokens
+     * @param maxTokens   maximum output tokens
      * @return GeminiResponseDTO containing generated content and metadata
      */
     GeminiResponseDTO generateStructuredContent(String prompt, String model, float temperature, int maxTokens);
 
     /**
-     * Generates structured content (JSON) synchronously using default model and config.
+     * Generates structured content (JSON) synchronously using default model and
+     * config.
      * 
      * @param prompt the prompt to send to Gemini
      * @return GeminiResponseDTO containing generated content and metadata
@@ -82,8 +97,10 @@ public interface GeminiClientService {
     /**
      * Generates content asynchronously using the default model.
      * 
-     * <p>Non-blocking call that returns immediately with a CompletableFuture.
-     * Useful for parallel AI operations.</p>
+     * <p>
+     * Non-blocking call that returns immediately with a CompletableFuture.
+     * Useful for parallel AI operations.
+     * </p>
      * 
      * @param prompt the prompt to send to Gemini
      * @return CompletableFuture that will contain the response when complete
@@ -94,7 +111,7 @@ public interface GeminiClientService {
      * Generates content asynchronously using the specified model.
      * 
      * @param prompt the prompt to send to Gemini
-     * @param model the model to use
+     * @param model  the model to use
      * @return CompletableFuture that will contain the response when complete
      */
     CompletableFuture<GeminiResponseDTO> generateContentAsync(String prompt, String model);
@@ -102,15 +119,20 @@ public interface GeminiClientService {
     /**
      * Streams content generation via Server-Sent Events (SSE).
      * 
-     * <p>Returns an SseEmitter that streams tokens as they are generated.
-     * Event format:</p>
+     * <p>
+     * Returns an SseEmitter that streams tokens as they are generated.
+     * Event format:
+     * </p>
      * <ul>
-     *   <li><code>event: token</code> - Individual tokens during generation</li>
-     *   <li><code>event: complete</code> - Generation finished successfully</li>
-     *   <li><code>event: error</code> - An error occurred during streaming</li>
+     * <li><code>event: token</code> - Individual tokens during generation</li>
+     * <li><code>event: complete</code> - Generation finished successfully</li>
+     * <li><code>event: error</code> - An error occurred during streaming</li>
      * </ul>
      * 
-     * <p>Example SSE events:</p>
+     * <p>
+     * Example SSE events:
+     * </p>
+     * 
      * <pre>
      * event: token
      * data: {"content": "Hello", "index": 0}
@@ -131,20 +153,47 @@ public interface GeminiClientService {
      * Streams content generation via SSE using the specified model.
      * 
      * @param prompt the prompt to send to Gemini
-     * @param model the model to use
+     * @param model  the model to use
      * @return SseEmitter for streaming response
      */
     SseEmitter streamContent(String prompt, String model);
 
     /**
+     * Generates content with inline file data.
+     * Uses Part.fromBytes() for files that cannot be accessed via URL (e.g.,
+     * localhost).
+     * 
+     * <p>
+     * This method is useful when the file is stored locally and Gemini cannot
+     * access it via URL. The file data is sent directly as part of the request.
+     * </p>
+     * 
+     * <p>
+     * Size limit: 20MB total request size (prompt + file data).
+     * </p>
+     * 
+     * @param prompt   the text prompt
+     * @param fileData the file content as byte array
+     * @param mimeType the MIME type (e.g., "application/pdf", "image/png",
+     *                 "image/jpeg")
+     * @return GeminiResponseDTO containing generated content and metadata
+     * @throws com.lexia.backend.exception.ai.AiServiceException if file data is
+     *                                                           null/empty or
+     *                                                           exceeds size limit
+     */
+    GeminiResponseDTO generateContentWithFile(String prompt, byte[] fileData, String mimeType);
+
+    /**
      * Estimates the number of tokens in the given text.
      * 
-     * <p>Uses a heuristic approximation (~4 characters per token for English).
-     * This is useful for:</p>
+     * <p>
+     * Uses a heuristic approximation (~4 characters per token for English).
+     * This is useful for:
+     * </p>
      * <ul>
-     *   <li>Pre-flight cost estimation</li>
-     *   <li>Prompt truncation to fit token limits</li>
-     *   <li>Quota tracking</li>
+     * <li>Pre-flight cost estimation</li>
+     * <li>Prompt truncation to fit token limits</li>
+     * <li>Quota tracking</li>
      * </ul>
      * 
      * @param text the text to estimate tokens for

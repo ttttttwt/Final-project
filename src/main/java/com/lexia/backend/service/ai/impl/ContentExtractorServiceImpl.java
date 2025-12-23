@@ -3,10 +3,13 @@ package com.lexia.backend.service.ai.impl;
 import com.lexia.backend.entity.UserCustomMaterial;
 import com.lexia.backend.enums.CustomMaterialSourceType;
 import com.lexia.backend.exception.ContentExtractionException;
+import com.lexia.backend.file.entity.FileEntity;
+import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.service.ai.ContentExtractorService;
 import com.lexia.backend.service.ai.GeminiClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -19,6 +22,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +62,41 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
 
     private final GeminiClientService geminiClient;
     private final HttpClient httpClient;
+    private final FileStorageService fileStorageService;
+
+    // Pattern to extract file ID from local URL: /api/v1/files/{uuid}/download
+    private static final Pattern LOCAL_FILE_URL_PATTERN = Pattern.compile(
+            "/api/v1/files/([a-f0-9-]{36})/download");
+
+    /**
+     * Checks if the URL is a local file URL (stored on this server).
+     */
+    private boolean isLocalFileUrl(String url) {
+        return url != null && url.startsWith("/api/v1/files/");
+    }
+
+    /**
+     * Extracts the file UUID from a local file URL.
+     */
+    private UUID extractFileIdFromUrl(String url) {
+        Matcher matcher = LOCAL_FILE_URL_PATTERN.matcher(url);
+        if (matcher.find()) {
+            return UUID.fromString(matcher.group(1));
+        }
+        throw new ContentExtractionException("FILE", "Invalid local file URL format: " + url);
+    }
+
+    /**
+     * Loads file bytes from local storage.
+     */
+    private byte[] loadFileBytes(UUID fileId) {
+        try {
+            Resource resource = fileStorageService.loadAsResource(fileId);
+            return resource.getInputStream().readAllBytes();
+        } catch (IOException e) {
+            throw new ContentExtractionException("FILE", "Failed to load file: " + e.getMessage(), e);
+        }
+    }
 
     @Override
     public String extractContent(UserCustomMaterial material) {
@@ -150,12 +189,27 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
             prompt.append(String.format("Extract up to page %d.%n", pageEnd));
         }
 
-        prompt.append("\nPDF URL: ").append(fileUrl);
-
         try {
-            // Use Gemini multimodal to extract PDF content
-            var response = geminiClient.generateContent(prompt.toString());
-            String content = response.content();
+            String content;
+
+            // Check if this is a local file URL (cannot be accessed by Gemini remotely)
+            if (isLocalFileUrl(fileUrl)) {
+                log.info("PDF is stored locally, using inline file upload for Gemini");
+                UUID fileId = extractFileIdFromUrl(fileUrl);
+                byte[] fileBytes = loadFileBytes(fileId);
+
+                // Use inline file upload
+                var response = geminiClient.generateContentWithFile(
+                        prompt.toString(), fileBytes, "application/pdf");
+                log.info("PDF extraction response received from Gemini" + 
+                         (response.toString()));
+                content = response.content();
+            } else {
+                // Remote URL - pass to Gemini directly
+                prompt.append("\nPDF URL: ").append(fileUrl);
+                var response = geminiClient.generateContent(prompt.toString());
+                content = response.content();
+            }
 
             if (content == null || content.isBlank()) {
                 throw new ContentExtractionException("PDF", "No text extracted from PDF");
@@ -261,11 +315,49 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                 """;
 
         try {
-            var response = geminiClient.generateContent(ocrPrompt + "\n\nImage URL: " + fileUrl);
-            return response.content();
+            String content;
+
+            // Check if this is a local file URL (cannot be accessed by Gemini remotely)
+            if (isLocalFileUrl(fileUrl)) {
+                log.info("Image is stored locally, using inline file upload for Gemini");
+                UUID fileId = extractFileIdFromUrl(fileUrl);
+                byte[] fileBytes = loadFileBytes(fileId);
+
+                // Determine MIME type from file extension or default to image/png
+                String mimeType = determineMimeType(fileUrl);
+
+                // Use inline file upload
+                var response = geminiClient.generateContentWithFile(ocrPrompt, fileBytes, mimeType);
+                content = response.content();
+            } else {
+                // Remote URL - pass to Gemini directly
+                var response = geminiClient.generateContent(ocrPrompt + "\n\nImage URL: " + fileUrl);
+                content = response.content();
+            }
+
+            return content;
         } catch (Exception e) {
             throw new ContentExtractionException("IMAGE", "OCR failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Determines MIME type from file URL or returns default.
+     */
+    private String determineMimeType(String fileUrl) {
+        String lowerUrl = fileUrl.toLowerCase();
+        if (lowerUrl.contains(".png"))
+            return "image/png";
+        if (lowerUrl.contains(".jpg") || lowerUrl.contains(".jpeg"))
+            return "image/jpeg";
+        if (lowerUrl.contains(".gif"))
+            return "image/gif";
+        if (lowerUrl.contains(".webp"))
+            return "image/webp";
+        if (lowerUrl.contains(".pdf"))
+            return "application/pdf";
+        // Default to PNG for images
+        return "image/png";
     }
 
     private String extractFromYoutube(UserCustomMaterial material) {
@@ -332,12 +424,12 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                 String content = sb.toString().trim();
 
                 log.info("Tier 1: Successfully fetched transcript. Length: {} chars", content.length());
-                
+
                 // Log preview of content as requested
                 if (content.length() > 0) {
                     log.info("Tier 1 Content Preview: {}", content.substring(0, Math.min(content.length(), 500)));
                 }
-                
+
                 return content;
             }
         } catch (Exception e) {
@@ -416,7 +508,8 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
     }
 
     /**
-     * Parse JSON transcript format: [{"text": "...", "start": 0.0, "duration": 1.0}, ...]
+     * Parse JSON transcript format: [{"text": "...", "start": 0.0, "duration":
+     * 1.0}, ...]
      */
     private String parseJsonTranscript(String json) {
         try {
@@ -481,9 +574,12 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                         && altResponse.body().contains("<text")) {
                     String content = parseTimedText(altResponse.body());
                     if (content != null) {
-                        log.info("Tier 1 Fallback: Successfully fetched transcript from timedtext API. Length: {} chars", content.length());
+                        log.info(
+                                "Tier 1 Fallback: Successfully fetched transcript from timedtext API. Length: {} chars",
+                                content.length());
                         if (content.length() > 0) {
-                            log.info("Tier 1 Fallback Content Preview: {}", content.substring(0, Math.min(content.length(), 500)));
+                            log.info("Tier 1 Fallback Content Preview: {}",
+                                    content.substring(0, Math.min(content.length(), 500)));
                         }
                         return content;
                     }
@@ -651,7 +747,7 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
             }
 
             String html = response.body();
-            
+
             // Update material title from website <title> tag
             updateMaterialTitleFromWebsite(material, html);
 

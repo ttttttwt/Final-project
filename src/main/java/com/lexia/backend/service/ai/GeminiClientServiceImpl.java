@@ -6,11 +6,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.genai.Client;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.File;
+import com.google.genai.types.UploadFileConfig;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.Part;
 import com.lexia.backend.config.GeminiConfig;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import com.lexia.backend.dto.ai.GeminiResponseDTO;
 import com.lexia.backend.dto.ai.SseEventDTO;
 import com.lexia.backend.dto.ai.TokenUsageDTO;
@@ -46,13 +50,15 @@ import java.util.concurrent.TimeUnit;
 /**
  * Implementation of GeminiClientService with resilience patterns.
  * 
- * <p>Features:</p>
+ * <p>
+ * Features:
+ * </p>
  * <ul>
- *   <li>Retry with exponential backoff (3 attempts)</li>
- *   <li>Circuit breaker (opens at 50% failure rate)</li>
- *   <li>Rate limiting (100 requests/minute)</li>
- *   <li>SSE streaming for real-time responses</li>
- *   <li>Fallback content on failures</li>
+ * <li>Retry with exponential backoff (3 attempts)</li>
+ * <li>Circuit breaker (opens at 50% failure rate)</li>
+ * <li>Rate limiting (100 requests/minute)</li>
+ * <li>SSE streaming for real-time responses</li>
+ * <li>Fallback content on failures</li>
  * </ul>
  * 
  * @see GeminiClientService
@@ -160,8 +166,8 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         validateConfiguration();
         validatePrompt(prompt);
 
-        log.debug("Generating content with model: {}, temperature: {}, maxTokens: {}", 
-                  model, temperature, maxTokens);
+        log.debug("Generating content with model: {}, temperature: {}, maxTokens: {}",
+                model, temperature, maxTokens);
 
         long startTime = System.currentTimeMillis();
 
@@ -189,7 +195,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
             String finishReason = extractFinishReason(response);
 
             log.info("Content generated successfully. Model: {}, Tokens: {}, Time: {}ms",
-                     model, tokenUsage.totalTokens(), responseTimeMs);
+                    model, tokenUsage.totalTokens(), responseTimeMs);
 
             return GeminiResponseDTO.success(generatedText, model, tokenUsage, responseTimeMs, finishReason);
 
@@ -208,8 +214,8 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         validateConfiguration();
         validatePrompt(prompt);
 
-        log.debug("Generating structured content with model: {}, temperature: {}, maxTokens: {}", 
-                  model, temperature, maxTokens);
+        log.debug("Generating structured content with model: {}, temperature: {}, maxTokens: {}",
+                model, temperature, maxTokens);
 
         long startTime = System.currentTimeMillis();
 
@@ -237,7 +243,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
             String finishReason = extractFinishReason(response);
 
             log.info("Structured content generated successfully. Model: {}, Tokens: {}, Time: {}ms",
-                     model, tokenUsage.totalTokens(), responseTimeMs);
+                    model, tokenUsage.totalTokens(), responseTimeMs);
 
             return GeminiResponseDTO.success(generatedText, model, tokenUsage, responseTimeMs, finishReason);
 
@@ -252,9 +258,9 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
     @RateLimiter(name = CIRCUIT_BREAKER_NAME)
     public GeminiResponseDTO generateStructuredContent(String prompt) {
-        return generateStructuredContent(prompt, geminiConfig.getDefaultModel(), 
-                                         0.3f, // Lower temperature for structured output
-                                         geminiConfig.getMaxOutputTokens());
+        return generateStructuredContent(prompt, geminiConfig.getDefaultModel(),
+                0.3f, // Lower temperature for structured output
+                geminiConfig.getMaxOutputTokens());
     }
 
     @Override
@@ -267,6 +273,99 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     @Async
     public CompletableFuture<GeminiResponseDTO> generateContentAsync(String prompt, String model) {
         return CompletableFuture.supplyAsync(() -> generateContent(prompt, model));
+    }
+
+    @Override
+    @Retry(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentWithFileFallback")
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentWithFileFallback")
+    @RateLimiter(name = CIRCUIT_BREAKER_NAME)
+    public GeminiResponseDTO generateContentWithFile(String prompt, byte[] fileData, String mimeType) {
+        validateGlobalConstraints();
+        validateConfiguration();
+        validatePrompt(prompt);
+
+        if (fileData == null || fileData.length == 0) {
+            throw new AiServiceException("File data cannot be null or empty");
+        }
+        if (fileData.length > 20 * 1024 * 1024) { // 20MB limit
+            throw new AiServiceException("File size exceeds 20MB limit");
+        }
+
+        long startTime = System.currentTimeMillis();
+        Path tempFile = null;
+        File uploadFile = null;
+
+        try {
+            // 1. Create temp file
+            tempFile = Files.createTempFile("gemini-upload-", ".tmp");
+            Files.write(tempFile, fileData);
+            log.debug("Created temp file for upload: {}", tempFile);
+
+            // 2. Upload to Gemini
+            log.info("Uploading file to Gemini File API...");
+            uploadFile = geminiClient.files.upload(
+                    tempFile.toString(),
+                    UploadFileConfig.builder()
+                            .mimeType(mimeType)
+                            .build());
+
+            String fileUri = uploadFile.uri()
+                    .orElseThrow(() -> new AiServiceException("Upload failed: No URI returned"));
+            log.info("File uploaded successfully. URI: {}", fileUri);
+
+            // 3. Generate content
+            GenerateContentConfig config = buildConfig(geminiConfig.getTemperature(),
+                    geminiConfig.getMaxOutputTokens());
+
+            // Build content with both text and file parts using URI
+            Content content = Content.builder()
+                    .role("user")
+                    .parts(
+                            Part.fromText(prompt),
+                            Part.fromUri(fileUri, mimeType))
+                    .build();
+
+            log.info("[GEMINI-FILE-REQUEST] Model: {}, Prompt length: {}, File URI: {}",
+                    geminiConfig.getDefaultModel(), prompt.length(), fileUri);
+
+            GenerateContentResponse response = geminiClient.models.generateContent(
+                    geminiConfig.getDefaultModel(), content, config);
+
+            long responseTimeMs = System.currentTimeMillis() - startTime;
+
+            // Extract text (reusing existing robust extraction)
+            String generatedText = extractText(response);
+            TokenUsageDTO tokenUsage = extractTokenUsage(response, prompt, generatedText);
+            String finishReason = extractFinishReason(response);
+
+            log.info("Content with file generated successfully. Model: {}, Tokens: {}, Time: {}ms",
+                    geminiConfig.getDefaultModel(), tokenUsage.totalTokens(), responseTimeMs);
+
+            return GeminiResponseDTO.success(generatedText, geminiConfig.getDefaultModel(),
+                    tokenUsage, responseTimeMs, finishReason);
+
+        } catch (Exception e) {
+            log.error("Error generating content with file: {}", e.getMessage(), e);
+            throw mapException(e);
+        } finally {
+            // Cleanup
+            if (uploadFile != null && uploadFile.name().isPresent()) {
+                try {
+                    String fileName = uploadFile.name().get();
+                    log.debug("Deleting file from Gemini: {}", fileName);
+                    geminiClient.files.delete(fileName, null);
+                } catch (Exception ex) {
+                    log.warn("Failed to delete file from Gemini: {}", ex.getMessage());
+                }
+            }
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException ex) {
+                    log.warn("Failed to delete local temp file: {}", ex.getMessage());
+                }
+            }
+        }
     }
 
     @Override
@@ -315,7 +414,8 @@ public class GeminiClientServiceImpl implements GeminiClientService {
             logGeminiStreamRequest(model, prompt, messageId);
 
             // Use streaming API
-            Iterable<GenerateContentResponse> stream = geminiClient.models.generateContentStream(model, content, config);
+            Iterable<GenerateContentResponse> stream = geminiClient.models.generateContentStream(model, content,
+                    config);
 
             for (GenerateContentResponse chunk : stream) {
                 String text = extractText(chunk);
@@ -400,15 +500,15 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         if (!isConfigured()) {
             return false;
         }
-        io.github.resilience4j.circuitbreaker.CircuitBreaker cb = 
-                circuitBreakerRegistry.circuitBreaker(CIRCUIT_BREAKER_NAME);
+        io.github.resilience4j.circuitbreaker.CircuitBreaker cb = circuitBreakerRegistry
+                .circuitBreaker(CIRCUIT_BREAKER_NAME);
         return cb.getState() != io.github.resilience4j.circuitbreaker.CircuitBreaker.State.OPEN;
     }
 
     @Override
     public String getCircuitBreakerState() {
-        io.github.resilience4j.circuitbreaker.CircuitBreaker cb = 
-                circuitBreakerRegistry.circuitBreaker(CIRCUIT_BREAKER_NAME);
+        io.github.resilience4j.circuitbreaker.CircuitBreaker cb = circuitBreakerRegistry
+                .circuitBreaker(CIRCUIT_BREAKER_NAME);
         return cb.getState().name();
     }
 
@@ -423,8 +523,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         log.warn("Fallback triggered for default model. Error type: {}", e.getClass().getSimpleName());
         return GeminiResponseDTO.fallback(
                 "I apologize, but I'm temporarily unable to generate a response. Please try again later.",
-                geminiConfig.getDefaultModel()
-        );
+                geminiConfig.getDefaultModel());
     }
 
     /**
@@ -435,22 +534,34 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         log.warn("Fallback triggered for model {}. Error type: {}", model, e.getClass().getSimpleName());
         return GeminiResponseDTO.fallback(
                 "I apologize, but I'm temporarily unable to generate a response. Please try again later.",
-                model
-        );
+                model);
     }
 
     /**
      * Fallback method for custom config generation.
      */
     @SuppressWarnings("unused")
-    private GeminiResponseDTO generateContentFallback(String prompt, String model, 
-                                                       float temperature, int maxTokens, Exception e) {
-        log.warn("Fallback triggered for model {} with custom config. Error type: {}", 
-                 model, e.getClass().getSimpleName());
+    private GeminiResponseDTO generateContentFallback(String prompt, String model,
+            float temperature, int maxTokens, Exception e) {
+        log.warn("Fallback triggered for model {} with custom config. Error type: {}",
+                model, e.getClass().getSimpleName());
         return GeminiResponseDTO.fallback(
                 "I apologize, but I'm temporarily unable to generate a response. Please try again later.",
-                model
-        );
+                model);
+    }
+
+    /**
+     * Fallback method for file-based content generation.
+     * MUST be public and have matching signature + Throwable to work with
+     * Resilience4j correctly.
+     */
+    public GeminiResponseDTO generateContentWithFileFallback(String prompt, byte[] fileData,
+            String mimeType, Throwable t) {
+        log.warn("Fallback triggered for file-based generation. MimeType: {}, Error type: {}, Message: {}",
+                mimeType, t.getClass().getSimpleName(), t.getMessage());
+        return GeminiResponseDTO.fallback(
+                "I apologize, but I'm temporarily unable to process the file. Please try again later.",
+                geminiConfig.getDefaultModel());
     }
 
     // ==================== Helper Methods ====================
@@ -458,45 +569,45 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     /**
      * Logs the full JSON request data sent to Gemini API.
      * 
-     * @param model the model name
-     * @param prompt the prompt text
-     * @param config the generation config
+     * @param model       the model name
+     * @param prompt      the prompt text
+     * @param config      the generation config
      * @param temperature the temperature setting
-     * @param maxTokens the max tokens setting
+     * @param maxTokens   the max tokens setting
      */
-    private void logGeminiRequest(String model, String prompt, GenerateContentConfig config, 
-                                  float temperature, int maxTokens) {
+    private void logGeminiRequest(String model, String prompt, GenerateContentConfig config,
+            float temperature, int maxTokens) {
         try {
             var requestData = new java.util.LinkedHashMap<String, Object>();
             requestData.put("model", model);
             requestData.put("timestamp", java.time.Instant.now().toString());
-            
+
             var contentData = new java.util.LinkedHashMap<String, Object>();
             contentData.put("role", "user");
             contentData.put("prompt", prompt);
             contentData.put("promptLength", prompt.length());
             contentData.put("estimatedTokens", estimateTokens(prompt));
             requestData.put("content", contentData);
-            
+
             var configData = new java.util.LinkedHashMap<String, Object>();
             configData.put("temperature", temperature);
             configData.put("maxOutputTokens", maxTokens);
             requestData.put("generationConfig", configData);
-            
+
             String jsonRequest = objectMapper.writeValueAsString(requestData);
             log.info("[GEMINI-REQUEST] Sending request to Gemini API:\n{}", jsonRequest);
         } catch (JsonProcessingException e) {
             log.warn("[GEMINI-REQUEST] Failed to serialize request for logging: {}", e.getMessage());
-            log.info("[GEMINI-REQUEST] Model: {}, Prompt length: {}, Temperature: {}, MaxTokens: {}", 
-                     model, prompt.length(), temperature, maxTokens);
+            log.info("[GEMINI-REQUEST] Model: {}, Prompt length: {}, Temperature: {}, MaxTokens: {}",
+                    model, prompt.length(), temperature, maxTokens);
         }
     }
 
     /**
      * Logs the full JSON request data for streaming requests to Gemini API.
      * 
-     * @param model the model name
-     * @param prompt the prompt text
+     * @param model     the model name
+     * @param prompt    the prompt text
      * @param messageId the unique message ID for this stream
      */
     private void logGeminiStreamRequest(String model, String prompt, String messageId) {
@@ -506,25 +617,25 @@ public class GeminiClientServiceImpl implements GeminiClientService {
             requestData.put("messageId", messageId);
             requestData.put("model", model);
             requestData.put("timestamp", java.time.Instant.now().toString());
-            
+
             var contentData = new java.util.LinkedHashMap<String, Object>();
             contentData.put("role", "user");
             contentData.put("prompt", prompt);
             contentData.put("promptLength", prompt.length());
             contentData.put("estimatedTokens", estimateTokens(prompt));
             requestData.put("content", contentData);
-            
+
             var configData = new java.util.LinkedHashMap<String, Object>();
             configData.put("temperature", 0.9f); // creativeContentConfig temperature
             configData.put("maxOutputTokens", geminiConfig.getMaxOutputTokens());
             requestData.put("generationConfig", configData);
-            
+
             String jsonRequest = objectMapper.writeValueAsString(requestData);
             log.info("[GEMINI-STREAM-REQUEST] Sending streaming request to Gemini API:\n{}", jsonRequest);
         } catch (JsonProcessingException e) {
             log.warn("[GEMINI-STREAM-REQUEST] Failed to serialize request for logging: {}", e.getMessage());
-            log.info("[GEMINI-STREAM-REQUEST] MessageId: {}, Model: {}, Prompt length: {}", 
-                     messageId, model, prompt.length());
+            log.info("[GEMINI-STREAM-REQUEST] MessageId: {}, Model: {}, Prompt length: {}",
+                    messageId, model, prompt.length());
         }
     }
 
@@ -575,26 +686,60 @@ public class GeminiClientServiceImpl implements GeminiClientService {
      */
     private String extractText(GenerateContentResponse response) {
         if (response == null) {
+            log.warn("[GEMINI-EXTRACT] Response is null");
             return "";
         }
-        
+
         Optional<List<Candidate>> candidatesOpt = response.candidates();
         if (candidatesOpt.isEmpty() || candidatesOpt.get().isEmpty()) {
+            log.warn("[GEMINI-EXTRACT] No candidates in response");
+            try {
+                if (response.promptFeedback().isPresent()) {
+                    log.warn("[GEMINI-EXTRACT] PromptFeedback: {}", response.promptFeedback().get());
+                } else {
+                    log.warn("[GEMINI-EXTRACT] No PromptFeedback available. RAW Response: {}", response);
+                }
+            } catch (Exception e) {
+                log.warn("[GEMINI-EXTRACT] Failed to log debug info: {}", e.getMessage());
+            }
             return "";
         }
-        
+
         StringBuilder textBuilder = new StringBuilder();
         for (Candidate candidate : candidatesOpt.get()) {
+            log.debug("[GEMINI-EXTRACT] Processing candidate, finishReason: {}",
+                    candidate.finishReason().orElse(null));
+
             Optional<Content> contentOpt = candidate.content();
-            if (contentOpt.isPresent() && contentOpt.get().parts().isPresent()) {
-                for (Part part : contentOpt.get().parts().get()) {
+            if (contentOpt.isEmpty()) {
+                log.warn("[GEMINI-EXTRACT] Candidate has no content");
+                continue;
+            }
+
+            Content content = contentOpt.get();
+            log.debug("[GEMINI-EXTRACT] Content role: {}, hasParts: {}",
+                    content.role().orElse(null), content.parts().isPresent());
+
+            if (content.parts().isPresent()) {
+                List<Part> parts = content.parts().get();
+                log.debug("[GEMINI-EXTRACT] Number of parts: {}", parts.size());
+
+                for (int i = 0; i < parts.size(); i++) {
+                    Part part = parts.get(i);
                     if (part.text().isPresent()) {
-                        textBuilder.append(part.text().get());
+                        String text = part.text().get();
+                        log.debug("[GEMINI-EXTRACT] Part {} has text, length: {}", i, text.length());
+                        textBuilder.append(text);
+                    } else {
+                        log.debug("[GEMINI-EXTRACT] Part {} has no text (may be other content type)", i);
                     }
                 }
             }
         }
-        return textBuilder.toString();
+
+        String result = textBuilder.toString();
+        log.info("[GEMINI-EXTRACT] Extracted text length: {}", result.length());
+        return result;
     }
 
     /**
@@ -617,8 +762,8 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         }
 
         // Calculate estimated cost
-        double cost = (inputTokens * INPUT_COST_PER_MILLION / 1_000_000) 
-                    + (outputTokens * OUTPUT_COST_PER_MILLION / 1_000_000);
+        double cost = (inputTokens * INPUT_COST_PER_MILLION / 1_000_000)
+                + (outputTokens * OUTPUT_COST_PER_MILLION / 1_000_000);
 
         return TokenUsageDTO.of(inputTokens, outputTokens, cost);
     }
@@ -630,12 +775,12 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         if (response == null) {
             return "UNKNOWN";
         }
-        
+
         Optional<List<Candidate>> candidatesOpt = response.candidates();
         if (candidatesOpt.isEmpty() || candidatesOpt.get().isEmpty()) {
             return "UNKNOWN";
         }
-        
+
         for (Candidate candidate : candidatesOpt.get()) {
             if (candidate.finishReason().isPresent()) {
                 return candidate.finishReason().get().toString();
@@ -649,11 +794,11 @@ public class GeminiClientServiceImpl implements GeminiClientService {
      */
     private void validateGlobalConstraints() {
         var settings = aiConfigService.getSettings();
-        
+
         if (!settings.isGlobalEnabled()) {
             throw new AiServiceException("AI services are currently disabled by administrator");
         }
-        
+
         if (aiCostService.isBudgetExceeded()) {
             throw new AiServiceException("Monthly AI budget limit exceeded");
         }
@@ -674,7 +819,7 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         if (message.contains("authentication") || message.contains("API key")) {
             return new AiConfigurationException("AI authentication failed: " + message);
         }
-        
+
         return new AiServiceException("AI service error: " + message, e);
     }
 }
