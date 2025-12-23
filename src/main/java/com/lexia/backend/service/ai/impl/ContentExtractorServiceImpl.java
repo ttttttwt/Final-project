@@ -201,8 +201,8 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                 // Use inline file upload
                 var response = geminiClient.generateContentWithFile(
                         prompt.toString(), fileBytes, "application/pdf");
-                log.info("PDF extraction response received from Gemini" + 
-                         (response.toString()));
+                log.info("PDF extraction response received from Gemini" +
+                        (response.toString()));
                 content = response.content();
             } else {
                 // Remote URL - pass to Gemini directly
@@ -232,25 +232,31 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
         log.info("Extracting DOCX content from: {}", fileUrl);
 
         try {
-            // Download the DOCX file
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(fileUrl))
-                    .timeout(Duration.ofSeconds(60))
-                    .GET()
-                    .build();
+            InputStream is;
+            if (isLocalFileUrl(fileUrl)) {
+                log.info("DOCX is stored locally, loading from storage");
+                UUID fileId = extractFileIdFromUrl(fileUrl);
+                is = fileStorageService.loadAsResource(fileId).getInputStream();
+            } else {
+                // Download the DOCX file
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(fileUrl))
+                        .timeout(Duration.ofSeconds(60))
+                        .GET()
+                        .build();
 
-            HttpResponse<InputStream> response = httpClient.send(request,
-                    HttpResponse.BodyHandlers.ofInputStream());
+                HttpResponse<InputStream> response = httpClient.send(request,
+                        HttpResponse.BodyHandlers.ofInputStream());
 
-            if (response.statusCode() != 200) {
-                throw new ContentExtractionException("DOCX",
-                        "Failed to download file: HTTP " + response.statusCode());
+                if (response.statusCode() != 200) {
+                    throw new ContentExtractionException("DOCX",
+                            "Failed to download file: HTTP " + response.statusCode());
+                }
+                is = response.body();
             }
 
             // Parse DOCX with Apache POI
-            try (InputStream is = response.body();
-                    XWPFDocument document = new XWPFDocument(is)) {
-
+            try (is; XWPFDocument document = new XWPFDocument(is)) {
                 List<XWPFParagraph> paragraphs = document.getParagraphs();
                 if (paragraphs.isEmpty()) {
                     throw new ContentExtractionException("DOCX", "No content found in document");
@@ -730,6 +736,54 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                     "Domain not allowed. Please use a public article URL.");
         }
 
+        log.info("Extracting content from website: {}", sourceUrl);
+
+        try {
+            // Primary: Use Gemini URL Context tool (supports dynamic/JS-rendered sites)
+            String prompt = """
+                    Extract the main article content from this webpage.
+
+                    Requirements:
+                    1. Extract ONLY the main article text/content
+                    2. Skip navigation, ads, sidebars, footers, and comments
+                    3. Maintain paragraph structure and headings
+                    4. Include any important lists or bullet points
+                    5. Return the content in clean, readable format
+
+                    Return ONLY the extracted content, no explanations.
+                    """;
+
+            log.info("Using Gemini URL Context tool for website: {}", sourceUrl);
+            var response = geminiClient.generateContentWithUrl(prompt, sourceUrl);
+            String content = response.content();
+
+            if (content != null && !content.isBlank()) {
+                // Update material title from the extracted content if possible
+                updateMaterialTitleFromContent(material, content);
+                log.info("Successfully extracted {} chars using URL Context", content.length());
+                return content;
+            }
+
+            // Fallback to traditional HTTP + Jsoup scraping
+            log.warn("URL Context returned empty, falling back to HTTP scraping");
+            return extractFromWebsiteFallback(sourceUrl, material);
+
+        } catch (Exception e) {
+            log.warn("URL Context failed, attempting fallback: {}", e.getMessage());
+            try {
+                return extractFromWebsiteFallback(sourceUrl, material);
+            } catch (Exception fallbackError) {
+                throw new ContentExtractionException("WEBSITE",
+                        "Failed to fetch content: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * Fallback method using traditional HTTP + Jsoup scraping.
+     * Used when URL Context tool fails or returns empty.
+     */
+    private String extractFromWebsiteFallback(String sourceUrl, UserCustomMaterial material) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(sourceUrl))
@@ -759,6 +813,25 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
         } catch (Exception e) {
             throw new ContentExtractionException("WEBSITE",
                     "Failed to fetch content: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Updates material title from extracted content (first heading or first line).
+     */
+    private void updateMaterialTitleFromContent(UserCustomMaterial material, String content) {
+        if (content == null || content.isBlank())
+            return;
+
+        // Try to find first heading-like line (short line at the start)
+        String[] lines = content.split("\n");
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty() && trimmed.length() < 100) {
+                material.setTitle(trimmed);
+                log.debug("Updated material title from content: {}", trimmed);
+                return;
+            }
         }
     }
 

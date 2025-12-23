@@ -368,6 +368,86 @@ public class GeminiClientServiceImpl implements GeminiClientService {
         }
     }
 
+    /**
+     * Generates content using Gemini URL Context tool.
+     * This allows Gemini to fetch and analyze content from URLs directly,
+     * including dynamic/JavaScript-rendered websites.
+     */
+    @Override
+    @Retry(name = "geminiApi", fallbackMethod = "generateContentWithUrlFallback")
+    @CircuitBreaker(name = "geminiApi", fallbackMethod = "generateContentWithUrlFallback")
+    @RateLimiter(name = "geminiApi")
+    public GeminiResponseDTO generateContentWithUrl(String prompt, String... urls) {
+        validateConfiguration();
+        validatePrompt(prompt);
+
+        if (urls == null || urls.length == 0) {
+            throw new AiServiceException("At least one URL is required", "INVALID_URL", false);
+        }
+        if (urls.length > 20) {
+            throw new AiServiceException("Maximum 20 URLs allowed per request", "TOO_MANY_URLS", false);
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        // Build prompt with URLs included
+        StringBuilder contentBuilder = new StringBuilder(prompt);
+        contentBuilder.append("\n\nURLs to analyze:\n");
+        for (String url : urls) {
+            contentBuilder.append("- ").append(url).append("\n");
+        }
+
+        try {
+            // URL Context requires Gemini 2.5 models
+            String model = "gemini-2.5-flash";
+
+            log.info("[GEMINI-URL-CONTEXT] Model: {}, Prompt length: {}, URLs: {}",
+                    model, prompt.length(), urls.length);
+
+            // Build config with URL Context tool enabled
+            GenerateContentConfig config = GenerateContentConfig.builder()
+                    .maxOutputTokens(geminiConfig.getMaxOutputTokens())
+                    .temperature(geminiConfig.getTemperature())
+                    .tools(java.util.List.of(
+                            com.google.genai.types.Tool.builder()
+                                    .urlContext(com.google.genai.types.UrlContext.builder().build())
+                                    .build()))
+                    .build();
+
+            Content content = Content.builder()
+                    .role("user")
+                    .parts(Part.fromText(contentBuilder.toString()))
+                    .build();
+
+            GenerateContentResponse response = geminiClient.models.generateContent(model, content, config);
+
+            long responseTimeMs = System.currentTimeMillis() - startTime;
+            String generatedText = extractText(response);
+            TokenUsageDTO tokenUsage = extractTokenUsage(response, prompt, generatedText);
+            String finishReason = extractFinishReason(response);
+
+            log.info("URL Context content generated successfully. Model: {}, Tokens: {}, Time: {}ms",
+                    model, tokenUsage.totalTokens(), responseTimeMs);
+
+            return GeminiResponseDTO.success(generatedText, model, tokenUsage, responseTimeMs, finishReason);
+
+        } catch (Exception e) {
+            log.error("Error generating content with URL context: {}", e.getMessage(), e);
+            throw mapException(e);
+        }
+    }
+
+    /**
+     * Fallback method for URL context generation.
+     */
+    public GeminiResponseDTO generateContentWithUrlFallback(String prompt, String[] urls, Throwable t) {
+        log.warn("Fallback triggered for URL context generation. URLs: {}, Error: {}",
+                urls != null ? urls.length : 0, t.getMessage());
+        return GeminiResponseDTO.fallback(
+                "I apologize, but I'm temporarily unable to fetch content from the provided URLs. Please try again later.",
+                "gemini-2.5-flash");
+    }
+
     @Override
     public SseEmitter streamContent(String prompt) {
         return streamContent(prompt, geminiConfig.getDefaultModel());

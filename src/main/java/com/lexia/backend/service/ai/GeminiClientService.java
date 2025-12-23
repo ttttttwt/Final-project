@@ -184,6 +184,45 @@ public interface GeminiClientService {
     GeminiResponseDTO generateContentWithFile(String prompt, byte[] fileData, String mimeType);
 
     /**
+     * Generates content using Gemini URL Context tool.
+     * 
+     * <p>
+     * This method uses the URL Context tool which allows Gemini to fetch and
+     * analyze
+     * content from web URLs directly. It supports dynamic websites
+     * (JavaScript-rendered),
+     * PDFs, images, and various text formats.
+     * </p>
+     * 
+     * <p>
+     * Supported content types:
+     * </p>
+     * <ul>
+     * <li>HTML (text/html) - including dynamic/SPA websites</li>
+     * <li>PDF (application/pdf)</li>
+     * <li>Images (image/png, image/jpeg, image/bmp, image/webp)</li>
+     * <li>Text (text/plain, application/json, text/xml, text/csv)</li>
+     * </ul>
+     * 
+     * <p>
+     * Limitations:
+     * </p>
+     * <ul>
+     * <li>Maximum 20 URLs per request</li>
+     * <li>Maximum 34MB content per URL</li>
+     * <li>Requires Gemini 2.5 models (gemini-2.5-flash, gemini-2.5-pro, etc.)</li>
+     * </ul>
+     * 
+     * @param prompt the text prompt describing what to extract/analyze
+     * @param urls   one or more URLs to fetch content from
+     * @return GeminiResponseDTO containing generated content and metadata
+     * @throws com.lexia.backend.exception.ai.AiServiceException if URL fetch fails
+     *                                                           or content is
+     *                                                           blocked
+     */
+    GeminiResponseDTO generateContentWithUrl(String prompt, String... urls);
+
+    /**
      * Estimates the number of tokens in the given text.
      * 
      * <p>

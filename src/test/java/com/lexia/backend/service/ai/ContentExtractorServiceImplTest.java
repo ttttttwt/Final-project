@@ -4,6 +4,7 @@ import com.lexia.backend.dto.ai.GeminiResponseDTO;
 import com.lexia.backend.entity.UserCustomMaterial;
 import com.lexia.backend.enums.CustomMaterialSourceType;
 import com.lexia.backend.exception.ContentExtractionException;
+import com.lexia.backend.file.service.FileStorageService;
 import com.lexia.backend.service.ai.impl.ContentExtractorServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.Resource;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
@@ -33,6 +35,9 @@ class ContentExtractorServiceImplTest {
 
     @Mock
     private HttpClient httpClient;
+
+    @Mock
+    private FileStorageService fileStorageService;
 
     @Mock
     private HttpResponse<String> httpResponse;
@@ -125,6 +130,40 @@ class ContentExtractorServiceImplTest {
     }
 
     @Nested
+    class DocxSourceTests {
+        @Test
+        void extractContent_WithLocalDocx_LoadsFromStorage() throws Exception {
+            UUID fileId = UUID.randomUUID();
+            material.setSourceType(CustomMaterialSourceType.DOCX);
+            material.setOriginalFileUrl("/api/v1/files/" + fileId + "/download");
+
+            Resource mockResource = mock(Resource.class);
+            when(fileStorageService.loadAsResource(fileId)).thenReturn(mockResource);
+            when(mockResource.getInputStream()).thenReturn(new java.io.ByteArrayInputStream(new byte[0]));
+
+            // Should fail because empty stream is not a valid DOCX, but verifies it called storage
+            assertThrows(ContentExtractionException.class, () -> extractorService.extractContent(material));
+
+            verify(fileStorageService).loadAsResource(fileId);
+        }
+
+        @Test
+        void extractContent_WithRemoteDocx_DownloadsFile() throws Exception {
+            material.setSourceType(CustomMaterialSourceType.DOCX);
+            material.setOriginalFileUrl("https://example.com/file.docx");
+
+            HttpResponse<java.io.InputStream> mockResponse = mock(HttpResponse.class);
+            doReturn(mockResponse).when(httpClient).send(any(), any());
+            when(mockResponse.statusCode()).thenReturn(200);
+            when(mockResponse.body()).thenReturn(new java.io.ByteArrayInputStream(new byte[0]));
+
+            assertThrows(ContentExtractionException.class, () -> extractorService.extractContent(material));
+
+            verify(httpClient).send(any(), any());
+        }
+    }
+
+    @Nested
     class ImageSourceTests {
         @Test
         void extractContent_WithValidImage_CallsGeminiVision() {
@@ -181,7 +220,7 @@ class ContentExtractorServiceImplTest {
         }
 
         @Test
-        void extractContent_ApiFailure_ReturnsFallback() throws Exception {
+        void extractContent_ApiFailure_ThrowsException() throws Exception {
             material.setSourceType(CustomMaterialSourceType.YOUTUBE);
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("sourceUrl", "https://youtube.com/watch?v=ABCDEFGHIJK");
@@ -192,10 +231,7 @@ class ContentExtractorServiceImplTest {
                     .thenReturn(httpResponse);
             when(httpResponse.statusCode()).thenReturn(404);
 
-            String result = extractorService.extractContent(material);
-
-            assertTrue(result.contains("Transcript extraction failed"));
-            assertTrue(result.contains("ABCDEFGHIJK"));
+            assertThrows(ContentExtractionException.class, () -> extractorService.extractContent(material));
         }
     }
 
