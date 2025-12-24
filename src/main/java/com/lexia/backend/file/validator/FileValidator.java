@@ -35,7 +35,13 @@ public class FileValidator {
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "image/jpeg",
                     "image/png",
-                    "image/webp"));
+                    "image/webp",
+                    "audio/mpeg",
+                    "audio/wav",
+                    "audio/ogg",
+                    "audio/webm",
+                    "audio/x-wav",
+                    "audio/mp4"));
 
     // Maximum file sizes per category (in bytes)
     private static final Map<FileCategory, Long> MAX_FILE_SIZES = Map.of(

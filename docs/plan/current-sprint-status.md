@@ -436,6 +436,26 @@
 
 ---
 
+### Epic H: Custom AI Content Generator (4 pts)
+
+**Status**: 🟢 In Progress (3.5/4.0 pts - 87.5%)  
+**Timeline**: Day 19-20 (December 29-30)
+
+- [x] **H1**: Implement Shadowing Scoring (1 pt) ✅ **COMPLETE** (Dec 29)
+  - ✅ Pronunciation assessment with real audio blobs
+  - ✅ Fixed transaction rollback issues in backend
+  - ✅ Fixed file validation for audio types
+- [x] **H2**: Implement Style Transformer UI (1 pt) ✅ **COMPLETE** (Dec 29)
+  - ✅ Swiss Modernism UI with "Learn Mode"
+  - ✅ Structured Markdown parsing for explanations
+- [x] **H3**: Implement Edit/Delete Generated Content (1.5 pts) ✅ **COMPLETE** (Dec 30)
+  - ✅ Global Edit Mode with floating save bar
+  - ✅ Inline editing for Vocabulary, Quiz, Summary, Role-Play, Shadowing
+  - ✅ Persistence via PATCH endpoint
+- [ ] **H4**: Implement Content Export (PDF/DOCX) (0.5 pt) ⬜ **TODO**
+
+---
+
 ## 📊 Sprint 5 Metrics
 
 | Metric | Target | Current | Status |

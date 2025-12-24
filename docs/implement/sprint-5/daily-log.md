@@ -2412,6 +2412,72 @@ Time: 16.051 s
 - [x] Export endpoint matches frontend expectations.
 - [x] User activity tracking is active.
 
+---
+
+## Day 19 (December 29, 2025) - Monday
+
+### 📋 Tasks Completed
+- [x] **Shadowing Scoring Implementation**:
+  - Implemented pronunciation assessment for custom materials.
+  - Fixed `404 Not Found` for shadowing sentences by supporting both `sentence` and `text` fields in `findShadowingSentence`.
+  - Fixed `UnexpectedRollbackException` by updating `FileValidator` to allow audio MIME types for `CUSTOM_MATERIAL` and removing silent `try-catch` blocks in `CustomMaterialServiceImpl`.
+  - Implemented UI for recording and displaying scores in `ShadowingSection.tsx`.
+- [x] **Style Transformer UI Implementation**:
+  - Implemented a "Swiss Modernism" inspired UI for text style adaptation.
+  - Added support for `DIPLOMATIC` and `PERSUASIVE` styles.
+  - Implemented "Learn Mode" to display AI-generated explanations of linguistic changes.
+  - Updated `CustomMaterialPrompts.java` with structured Markdown output requirements.
+  - Updated `CustomMaterialServiceImpl.java` with robust parsing for transformed text and explanations.
+
+### 📝 Code Changes
+- **Backend**:
+  - `CustomMaterialServiceImpl.java`: Fixed transaction rollback issues, improved sentence lookup, and added style transform parsing.
+  - `FileValidator.java`: Added audio types (`audio/webm`, `audio/wav`, `audio/mpeg`) to `CUSTOM_MATERIAL` category.
+  - `CustomMaterialPrompts.java`: Updated `STYLE_TRANSFORM_PROMPT` for structured output.
+- **Frontend (Web)**:
+  - `ShadowingSection.tsx`: Added recording UI and score display.
+  - `StyleTransformer.tsx`: New component for style adaptation.
+  - `custom-materials.ts` (types): Added new styles and response interfaces.
+  - `customMaterialStore.ts`: Added style transformation state and actions.
+  - `page.tsx` (style-transform): Integrated the new transformer component.
+
+### ✅ Validation
+- [x] Shadowing scoring verified with real audio blobs.
+- [x] Style transformation verified with structured explanations.
+- [x] Backend transaction management fixed (no more `UnexpectedRollbackException`).
+
+---
+
+## Day 20 (December 30, 2025) - Tuesday
+
+### 📋 Tasks Completed
+- [x] **Edit/Delete Generated Content Implementation**:
+  - Implemented a global "Edit Mode" for AI-generated materials (Vocabulary, Quiz, Summary, Role-Play, Shadowing).
+  - Added a floating "Save Changes" bar with persistence logic using the `PATCH` endpoint.
+  - Implemented inline editing for all content types:
+    - **Vocabulary**: Edit word, POS, IPA, definition, example; delete/add items.
+    - **Quiz**: Edit question text, options, correct answer, explanation; delete/add questions.
+    - **Summary**: Full-text editing via Textarea.
+    - **Role-Play**: Edit scenario, roles, and objectives.
+    - **Shadowing**: Edit sentence text, phonetic, translation, notes; delete/add sentences.
+  - Fixed TypeScript module resolution issues by renaming `StyleTransformer.tsx` to `index.tsx`.
+
+### 📝 Code Changes
+- **Frontend (Web)**:
+  - `customMaterialStore.ts`: Added `isEditMode` state and `setEditMode` action.
+  - `[id]/page.tsx`: 
+    - Implemented `localContent` buffering for edits.
+    - Added "Manage Content" toggle in the header.
+    - Added floating save bar with `updateContent` integration.
+    - Refactored all content tabs to support conditional rendering for `isEditMode`.
+  - `StyleTransformer/index.tsx`: Renamed from `StyleTransformer.tsx` to fix import errors.
+
+### ✅ Validation
+- [x] Edit mode toggle correctly transforms UI into editable forms.
+- [x] "Save Changes" correctly persists the entire `generatedContent` object to the backend.
+- [x] "Discard" correctly reverts changes using the store's state.
+- [x] Deletion and addition of items (Vocabulary, Quiz, Shadowing) work as expected.
+
 
 
 

@@ -283,7 +283,8 @@ public final class CustomMaterialPrompts {
           "keyVocabulary": [{"term": "...", "ipa": "...", "definition": "...", "example": "..."}],
           "openingLine": "... (The AI's first message to the user, initiating the interaction. AI must prioritize using vocabulary and patterns from the content)"
         }
-      If SHADOWING is requested: Extract 5-10 shadowing sentences
+      If SHADOWING is requested: Extract 5-10 shadowing sentences with structure:
+        {"id": "s1", "sentence": "...", "phonetic": "...", "notes": "..."}
 
       Return as JSON with this structure (include only requested sections):
       ```json
@@ -293,7 +294,7 @@ public final class CustomMaterialPrompts {
         "quiz": [...],
         "summary": "...",
         "roleplay": {...},
-        "shadowing": [...]
+        "shadowing": [{"id": "s1", "sentence": "...", "phonetic": "...", "notes": "..."}]
       }
       ```
       </instructions>
@@ -334,8 +335,8 @@ public final class CustomMaterialPrompts {
       [The transformed text]
 
       ## Key Changes
-      - [Change 1]: [Explanation]
-      - [Change 2]: [Explanation]
+      - [Original text] -> [Changed text]: [Reason for change]
+      - [Original text] -> [Changed text]: [Reason for change]
       ...
       {{/learn_mode}}
 

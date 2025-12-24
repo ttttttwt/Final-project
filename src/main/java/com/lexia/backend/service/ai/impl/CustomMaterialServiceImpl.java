@@ -365,14 +365,41 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
                         .trim();
             }
             if (parts.length > 1) {
-                // Parse key changes (simplified parsing)
+                // Parse key changes: - [Original] -> [Changed]: [Reason]
                 String changesSection = parts[1];
                 String[] lines = changesSection.split("\n");
                 for (String line : lines) {
-                    if (line.trim().startsWith("-")) {
-                        explanations.add(StyleTransformResponseDTO.StyleExplanation.builder()
-                                .reason(line.replaceFirst("^-\\s*", "").trim())
-                                .build());
+                    String trimmedLine = line.trim();
+                    if (trimmedLine.startsWith("-")) {
+                        String contentLine = trimmedLine.substring(1).trim();
+                        
+                        // Try to parse: [Original] -> [Changed]: [Reason]
+                        if (contentLine.contains("->") && contentLine.contains(":")) {
+                            try {
+                                String[] arrowParts = contentLine.split("->", 2);
+                                String original = arrowParts[0].trim();
+                                
+                                String[] colonParts = arrowParts[1].split(":", 2);
+                                String changed = colonParts[0].trim();
+                                String reason = colonParts[1].trim();
+                                
+                                explanations.add(StyleTransformResponseDTO.StyleExplanation.builder()
+                                        .original(original)
+                                        .changed(changed)
+                                        .reason(reason)
+                                        .build());
+                            } catch (Exception e) {
+                                // Fallback if parsing fails
+                                explanations.add(StyleTransformResponseDTO.StyleExplanation.builder()
+                                        .reason(contentLine)
+                                        .build());
+                            }
+                        } else {
+                            // Fallback for simple format
+                            explanations.add(StyleTransformResponseDTO.StyleExplanation.builder()
+                                    .reason(contentLine)
+                                    .build());
+                        }
                     }
                 }
             }
@@ -408,13 +435,9 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
         // Upload audio file
         String audioUrl = null;
         if (audio != null && !audio.isEmpty()) {
-            try {
-                var fileEntity = fileStorageService.store(audio,
-                        FileCategory.CUSTOM_MATERIAL, userId);
-                audioUrl = fileStorageService.getPublicUrl(fileEntity.getId());
-            } catch (Exception e) {
-                log.warn("Failed to store audio file: {}", e.getMessage());
-            }
+            var fileEntity = fileStorageService.store(audio,
+                    FileCategory.CUSTOM_MATERIAL, userId);
+            audioUrl = fileStorageService.getPublicUrl(fileEntity.getId());
         }
 
         // Generate pronunciation assessment via AI
@@ -433,11 +456,28 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
 
         Object shadowingObj = generatedContent.get("shadowing");
         if (shadowingObj instanceof List<?> shadowingList) {
-            for (Object item : shadowingList) {
+            for (int i = 0; i < shadowingList.size(); i++) {
+                Object item = shadowingList.get(i);
+                
+                // Case 1: Item is a Map (Object with id and sentence)
                 if (item instanceof Map<?, ?> sentenceMap) {
-                    String id = String.valueOf(((Map<String, Object>) sentenceMap).get("id"));
+                    Object idObj = ((Map<String, Object>) sentenceMap).get("id");
+                    String id = idObj != null ? String.valueOf(idObj) : "s-" + i;
+                    
                     if (sentenceId.equals(id)) {
-                        return String.valueOf(((Map<String, Object>) sentenceMap).get("sentence"));
+                        // Try "sentence" then "text" as fallback
+                        Object sentenceObj = ((Map<String, Object>) sentenceMap).get("sentence");
+                        if (sentenceObj == null) {
+                            sentenceObj = ((Map<String, Object>) sentenceMap).get("text");
+                        }
+                        return sentenceObj != null ? String.valueOf(sentenceObj) : null;
+                    }
+                } 
+                // Case 2: Item is a String (Legacy/Simple format)
+                else if (item instanceof String sentenceStr) {
+                    String id = "s-" + i;
+                    if (sentenceId.equals(id)) {
+                        return sentenceStr;
                     }
                 }
             }
@@ -528,20 +568,16 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
 
     private void saveAttempt(UserCustomMaterial material, UUID userId, String sentenceId,
             String audioUrl, ShadowingScoreResponseDTO result) {
-        try {
-            UserShadowingAttempt attempt = UserShadowingAttempt.builder()
-                    .material(material)
-                    .userId(userId)
-                    .sentenceId(sentenceId)
-                    .audioUrl(audioUrl)
-                    .score(result.getScore())
-                    .feedback(result.getPhonemeBreakdown())
-                    .build();
-            shadowingAttemptRepository.save(attempt);
-            log.info("Saved shadowing attempt for sentence {}", sentenceId);
-        } catch (Exception e) {
-            log.warn("Failed to save shadowing attempt: {}", e.getMessage());
-        }
+        UserShadowingAttempt attempt = UserShadowingAttempt.builder()
+                .material(material)
+                .userId(userId)
+                .sentenceId(sentenceId)
+                .audioUrl(audioUrl)
+                .score(result.getScore())
+                .feedback(result.getPhonemeBreakdown())
+                .build();
+        shadowingAttemptRepository.save(attempt);
+        log.info("Saved shadowing attempt for sentence {}", sentenceId);
     }
 
     @Override

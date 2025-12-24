@@ -26,7 +26,7 @@ public class StyleTransformRequestDTO {
     private String text;
 
     /**
-     * Target style: FORMAL, CASUAL, EMAIL, PRESENTATION, SOCIAL_MEDIA, DIPLOMATIC
+     * Target style: FORMAL, CASUAL, EMAIL, PRESENTATION, SOCIAL_MEDIA, DIPLOMATIC, PERSUASIVE
      */
     @NotBlank(message = "Target style is required")
     private String targetStyle;
