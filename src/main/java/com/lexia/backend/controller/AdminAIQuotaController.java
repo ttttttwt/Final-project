@@ -111,7 +111,11 @@ public class AdminAIQuotaController {
         Instant monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
         long customMaterialsUsed = customMaterialRepository.countByUserIdThisMonth(entity.getUserId(), monthStart);
         dto.setCustomMaterialsUsed((int) customMaterialsUsed);
-        dto.setCustomMaterialsLimit(limits.getCustomMaterialsLimit() != null ? limits.getCustomMaterialsLimit() : 10);
+
+        // Use individual limit if set, otherwise plan default
+        Integer customLimit = entity.getCustomMaterialsMonthlyLimit() != null ? entity.getCustomMaterialsMonthlyLimit()
+                : limits.getCustomMaterialsLimit();
+        dto.setCustomMaterialsLimit(customLimit != null ? customLimit : 10);
 
         // Warning flags
         double warningThreshold = quotaLimitsConfig.getWarningThreshold();

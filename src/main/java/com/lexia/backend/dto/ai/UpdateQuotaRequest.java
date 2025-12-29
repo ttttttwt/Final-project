@@ -13,4 +13,5 @@ public class UpdateQuotaRequest {
     private Integer rolePlayDailyLimit;
     private Integer grammarDailyLimit;
     private Integer flashcardDailyLimit;
+    private Integer customMaterialsLimit;
 }

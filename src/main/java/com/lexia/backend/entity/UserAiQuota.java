@@ -155,10 +155,17 @@ public class UserAiQuota {
     private Integer grammarExercisesUsed = 0;
 
     /**
+     * Maximum custom materials allowed per month.
+     */
+    @Column(name = "custom_materials_monthly_limit")
+    @Builder.Default
+    private Integer customMaterialsMonthlyLimit = 10;
+
+    /**
      * Number of custom materials generated this month.
      * Each material generation counts as 1.
      */
-    @Column(name = "custom_materials_used", nullable = false)
+    @Column(name = "custom_materials_used_this_month", nullable = false)
     @Builder.Default
     private Integer customMaterialsUsed = 0;
 

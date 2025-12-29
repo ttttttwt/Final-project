@@ -123,6 +123,9 @@ public class AIQuotaServiceImpl implements AIQuotaService {
         if (request.getFlashcardDailyLimit() != null) {
             updateFeatureLimit(quota, "flashcard", request.getFlashcardDailyLimit());
         }
+        if (request.getCustomMaterialsLimit() != null) {
+            quota.setCustomMaterialsMonthlyLimit(request.getCustomMaterialsLimit());
+        }
     }
 
     private void updateFeatureLimit(UserAiQuota quota, String feature, Integer limit) {
