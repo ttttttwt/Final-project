@@ -34,12 +34,14 @@ import java.util.stream.Collectors;
 /**
  * Implementation of FlashcardService with AI-powered flashcard generation.
  * 
- * <p>Features:</p>
+ * <p>
+ * Features:
+ * </p>
  * <ul>
- *   <li>AI generation from lesson content via Google Gemini</li>
- *   <li>Fallback generation when AI fails</li>
- *   <li>SM-2 spaced repetition algorithm</li>
- *   <li>Progress tracking per card</li>
+ * <li>AI generation from lesson content via Google Gemini</li>
+ * <li>Fallback generation when AI fails</li>
+ * <li>SM-2 spaced repetition algorithm</li>
+ * <li>Progress tracking per card</li>
  * </ul>
  * 
  * @author LEXIA Team
@@ -70,75 +72,75 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     /** Prompt template for flashcard generation from lesson */
     private static final String FLASHCARD_GENERATION_PROMPT = """
-        You are an expert English vocabulary teacher creating flashcards for language learners.
-        
-        TASK: Generate %d vocabulary flashcards from the following lesson content.
-        CEFR Level: %s
-        Focus Areas: %s
-        
-        LESSON CONTENT:
-        %s
-        
-        OUTPUT REQUIREMENTS:
-        - Generate flashcards for the most important vocabulary words/phrases
-        - Each card should have: word/phrase, definition, part of speech, pronunciation (IPA), example sentence
-        - Include synonyms and collocations where relevant
-        - Assign difficulty level (1-5) based on word frequency and complexity
-        - Output ONLY valid JSON array matching this schema:
-        
-        [
-          {
-            "front": "collaborate",
-            "back": {
-              "definition": "to work together with others towards a shared goal",
-              "partOfSpeech": "verb",
-              "pronunciation": "/kəˈlæbəˌreɪt/",
-              "exampleSentence": "The two departments will collaborate on the new project.",
-              "synonyms": ["cooperate", "work together", "team up"],
-              "collocations": ["collaborate with", "collaborate on", "closely collaborate"]
-            },
-            "tags": ["business", "teamwork"],
-            "difficulty": 3
-          }
-        ]
-        
-        Generate exactly %d cards. Output ONLY the JSON array, no additional text.
-        """;
+            You are an expert English vocabulary teacher creating flashcards for language learners.
+
+            TASK: Generate %d vocabulary flashcards from the following lesson content.
+            CEFR Level: %s
+            Focus Areas: %s
+
+            LESSON CONTENT:
+            %s
+
+            OUTPUT REQUIREMENTS:
+            - Generate flashcards for the most important vocabulary words/phrases
+            - Each card should have: word/phrase, definition, part of speech, pronunciation (IPA), example sentence
+            - Include synonyms and collocations where relevant
+            - Assign difficulty level (1-5) based on word frequency and complexity
+            - Output ONLY valid JSON array matching this schema:
+
+            [
+              {
+                "front": "collaborate",
+                "back": {
+                  "definition": "to work together with others towards a shared goal",
+                  "partOfSpeech": "verb",
+                  "pronunciation": "/kəˈlæbəˌreɪt/",
+                  "exampleSentence": "The two departments will collaborate on the new project.",
+                  "synonyms": ["cooperate", "work together", "team up"],
+                  "collocations": ["collaborate with", "collaborate on", "closely collaborate"]
+                },
+                "tags": ["business", "teamwork"],
+                "difficulty": 3
+              }
+            ]
+
+            Generate exactly %d cards. Output ONLY the JSON array, no additional text.
+            """;
 
     /** Prompt template for flashcard generation from topic */
     private static final String TOPIC_FLASHCARD_GENERATION_PROMPT = """
-        You are an expert English vocabulary teacher creating flashcards for language learners.
-        
-        TASK: Generate %d vocabulary flashcards about the topic: %s
-        CEFR Level: %s
-        Focus Areas: %s
-        
-        OUTPUT REQUIREMENTS:
-        - Generate flashcards for vocabulary words/phrases commonly used in this topic
-        - Each card should have: word/phrase, definition, part of speech, pronunciation (IPA), example sentence
-        - Include synonyms and collocations where relevant
-        - Assign difficulty level (1-5) based on word frequency and complexity
-        - Make sure vocabulary is appropriate for the CEFR level
-        - Output ONLY valid JSON array matching this schema:
-        
-        [
-          {
-            "front": "negotiate",
-            "back": {
-              "definition": "to discuss something with someone to reach an agreement",
-              "partOfSpeech": "verb",
-              "pronunciation": "/nɪˈɡoʊʃieɪt/",
-              "exampleSentence": "We need to negotiate the terms of the contract.",
-              "synonyms": ["bargain", "discuss", "work out"],
-              "collocations": ["negotiate with", "negotiate a deal", "negotiate terms"]
-            },
-            "tags": ["business", "communication"],
-            "difficulty": 3
-          }
-        ]
-        
-        Generate exactly %d cards. Output ONLY the JSON array, no additional text.
-        """;
+            You are an expert English vocabulary teacher creating flashcards for language learners.
+
+            TASK: Generate %d vocabulary flashcards about the topic: %s
+            CEFR Level: %s
+            Focus Areas: %s
+
+            OUTPUT REQUIREMENTS:
+            - Generate flashcards for vocabulary words/phrases commonly used in this topic
+            - Each card should have: word/phrase, definition, part of speech, pronunciation (IPA), example sentence
+            - Include synonyms and collocations where relevant
+            - Assign difficulty level (1-5) based on word frequency and complexity
+            - Make sure vocabulary is appropriate for the CEFR level
+            - Output ONLY valid JSON array matching this schema:
+
+            [
+              {
+                "front": "negotiate",
+                "back": {
+                  "definition": "to discuss something with someone to reach an agreement",
+                  "partOfSpeech": "verb",
+                  "pronunciation": "/nɪˈɡoʊʃieɪt/",
+                  "exampleSentence": "We need to negotiate the terms of the contract.",
+                  "synonyms": ["bargain", "discuss", "work out"],
+                  "collocations": ["negotiate with", "negotiate a deal", "negotiate terms"]
+                },
+                "tags": ["business", "communication"],
+                "difficulty": 3
+              }
+            ]
+
+            Generate exactly %d cards. Output ONLY the JSON array, no additional text.
+            """;
 
     // ========== Generation Methods ==========
 
@@ -169,9 +171,10 @@ public class FlashcardServiceImpl implements FlashcardService {
         // Generate flashcards using AI
         List<FlashcardCard> cards;
         boolean usedFallback = false;
-        
+
         try {
-            cards = generateCardsWithAI(lessonContent, cefrLevel, maxCards, request.getFocusAreas(), userId);
+            cards = generateCardsWithAI(lessonContent, cefrLevel, maxCards, request.getFocusAreas(), userId,
+                    featureConfig);
         } catch (Exception e) {
             log.warn("AI generation failed, using fallback: {}", e.getMessage());
             cards = generateFallbackCards(lessonContent, cefrLevel, maxCards);
@@ -179,9 +182,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         }
 
         // Create the deck
-        String title = request.getCustomTitle() != null ? 
-                request.getCustomTitle() : 
-                "Vocabulary: " + lesson.getTitle();
+        String title = request.getCustomTitle() != null ? request.getCustomTitle() : "Vocabulary: " + lesson.getTitle();
 
         FlashcardDeck deck = FlashcardDeck.builder()
                 .userId(userId)
@@ -199,7 +200,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         // Initialize progress records for all cards
         initializeProgressRecords(deck, userId);
 
-        log.info("Created flashcard deck {} with {} cards (fallback: {})", 
+        log.info("Created flashcard deck {} with {} cards (fallback: {})",
                 deck.getId(), cards.size(), usedFallback);
 
         return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
@@ -217,15 +218,17 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         String cefrLevel = request.getCefrLevelOrDefault();
         int maxCards = request.getCardCountOrDefault();
-        String focusAreasStr = request.getFocusAreas() != null && !request.getFocusAreas().isEmpty() ? 
-                String.join(", ", request.getFocusAreas()) : "general vocabulary";
+        String focusAreasStr = request.getFocusAreas() != null && !request.getFocusAreas().isEmpty()
+                ? String.join(", ", request.getFocusAreas())
+                : "general vocabulary";
 
         // Generate flashcards using AI
         List<FlashcardCard> cards;
         boolean usedFallback = false;
 
         try {
-            cards = generateCardsFromTopicWithAI(request.getTopic(), cefrLevel, maxCards, focusAreasStr, userId);
+            cards = generateCardsFromTopicWithAI(request.getTopic(), cefrLevel, maxCards, focusAreasStr, userId,
+                    featureConfig);
         } catch (Exception e) {
             log.warn("AI generation from topic failed, using fallback: {}", e.getMessage());
             cards = generateFallbackCardsForTopic(request.getTopic(), cefrLevel, maxCards);
@@ -239,9 +242,8 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         // Create the deck
         String title = request.getEffectiveTitle();
-        String description = request.getDescription() != null ? 
-                request.getDescription() : 
-                "AI-generated vocabulary for: " + request.getTopic();
+        String description = request.getDescription() != null ? request.getDescription()
+                : "AI-generated vocabulary for: " + request.getTopic();
 
         FlashcardDeck deck = FlashcardDeck.builder()
                 .userId(userId)
@@ -258,7 +260,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         // Initialize progress records for all cards
         initializeProgressRecords(deck, userId);
 
-        log.info("Created AI-generated deck {} with {} cards from topic '{}' (fallback: {})", 
+        log.info("Created AI-generated deck {} with {} cards from topic '{}' (fallback: {})",
                 deck.getId(), cards.size(), request.getTopic(), usedFallback);
 
         return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
@@ -280,13 +282,12 @@ public class FlashcardServiceImpl implements FlashcardService {
             }
         }
 
-        FlashcardDeck.SourceType sourceType = request.getSourceType() != null ?
-                FlashcardDeck.SourceType.valueOf(request.getSourceType()) :
-                FlashcardDeck.SourceType.USER_CREATED;
+        FlashcardDeck.SourceType sourceType = request.getSourceType() != null
+                ? FlashcardDeck.SourceType.valueOf(request.getSourceType())
+                : FlashcardDeck.SourceType.USER_CREATED;
 
-        List<FlashcardCard> cards = request.getCards() != null ?
-                FlashcardMapper.toCardEntityList(request.getCards()) :
-                new ArrayList<>();
+        List<FlashcardCard> cards = request.getCards() != null ? FlashcardMapper.toCardEntityList(request.getCards())
+                : new ArrayList<>();
 
         FlashcardDeck deck = FlashcardDeck.builder()
                 .userId(userId)
@@ -383,28 +384,28 @@ public class FlashcardServiceImpl implements FlashcardService {
      * Cards are matched by front text and back content.
      */
     private void updateCardsWithProgressPreservation(
-            FlashcardDeck deck, 
-            List<FlashcardCardDTO> newCardDTOs, 
-            UUID userId, 
+            FlashcardDeck deck,
+            List<FlashcardCardDTO> newCardDTOs,
+            UUID userId,
             UUID deckId) {
-        
+
         List<FlashcardCard> oldCards = deck.getCards();
         List<FlashcardCard> newCards = FlashcardMapper.toCardEntityList(newCardDTOs);
-        
+
         // Build map of old cards by signature (front + backs) to their index
         Map<String, Integer> oldCardIndexMap = new HashMap<>();
         for (int i = 0; i < oldCards.size(); i++) {
             oldCardIndexMap.put(getCardSignature(oldCards.get(i)), i);
         }
-        
+
         // Find which old card indices to preserve progress for
         Map<Integer, Integer> oldToNewIndexMap = new HashMap<>();
         Set<Integer> newCardIndicesNeedingProgress = new HashSet<>();
-        
+
         for (int newIndex = 0; newIndex < newCards.size(); newIndex++) {
             String signature = getCardSignature(newCards.get(newIndex));
             Integer oldIndex = oldCardIndexMap.get(signature);
-            
+
             if (oldIndex != null) {
                 // Card exists in old deck, map progress from old index to new index
                 oldToNewIndexMap.put(oldIndex, newIndex);
@@ -413,11 +414,10 @@ public class FlashcardServiceImpl implements FlashcardService {
                 newCardIndicesNeedingProgress.add(newIndex);
             }
         }
-        
+
         // Update card indices in existing progress records
-        List<UserFlashcardProgress> existingProgress = 
-            progressRepository.findByUserIdAndDeckId(userId, deckId);
-        
+        List<UserFlashcardProgress> existingProgress = progressRepository.findByUserIdAndDeckId(userId, deckId);
+
         List<UserFlashcardProgress> progressToKeep = new ArrayList<>();
         for (UserFlashcardProgress progress : existingProgress) {
             Integer newIndex = oldToNewIndexMap.get(progress.getCardIndex());
@@ -428,33 +428,33 @@ public class FlashcardServiceImpl implements FlashcardService {
             }
             // Else: progress is for a removed card, don't keep it
         }
-        
+
         // Delete all old progress and save updated ones
         progressRepository.deleteByUserIdAndDeckId(userId, deckId);
         if (!progressToKeep.isEmpty()) {
             progressRepository.saveAll(progressToKeep);
         }
-        
+
         // Set new cards on deck
         deck.setCards(newCards);
         deck.updateCardCount();
-        
+
         // Initialize progress for truly new cards
         if (!newCardIndicesNeedingProgress.isEmpty()) {
             List<UserFlashcardProgress> newProgressRecords = newCardIndicesNeedingProgress.stream()
-                .map(cardIndex -> UserFlashcardProgress.builder()
-                    .userId(userId)
-                    .deck(deck)
-                    .cardIndex(cardIndex)
-                    .build())
-                .collect(Collectors.toList());
+                    .map(cardIndex -> UserFlashcardProgress.builder()
+                            .userId(userId)
+                            .deck(deck)
+                            .cardIndex(cardIndex)
+                            .build())
+                    .collect(Collectors.toList());
             progressRepository.saveAll(newProgressRecords);
         }
-        
+
         log.debug("Updated cards for deck {}: preserved {} progress records, created {} new ones",
-            deckId, progressToKeep.size(), newCardIndicesNeedingProgress.size());
+                deckId, progressToKeep.size(), newCardIndicesNeedingProgress.size());
     }
-    
+
     /**
      * Generates a unique signature for a card based on front and back content.
      */
@@ -474,10 +474,10 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Override
     public void deleteDeck(UUID deckId, UUID userId) {
         FlashcardDeck deck = findDeckWithOwnershipCheck(deckId, userId);
-        
+
         // Delete progress records first
         progressRepository.deleteByUserIdAndDeckId(userId, deckId);
-        
+
         // Delete the deck
         deckRepository.delete(deck);
         log.info("Deleted deck {} for user {}", deckId, userId);
@@ -551,29 +551,32 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Transactional(readOnly = true)
     public FlashcardStudySessionDTO getStudySession(UUID deckId, UUID userId, Integer maxCards) {
         FlashcardDeck deck = findDeckWithOwnershipCheck(deckId, userId);
-        int sessionSize = maxCards != null ? Math.min(maxCards, DEFAULT_STUDY_SESSION_SIZE * 2) : DEFAULT_STUDY_SESSION_SIZE;
+        int sessionSize = maxCards != null ? Math.min(maxCards, DEFAULT_STUDY_SESSION_SIZE * 2)
+                : DEFAULT_STUDY_SESSION_SIZE;
         Instant now = Instant.now();
 
         // Get due cards
         List<UserFlashcardProgress> dueCards = progressRepository.findDueCardsForDeck(userId, deckId, now);
-        
+
         // Get new cards (never reviewed)
         List<UserFlashcardProgress> newCards = progressRepository.findNewCardsForDeck(userId, deckId);
-        
+
         // Combine and limit
         List<UserFlashcardProgress> sessionCards = new ArrayList<>();
-        
+
         // Add overdue cards first
         for (UserFlashcardProgress card : dueCards) {
-            if (sessionCards.size() >= sessionSize) break;
+            if (sessionCards.size() >= sessionSize)
+                break;
             if (card.getReviewCount() > 0) {
                 sessionCards.add(card);
             }
         }
-        
+
         // Then add new cards
         for (UserFlashcardProgress card : newCards) {
-            if (sessionCards.size() >= sessionSize) break;
+            if (sessionCards.size() >= sessionSize)
+                break;
             sessionCards.add(card);
         }
 
@@ -619,13 +622,13 @@ public class FlashcardServiceImpl implements FlashcardService {
                 progress.recordReview(review.getQuality());
                 progressRepository.save(progress);
             } else {
-                log.warn("Progress record not found for card index {} in deck {}", 
+                log.warn("Progress record not found for card index {} in deck {}",
                         review.getCardIndex(), deckId);
             }
         }
 
         log.info("Submitted {} reviews for deck {}", results.getReviews().size(), deckId);
-        
+
         // Return updated session
         return getStudySession(deckId, userId, DEFAULT_STUDY_SESSION_SIZE);
     }
@@ -636,7 +639,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Transactional(readOnly = true)
     public List<FlashcardProgressDTO> getDeckProgress(UUID deckId, UUID userId) {
         findDeckWithOwnershipCheck(deckId, userId);
-        
+
         List<UserFlashcardProgress> progressList = progressRepository.findByUserIdAndDeckId(userId, deckId);
         return progressList.stream()
                 .map(FlashcardMapper::toProgressDTO)
@@ -667,7 +670,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Transactional(readOnly = true)
     public FlashcardDeckDTO getLessonDeck(Long lessonId, UUID userId) {
         return deckRepository.findByUserIdAndSourceTypeAndSourceId(
-                        userId, FlashcardDeck.SourceType.LESSON, lessonId)
+                userId, FlashcardDeck.SourceType.LESSON, lessonId)
                 .map(FlashcardMapper::toDeckDTO)
                 .map(this::enrichDeckDTO)
                 .orElse(null);
@@ -679,9 +682,9 @@ public class FlashcardServiceImpl implements FlashcardService {
         long newCount = progressRepository.countByUserIdAndMasteryLevel(userId, 0);
         long learningCount = progressRepository.countByUserIdAndMasteryLevel(userId, 1);
         long reviewingCount = progressRepository.countByUserIdAndMasteryLevel(userId, 2) +
-                              progressRepository.countByUserIdAndMasteryLevel(userId, 3);
+                progressRepository.countByUserIdAndMasteryLevel(userId, 3);
         long masteredCount = progressRepository.countByUserIdAndMasteryLevel(userId, 4) +
-                             progressRepository.countByUserIdAndMasteryLevel(userId, 5);
+                progressRepository.countByUserIdAndMasteryLevel(userId, 5);
 
         return FlashcardStudySessionDTO.DeckStatsDTO.builder()
                 .newCount((int) newCount)
@@ -698,7 +701,8 @@ public class FlashcardServiceImpl implements FlashcardService {
      * Also populates progress statistics.
      */
     private FlashcardDeckDTO enrichDeckDTO(FlashcardDeckDTO dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
 
         // Populate Course/Lesson titles
         if ("LESSON".equals(dto.getSourceType()) && dto.getSourceId() != null) {
@@ -723,7 +727,8 @@ public class FlashcardServiceImpl implements FlashcardService {
             // Other stats
             Object[] stats = progressRepository.getDeckProgressStatistics(dto.getUserId(), dto.getId());
             if (stats != null && stats.length >= 8) {
-                // Columns: 0:total, 1:new, 2:learning, 3:reviewing, 4:mastered, 5:reviews, 6:correct, 7:accuracy
+                // Columns: 0:total, 1:new, 2:learning, 3:reviewing, 4:mastered, 5:reviews,
+                // 6:correct, 7:accuracy
                 dto.setNewCount(stats[1] != null ? ((Number) stats[1]).intValue() : 0);
                 dto.setMasteredCount(stats[4] != null ? ((Number) stats[4]).intValue() : 0);
                 dto.setAccuracyRate(stats[7] != null ? ((Number) stats[7]).doubleValue() : 0.0);
@@ -741,11 +746,11 @@ public class FlashcardServiceImpl implements FlashcardService {
     private FlashcardDeck findDeckWithOwnershipCheck(UUID deckId, UUID userId) {
         FlashcardDeck deck = deckRepository.findById(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("FlashcardDeck", deckId));
-        
+
         if (!deck.getUserId().equals(userId)) {
             throw new AccessDeniedException("User does not own this flashcard deck");
         }
-        
+
         return deck;
     }
 
@@ -754,7 +759,7 @@ public class FlashcardServiceImpl implements FlashcardService {
      */
     private void initializeProgressRecords(FlashcardDeck deck, UUID userId) {
         List<UserFlashcardProgress> progressRecords = new ArrayList<>();
-        
+
         for (int i = 0; i < deck.getCards().size(); i++) {
             UserFlashcardProgress progress = UserFlashcardProgress.builder()
                     .userId(userId)
@@ -763,7 +768,7 @@ public class FlashcardServiceImpl implements FlashcardService {
                     .build();
             progressRecords.add(progress);
         }
-        
+
         progressRepository.saveAll(progressRecords);
     }
 
@@ -772,7 +777,7 @@ public class FlashcardServiceImpl implements FlashcardService {
      */
     private void reindexProgressRecords(UUID userId, UUID deckId, int removedIndex) {
         List<UserFlashcardProgress> progressList = progressRepository.findByUserIdAndDeckId(userId, deckId);
-        
+
         for (UserFlashcardProgress progress : progressList) {
             if (progress.getCardIndex() > removedIndex) {
                 progress.setCardIndex(progress.getCardIndex() - 1);
@@ -788,9 +793,9 @@ public class FlashcardServiceImpl implements FlashcardService {
         long newCount = progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 0);
         long learningCount = progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 1);
         long reviewingCount = progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 2) +
-                              progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 3);
+                progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 3);
         long masteredCount = progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 4) +
-                             progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 5);
+                progressRepository.countByUserIdAndDeckIdAndMasteryLevel(userId, deckId, 5);
 
         return FlashcardStudySessionDTO.DeckStatsDTO.builder()
                 .newCount((int) newCount)
@@ -800,31 +805,34 @@ public class FlashcardServiceImpl implements FlashcardService {
                 .build();
     }
 
-    /**
-     * Generates flashcards using Gemini AI.
-     */
     private List<FlashcardCard> generateCardsWithAI(
-            String lessonContent, 
-            String cefrLevel, 
-            int maxCards, 
+            String lessonContent,
+            String cefrLevel,
+            int maxCards,
             List<String> focusAreas,
-            UUID userId) {
-        
-        String focusAreasStr = focusAreas != null && !focusAreas.isEmpty() ? 
-                String.join(", ", focusAreas) : "general vocabulary";
-        
-        String prompt = String.format(FLASHCARD_GENERATION_PROMPT, 
+            UUID userId,
+            com.lexia.backend.dto.ai.AIFeatureConfig featureConfig) {
+
+        String focusAreasStr = focusAreas != null && !focusAreas.isEmpty() ? String.join(", ", focusAreas)
+                : "general vocabulary";
+
+        String prompt = String.format(FLASHCARD_GENERATION_PROMPT,
                 maxCards, cefrLevel, focusAreasStr, lessonContent, maxCards);
 
         // Track AI usage
         long startTime = System.currentTimeMillis();
-        
+
         try {
-            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
-            
+            // Use configured model settings
+            GeminiResponseDTO response = geminiClientService.generateStructuredContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
+
             // Track successful usage
             trackAiUsage(userId, response, System.currentTimeMillis() - startTime, true, null);
-            
+
             return parseAIGeneratedCards(response.content());
         } catch (Exception e) {
             // Track failed usage
@@ -837,24 +845,30 @@ public class FlashcardServiceImpl implements FlashcardService {
      * Generates flashcards from a topic using Gemini AI.
      */
     private List<FlashcardCard> generateCardsFromTopicWithAI(
-            String topic, 
-            String cefrLevel, 
-            int maxCards, 
+            String topic,
+            String cefrLevel,
+            int maxCards,
             String focusAreas,
-            UUID userId) {
-        
-        String prompt = String.format(TOPIC_FLASHCARD_GENERATION_PROMPT, 
+            UUID userId,
+            com.lexia.backend.dto.ai.AIFeatureConfig featureConfig) {
+
+        String prompt = String.format(TOPIC_FLASHCARD_GENERATION_PROMPT,
                 maxCards, topic, cefrLevel, focusAreas, maxCards);
 
         // Track AI usage
         long startTime = System.currentTimeMillis();
-        
+
         try {
-            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
-            
+            // Use configured model settings
+            GeminiResponseDTO response = geminiClientService.generateStructuredContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
+
             // Track successful usage
             trackAiUsage(userId, response, System.currentTimeMillis() - startTime, true, null);
-            
+
             return parseAIGeneratedCards(response.content());
         } catch (Exception e) {
             // Track failed usage
@@ -868,11 +882,11 @@ public class FlashcardServiceImpl implements FlashcardService {
      */
     private List<FlashcardCard> generateFallbackCardsForTopic(String topic, String cefrLevel, int maxCards) {
         log.info("Using fallback flashcard generation for topic: {}", topic);
-        
+
         // Simple fallback: Create a basic card explaining that AI generation failed
         // In production, you might want to have pre-generated vocabulary lists by topic
         List<FlashcardCard> cards = new ArrayList<>();
-        
+
         FlashcardCard card = new FlashcardCard();
         card.setFront(topic);
         FlashcardBack back = FlashcardBack.builder()
@@ -884,7 +898,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         card.setTags(List.of(topic.toLowerCase()));
         card.setDifficulty(2);
         cards.add(card);
-        
+
         return cards;
     }
 
@@ -894,11 +908,12 @@ public class FlashcardServiceImpl implements FlashcardService {
     private List<FlashcardCard> parseAIGeneratedCards(String content) {
         try {
             String jsonContent = extractJson(content);
-            
+
             // Try to parse as array
             List<Map<String, Object>> cardMaps = objectMapper.readValue(
-                    jsonContent, new TypeReference<List<Map<String, Object>>>() {});
-            
+                    jsonContent, new TypeReference<List<Map<String, Object>>>() {
+                    });
+
             return cardMaps.stream()
                     .map(this::mapToFlashcardCard)
                     .filter(Objects::nonNull)
@@ -916,12 +931,12 @@ public class FlashcardServiceImpl implements FlashcardService {
         if (content == null || content.isBlank()) {
             throw new AiServiceException("Empty AI response");
         }
-        
+
         Matcher matcher = JSON_PATTERN.matcher(content);
         if (matcher.find()) {
             return matcher.group();
         }
-        
+
         // Try the whole content
         return content.trim();
     }
@@ -936,29 +951,30 @@ public class FlashcardServiceImpl implements FlashcardService {
             if (front == null || front.isBlank()) {
                 return null;
             }
-            
+
             Map<String, Object> backMap = (Map<String, Object>) map.get("back");
             FlashcardBack back = null;
-            
+
             if (backMap != null) {
                 back = FlashcardBack.builder()
                         .definition((String) backMap.get("definition"))
                         .partOfSpeech((String) backMap.get("partOfSpeech"))
                         .pronunciation((String) backMap.get("pronunciation"))
                         .exampleSentence((String) backMap.get("exampleSentence"))
-                        .synonyms(backMap.get("synonyms") instanceof List ? 
-                                (List<String>) backMap.get("synonyms") : Collections.emptyList())
-                        .collocations(backMap.get("collocations") instanceof List ? 
-                                (List<String>) backMap.get("collocations") : Collections.emptyList())
+                        .synonyms(backMap.get("synonyms") instanceof List ? (List<String>) backMap.get("synonyms")
+                                : Collections.emptyList())
+                        .collocations(
+                                backMap.get("collocations") instanceof List ? (List<String>) backMap.get("collocations")
+                                        : Collections.emptyList())
                         .build();
             }
-            
-            List<String> tags = map.get("tags") instanceof List ? 
-                    (List<String>) map.get("tags") : Collections.emptyList();
-            
-            Integer difficulty = map.get("difficulty") instanceof Number ? 
-                    ((Number) map.get("difficulty")).intValue() : 3;
-            
+
+            List<String> tags = map.get("tags") instanceof List ? (List<String>) map.get("tags")
+                    : Collections.emptyList();
+
+            Integer difficulty = map.get("difficulty") instanceof Number ? ((Number) map.get("difficulty")).intValue()
+                    : 3;
+
             return FlashcardCard.builder()
                     .front(front)
                     .back(back)
@@ -976,14 +992,15 @@ public class FlashcardServiceImpl implements FlashcardService {
      */
     private List<FlashcardCard> generateFallbackCards(String lessonContent, String cefrLevel, int maxCards) {
         List<FlashcardCard> cards = new ArrayList<>();
-        
+
         // Extract potential vocabulary words (simple approach)
         Set<String> words = extractVocabularyWords(lessonContent);
-        
+
         int count = 0;
         for (String word : words) {
-            if (count >= maxCards) break;
-            
+            if (count >= maxCards)
+                break;
+
             FlashcardCard card = FlashcardCard.builder()
                     .front(word)
                     .back(FlashcardBack.builder()
@@ -995,7 +1012,7 @@ public class FlashcardServiceImpl implements FlashcardService {
             cards.add(card);
             count++;
         }
-        
+
         return cards;
     }
 
@@ -1004,7 +1021,7 @@ public class FlashcardServiceImpl implements FlashcardService {
      */
     private Set<String> extractVocabularyWords(String content) {
         Set<String> words = new LinkedHashSet<>();
-        
+
         // Parse JSON content to extract vocabulary
         try {
             JsonNode rootNode = objectMapper.readTree(content);
@@ -1019,7 +1036,7 @@ public class FlashcardServiceImpl implements FlashcardService {
                 }
             }
         }
-        
+
         return words;
     }
 
@@ -1055,7 +1072,7 @@ public class FlashcardServiceImpl implements FlashcardService {
             if (node.has("word")) {
                 words.add(node.get("word").asText().toLowerCase());
             }
-            
+
             // Process other fields
             node.fields().forEachRemaining(entry -> extractWordsFromJsonNode(entry.getValue(), words));
         }
@@ -1068,17 +1085,17 @@ public class FlashcardServiceImpl implements FlashcardService {
         StringBuilder content = new StringBuilder();
         content.append("Title: ").append(lesson.getTitle()).append("\n");
         content.append("Type: ").append(lesson.getLessonType()).append("\n\n");
-        
+
         int initialLength = content.length();
-        
-        log.info("Extracting content for lesson {} (Type: {}). Raw content: {}", 
+
+        log.info("Extracting content for lesson {} (Type: {}). Raw content: {}",
                 lesson.getId(), lesson.getLessonType(), lesson.getContent());
 
         // Parse and include relevant content
         try {
             JsonNode rootNode = objectMapper.readTree(lesson.getContent());
             log.info("Parsed JSON keys: {}", rootNode.fieldNames());
-            
+
             // Extract based on lesson type
             switch (lesson.getLessonType()) {
                 case READING:
@@ -1093,17 +1110,17 @@ public class FlashcardServiceImpl implements FlashcardService {
                                 content.append(passage.get("text").asText()).append("\n\n");
                             }
                         }
-                    } 
+                    }
                     // Handle 'passage' string (legacy/fallback)
                     else if (rootNode.has("passage")) {
                         content.append("Passage:\n").append(rootNode.get("passage").asText()).append("\n");
                     }
-                    
+
                     if (rootNode.has("vocabulary")) {
                         content.append("Vocabulary: ").append(rootNode.get("vocabulary").toString()).append("\n");
                     }
                     break;
-                    
+
                 case LISTENING:
                     if (rootNode.has("transcript")) {
                         content.append("Transcript:\n").append(rootNode.get("transcript").asText()).append("\n");
@@ -1112,13 +1129,13 @@ public class FlashcardServiceImpl implements FlashcardService {
                         content.append("Vocabulary: ").append(rootNode.get("vocabulary").toString()).append("\n");
                     }
                     break;
-                    
+
                 case QUIZ:
                     if (rootNode.has("questions")) {
                         content.append("Questions: ").append(rootNode.get("questions").toString()).append("\n");
                     }
                     break;
-                    
+
                 case SPEAKING:
                     if (rootNode.has("scenario")) {
                         content.append("Scenario: ").append(rootNode.get("scenario").asText()).append("\n");
@@ -1131,19 +1148,19 @@ public class FlashcardServiceImpl implements FlashcardService {
                     }
                     break;
             }
-            
+
             // If no structured content was extracted, fall back to the full JSON
             if (content.length() == initialLength) {
                 log.warn("No structured content extracted for lesson {}. Falling back to raw JSON.", lesson.getId());
                 content.append(rootNode.toPrettyString());
             }
-            
+
         } catch (JsonProcessingException e) {
             log.warn("Failed to parse lesson content as JSON: {}", e.getMessage());
             // Fall back to raw content
             content.append(lesson.getContent());
         }
-        
+
         return content.toString();
     }
 
@@ -1160,7 +1177,7 @@ public class FlashcardServiceImpl implements FlashcardService {
         } catch (JsonProcessingException e) {
             // Ignore
         }
-        
+
         // Default to B1 if not found
         return "B1";
     }
@@ -1168,20 +1185,28 @@ public class FlashcardServiceImpl implements FlashcardService {
     /**
      * Tracks AI usage for monitoring and quotas.
      */
-    private void trackAiUsage(UUID userId, GeminiResponseDTO response, long responseTimeMs, 
-                              boolean success, String errorMessage) {
+    private void trackAiUsage(UUID userId, GeminiResponseDTO response, long responseTimeMs,
+            boolean success, String errorMessage) {
         try {
+            // Fetch feature config to get the model ID if the response is null (for failure
+            // tracking)
+            String modelId = response != null ? response.model()
+                    : aiConfigService.getFeatureConfig("flashcards").getModelId();
+
             AiUsageTrackingRequest trackingRequest = AiUsageTrackingRequest.builder()
                     .userId(userId)
                     .contentType(AiUsageTracker.CONTENT_TYPE_FLASHCARD)
-                    .modelId(response != null ? response.model() : "gemini-2.0-flash-exp")
-                    .inputTokens(response != null ? response.tokenUsage().inputTokens() : 0)
-                    .outputTokens(response != null ? response.tokenUsage().outputTokens() : 0)
+                    .modelId(modelId)
+                    .inputTokens(
+                            response != null && response.tokenUsage() != null ? response.tokenUsage().inputTokens() : 0)
+                    .outputTokens(
+                            response != null && response.tokenUsage() != null ? response.tokenUsage().outputTokens()
+                                    : 0)
                     .responseTimeMs((int) responseTimeMs)
                     .success(success)
                     .errorMessage(errorMessage)
                     .build();
-            
+
             aiUsageTracker.trackUsageAsync(trackingRequest);
         } catch (Exception e) {
             log.warn("Failed to track AI usage: {}", e.getMessage());

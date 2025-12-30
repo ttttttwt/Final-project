@@ -167,7 +167,11 @@ public class RolePlayServiceImpl implements RolePlayService {
                 request.getUserContext() != null ? request.getUserContext() : "None");
 
         try {
-            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            GeminiResponseDTO response = geminiClientService.generateStructuredContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
 
             String jsonContent = cleanJson(response.content());
             RolePlayScenarioDTO generatedDto = objectMapper.readValue(jsonContent, RolePlayScenarioDTO.class);
@@ -343,8 +347,16 @@ public class RolePlayServiceImpl implements RolePlayService {
         promptBuilder.append(contextWindow);
         promptBuilder.append("\nai: ");
 
-        // Get AI response
-        GeminiResponseDTO response = geminiClientService.generateContent(promptBuilder.toString());
+        // Fetch feature config
+        var featureConfig = aiConfigService.getFeatureConfig("roleplay");
+
+        // Get AI response using configured model
+        GeminiResponseDTO response = geminiClientService.generateContent(
+                promptBuilder.toString(),
+                featureConfig.getModelId(),
+                (float) featureConfig.getTemperature(),
+                featureConfig.getMaxTokens());
+
         String aiContent = response.content();
 
         // Track usage
@@ -417,11 +429,18 @@ public class RolePlayServiceImpl implements RolePlayService {
         long responseTime = 0;
 
         try {
+            // Fetch feature config
+            var featureConfig = aiConfigService.getFeatureConfig("roleplay");
+
             // Build immersive prompt (concise, no feedback)
             String prompt = buildImmersivePrompt(conversation, sanitizedMessage);
 
             long startTime = System.currentTimeMillis();
-            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            GeminiResponseDTO response = geminiClientService.generateContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
             responseTime = System.currentTimeMillis() - startTime;
 
             aiContent = response.content();
@@ -479,11 +498,18 @@ public class RolePlayServiceImpl implements RolePlayService {
         long responseTime = 0;
 
         try {
+            // Fetch feature config
+            var featureConfig = aiConfigService.getFeatureConfig("roleplay");
+
             // Build learning prompt (includes feedback request)
             String prompt = buildLearningPrompt(conversation, sanitizedMessage);
 
             long startTime = System.currentTimeMillis();
-            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            GeminiResponseDTO response = geminiClientService.generateContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
             responseTime = System.currentTimeMillis() - startTime;
 
             // Parse learning mode response (AI message + feedback)
@@ -575,9 +601,16 @@ public class RolePlayServiceImpl implements RolePlayService {
                 // Use streaming generation from Gemini
                 SseEmitter geminiEmitter = geminiClientService.streamContent(prompt);
 
+                // Fetch feature config
+                var featureConfig = aiConfigService.getFeatureConfig("roleplay");
+
                 // For now, since we can't easily relay SSE, fall back to non-streaming
                 // and send the response in chunks to simulate streaming
-                GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+                GeminiResponseDTO response = geminiClientService.generateContent(
+                        prompt,
+                        featureConfig.getModelId(),
+                        (float) featureConfig.getTemperature(),
+                        featureConfig.getMaxTokens());
                 String content = response.content();
                 fullContent.append(content);
 
@@ -1193,7 +1226,14 @@ public class RolePlayServiceImpl implements RolePlayService {
                     scenario.getCefrLevel(),
                     lastAiMessage);
 
-            GeminiResponseDTO response = geminiClientService.generateContent(prompt);
+            // Fetch feature config
+            var featureConfig = aiConfigService.getFeatureConfig("roleplay");
+
+            GeminiResponseDTO response = geminiClientService.generateStructuredContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
             String jsonContent = cleanJson(response.content());
 
             // Parse JSON array

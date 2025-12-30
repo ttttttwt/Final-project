@@ -71,6 +71,7 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
     private final FlashcardService flashcardService;
     private final com.lexia.backend.service.ai.AiUsageTracker usageTracker;
     private final ApplicationContext applicationContext;
+    private final com.lexia.backend.service.ai.AIConfigService aiConfigService;
 
     @Override
     @Async("aiProcessingExecutor")
@@ -218,21 +219,48 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
             List<String> targetOptions) {
         Map<String, Object> result = new HashMap<>();
 
+        // Calculate dynamic counts based on content length
+        Map<String, Integer> counts = calculateDynamicCounts(content);
+        log.info("Calculated dynamic counts for material {}: {}", material.getId(), counts);
+
         // Build combined prompt
-        Map<String, Object> variables = Map.of(
+        Map<String, Object> variables = new HashMap<>(Map.of(
                 "content", content,
                 "cefr_level", DEFAULT_CEFR_LEVEL,
-                "target_options", String.join(", ", targetOptions));
+                "target_options", String.join(", ", targetOptions)));
+
+        // Inject dynamic counts into variables
+        variables.put("vocab_count", counts.get("vocabulary"));
+        variables.put("quiz_count", counts.get("quiz"));
+        variables.put("shadowing_count", counts.get("shadowing"));
+        variables.put("summary_paragraphs", counts.get("summary"));
 
         String prompt = CustomMaterialPrompts.resolve(CustomMaterialPrompts.COMBINED_PROMPT, variables);
 
+        // Fetch feature config
+        var featureConfig = aiConfigService.getFeatureConfig("custom_materials");
+
         try {
-            // Call Gemini
+            // Call Gemini with configured settings
             long startTime = System.currentTimeMillis();
-            GeminiResponseDTO response = geminiClient.generateStructuredContent(prompt);
+            GeminiResponseDTO response = geminiClient.generateStructuredContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
             long responseTimeMs = System.currentTimeMillis() - startTime;
             String responseText = response.content();
             log.info("Raw AI response for material {}: {}", material.getId(), responseText);
+
+            // Check if this is a fallback response (AI unavailable)
+            if (response.isFallback()) {
+                log.warn("AI returned fallback response for material {}. Attempting individual generation.",
+                        material.getId());
+                trackContentGeneration(material, response, responseTimeMs, false, "AI returned fallback");
+                // Try generating each type individually
+                result = generateIndividually(material, content, targetOptions);
+                return result;
+            }
 
             // Track usage with granular content type
             trackContentGeneration(material, response, responseTimeMs, true, null);
@@ -283,7 +311,10 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
             int inputTokens = 0;
             int outputTokens = 0;
-            String modelId = "gemini-1.5-pro";
+
+            // Fetch feature config to get default model if response is null
+            var featureConfig = aiConfigService.getFeatureConfig("custom_materials");
+            String modelId = featureConfig.getModelId();
 
             if (response != null && response.tokenUsage() != null) {
                 inputTokens = response.tokenUsage().inputTokens();
@@ -313,9 +344,18 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
     private Map<String, Object> generateIndividually(UserCustomMaterial material, String content,
             List<String> targetOptions) {
         Map<String, Object> result = new HashMap<>();
-        Map<String, Object> variables = Map.of(
+        // Calculate dynamic counts
+        Map<String, Integer> counts = calculateDynamicCounts(content);
+
+        Map<String, Object> variables = new HashMap<>(Map.of(
                 "content", content,
-                "cefr_level", DEFAULT_CEFR_LEVEL);
+                "cefr_level", DEFAULT_CEFR_LEVEL));
+
+        // Inject dynamic counts
+        variables.put("vocab_count", counts.get("vocabulary"));
+        variables.put("quiz_count", counts.get("quiz"));
+        variables.put("shadowing_count", counts.get("shadowing"));
+        variables.put("summary_paragraphs", counts.get("summary"));
 
         for (String option : targetOptions) {
             try {
@@ -331,7 +371,14 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
                 };
 
                 if (prompt != null) {
-                    GeminiResponseDTO response = geminiClient.generateStructuredContent(prompt);
+                    // Fetch feature config for fallback generation
+                    var featureConfig = aiConfigService.getFeatureConfig("custom_materials");
+
+                    GeminiResponseDTO response = geminiClient.generateStructuredContent(
+                            prompt,
+                            featureConfig.getModelId(),
+                            (float) featureConfig.getTemperature(),
+                            featureConfig.getMaxTokens());
                     log.info("Raw AI response for material {} (fallback option {}): {}", material.getId(), option,
                             response.content());
                     String responseText = cleanJsonResponse(response.content());
@@ -579,5 +626,37 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
         log.debug("Normalized roleplay data: yourRole={}, aiRole={}",
                 normalized.get("yourRole"), normalized.get("aiRole"));
+    }
+
+    /**
+     * Calculates dynamic content counts based on the length of the extracted text.
+     * 
+     * Formula:
+     * - Vocabulary: 5 items per 1000 characters (min 10, max 50)
+     * - Quiz: 2 items per 1000 characters (min 5, max 20)
+     * - Shadowing: 3 items per 1000 characters (min 5, max 30)
+     * - Summary: 1 paragraph per 2000 characters (min 3, max 10)
+     */
+    private Map<String, Integer> calculateDynamicCounts(String content) {
+        int length = content != null ? content.length() : 0;
+        Map<String, Integer> counts = new HashMap<>();
+
+        // Vocabulary: 5 per 1000 chars, min 10, max 50
+        int vocabCount = Math.max(10, Math.min(50, (length / 1000) * 5));
+        counts.put("vocabulary", vocabCount);
+
+        // Quiz: 2 per 1000 chars, min 5, max 20
+        int quizCount = Math.max(5, Math.min(20, (length / 1000) * 2));
+        counts.put("quiz", quizCount);
+
+        // Shadowing: 3 per 1000 chars, min 5, max 30
+        int shadowingCount = Math.max(5, Math.min(30, (length / 1000) * 3));
+        counts.put("shadowing", shadowingCount);
+
+        // Summary: 1 per 2000 chars, min 3, max 10
+        int summaryCount = Math.max(3, Math.min(10, (length / 2000) * 1));
+        counts.put("summary", summaryCount);
+
+        return counts;
     }
 }

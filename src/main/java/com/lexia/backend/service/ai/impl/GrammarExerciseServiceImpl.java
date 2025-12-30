@@ -122,7 +122,7 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
 
         // Try AI generation
         try {
-            return generateWithAI(request, userId, topic);
+            return generateWithAI(request, userId, topic, featureConfig);
         } catch (AiServiceException e) {
             log.warn("AI generation failed, using fallback: {}", e.getMessage());
             return getFallbackOrGenerate(request, userId, topic);
@@ -132,7 +132,8 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
     /**
      * Generates exercises using AI.
      */
-    private GrammarExerciseSetDTO generateWithAI(GrammarRequestDTO request, UUID userId, GrammarTopic topic) {
+    private GrammarExerciseSetDTO generateWithAI(GrammarRequestDTO request, UUID userId, GrammarTopic topic,
+            com.lexia.backend.dto.ai.AIFeatureConfig featureConfig) {
         long startTime = System.currentTimeMillis();
 
         // Build prompt from template
@@ -140,8 +141,12 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         String prompt = promptTemplateService.getAndResolve(GRAMMAR_TEMPLATE_KEY, variables)
                 .orElseGet(() -> buildDefaultPrompt(request));
 
-        // Call Gemini API with structured output (JSON mode)
-        GeminiResponseDTO response = geminiClientService.generateStructuredContent(prompt);
+        // Call Gemini API with structured output (JSON mode) using configured model
+        GeminiResponseDTO response = geminiClientService.generateStructuredContent(
+                prompt,
+                featureConfig.getModelId(),
+                (float) featureConfig.getTemperature(),
+                featureConfig.getMaxTokens());
 
         log.info("Raw Gemini response content: {}", response.content());
 

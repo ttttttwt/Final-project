@@ -2,6 +2,7 @@ package com.lexia.backend.service.ai.impl;
 
 import com.lexia.backend.dto.custommaterial.ChatMessageResponseDTO;
 import com.lexia.backend.dto.custommaterial.EndChatResponseDTO;
+
 import com.lexia.backend.entity.CustomMaterialChatSession;
 import com.lexia.backend.entity.UserCustomMaterial;
 import com.lexia.backend.enums.AiCorrectionMode;
@@ -9,6 +10,7 @@ import com.lexia.backend.exception.AccessDeniedException;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.repository.CustomMaterialChatSessionRepository;
 import com.lexia.backend.repository.UserCustomMaterialRepository;
+import com.lexia.backend.service.ai.AIConfigService;
 import com.lexia.backend.service.ai.CustomMaterialChatService;
 import com.lexia.backend.service.ai.GeminiClientService;
 import lombok.RequiredArgsConstructor;
@@ -113,7 +115,7 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
             Learner's Role: %s
             AI's Role: %s
             CEFR Level: %s
-            
+
             <material_content>
             %s
             </material_content>
@@ -135,6 +137,7 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
     private final CustomMaterialChatSessionRepository sessionRepository;
     private final GeminiClientService geminiClient;
     private final ObjectMapper objectMapper;
+    private final AIConfigService aiConfigService;
 
     @Override
     @Transactional
@@ -235,7 +238,8 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
                         "<material_content>\n%s\n</material_content>\n\n" +
                         "The conversation is a continuation of a story based on the provided material. " +
                         "Provide a short opening line (1-2 sentences) to start the conversation as %s. " +
-                        "You MUST prioritize using vocabulary, sentence patterns, and specific content from the <material_content>. " +
+                        "You MUST prioritize using vocabulary, sentence patterns, and specific content from the <material_content>. "
+                        +
                         "Return ONLY the opening line.",
                 aiRole, scenario, content, aiRole);
 
@@ -491,7 +495,14 @@ public class CustomMaterialChatServiceImpl implements CustomMaterialChatService 
         String prompt = REPORT_PROMPT.replace("{{chat_history}}", formatChatHistory(session.getChatHistory()));
 
         try {
-            var response = geminiClient.generateContent(prompt);
+            // Use config from AIConfigService for consistency
+            var featureConfig = aiConfigService.getFeatureConfig("custom_materials");
+            var response = geminiClient.generateContent(prompt,
+                    featureConfig.getModelId(),
+                    0.3f, // temperature
+                    8000 // Increased maxOutputTokens
+            );
+
             String content = response.content();
 
             // Parse JSON response

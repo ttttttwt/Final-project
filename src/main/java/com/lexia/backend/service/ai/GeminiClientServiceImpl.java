@@ -206,8 +206,8 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     }
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
+    @Retry(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateStructuredContentFallback")
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateStructuredContentFallback")
     @RateLimiter(name = CIRCUIT_BREAKER_NAME)
     public GeminiResponseDTO generateStructuredContent(String prompt, String model, float temperature, int maxTokens) {
         validateGlobalConstraints();
@@ -254,8 +254,8 @@ public class GeminiClientServiceImpl implements GeminiClientService {
     }
 
     @Override
-    @Retry(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
-    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateContentFallback")
+    @Retry(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateStructuredContentFallback")
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "generateStructuredContentFallback")
     @RateLimiter(name = CIRCUIT_BREAKER_NAME)
     public GeminiResponseDTO generateStructuredContent(String prompt) {
         return generateStructuredContent(prompt, geminiConfig.getDefaultModel(),
@@ -627,6 +627,47 @@ public class GeminiClientServiceImpl implements GeminiClientService {
                 model, e.getClass().getSimpleName());
         return GeminiResponseDTO.fallback(
                 "I apologize, but I'm temporarily unable to generate a response. Please try again later.",
+                model);
+    }
+
+    // ==================== Structured Content Fallbacks ====================
+
+    /**
+     * Fallback for structured content (JSON) generation.
+     * Returns a valid JSON error object to prevent parsing failures in calling
+     * services.
+     */
+    @SuppressWarnings("unused")
+    private GeminiResponseDTO generateStructuredContentFallback(String prompt, Exception e) {
+        log.warn("Structured content fallback triggered for default model. Error type: {}",
+                e.getClass().getSimpleName());
+        return GeminiResponseDTO.fallback(
+                "{\"error\": \"AI service temporarily unavailable\", \"fallback\": true}",
+                geminiConfig.getDefaultModel());
+    }
+
+    /**
+     * Fallback for structured content with model.
+     */
+    @SuppressWarnings("unused")
+    private GeminiResponseDTO generateStructuredContentFallback(String prompt, String model, Exception e) {
+        log.warn("Structured content fallback triggered for model {}. Error type: {}", model,
+                e.getClass().getSimpleName());
+        return GeminiResponseDTO.fallback(
+                "{\"error\": \"AI service temporarily unavailable\", \"fallback\": true}",
+                model);
+    }
+
+    /**
+     * Fallback for structured content with custom config.
+     */
+    @SuppressWarnings("unused")
+    private GeminiResponseDTO generateStructuredContentFallback(String prompt, String model,
+            float temperature, int maxTokens, Exception e) {
+        log.warn("Structured content fallback triggered for model {} with custom config. Error type: {}",
+                model, e.getClass().getSimpleName());
+        return GeminiResponseDTO.fallback(
+                "{\"error\": \"AI service temporarily unavailable\", \"fallback\": true}",
                 model);
     }
 

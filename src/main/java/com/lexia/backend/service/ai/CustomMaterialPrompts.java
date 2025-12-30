@@ -25,7 +25,7 @@ public final class CustomMaterialPrompts {
       </user_content>
 
       <instructions>
-      Extract 10-15 important vocabulary words/phrases suitable for {{cefr_level}} level learners.
+      Extract {{vocab_count}} important vocabulary words/phrases suitable for {{cefr_level}} level learners.
       Focus on: professional terms, idiomatic expressions, and contextually important words.
 
       For each word, provide:
@@ -65,13 +65,22 @@ public final class CustomMaterialPrompts {
       </user_content>
 
       <instructions>
-      Create 5-8 quiz questions for {{cefr_level}} level learners based on this content.
-      Mix question types: multiple choice (3-4 options), true/false, fill-in-blank.
+      Create {{quiz_count}} quiz questions for {{cefr_level}} level learners based on this content.
+      Mix question types: You MUST provide a balanced variety of formats.
+      Strictly follow this distribution: 60% trắc nghiệm (multiple choice), 20% đúng/sai (true/false), và 20% điền vào chỗ trống (fill-in-the-blank).
+
+      CRITICAL: You MUST return a valid JSON array. Each object must have "id", "type", "question", "options", "answer", and "explanation" keys.
+      Do NOT skip the "question" key for any type.
 
       Focus on:
       - Reading comprehension (main ideas, details)
       - Vocabulary in context
       - Grammar patterns used in the text
+
+      Structure for each type:
+      - multiple_choice: 4 options, 1 answer (exact string from options)
+      - true_false: 2 options ["True", "False"], 1 answer ("True" or "False")
+      - fill_blank: A sentence with "___", 3-4 options for the missing word, 1 answer (the correct word)
 
       Return as JSON array with this exact structure:
       ```json
@@ -80,25 +89,25 @@ public final class CustomMaterialPrompts {
           "id": "q1",
           "type": "multiple_choice",
           "question": "What is the main purpose of the quarterly report?",
-          "options": ["Option A", "Option B", "Option C", "Option D"],
-          "correctAnswers": ["Option B"],
-          "explanation": "The report clearly states..."
+          "options": ["To review sales", "To hire staff", "To clean the office", "To plan a party"],
+          "answer": "To review sales",
+          "explanation": "The report opens with a sales summary."
         },
         {
           "id": "q2",
           "type": "true_false",
-          "question": "The company exceeded its Q1 targets.",
+          "question": "The company met its targets.",
           "options": ["True", "False"],
-          "correctAnswers": ["True"],
-          "explanation": "As mentioned in paragraph 2..."
+          "answer": "True",
+          "explanation": "Paragraph 1 confirmed the targets were met."
         },
         {
           "id": "q3",
           "type": "fill_blank",
-          "question": "The marketing team achieved a ___ increase in engagement.",
-          "options": ["significant", "marginal", "negative"],
-          "correctAnswers": ["significant"],
-          "explanation": "The word 'significant' appears in the context..."
+          "question": "The team needs to ___ the new strategy.",
+          "options": ["implement", "ignore", "forget", "delete"],
+          "answer": "implement",
+          "explanation": "Context suggests activation of the strategy."
         }
       ]
       ```
@@ -120,7 +129,7 @@ public final class CustomMaterialPrompts {
       Create a summary suitable for {{cefr_level}} level English learners.
 
       Requirements:
-      1. Write 3-5 paragraphs summarizing the main points
+      1. Write {{summary_paragraphs}} paragraphs summarizing the main points
       2. Use vocabulary appropriate for {{cefr_level}} level
       3. Highlight key terms in **bold**
       4. Keep sentences clear and not too complex
@@ -216,7 +225,7 @@ public final class CustomMaterialPrompts {
       </user_content>
 
       <instructions>
-      Extract 5-10 sentences from the content that are good for shadowing practice.
+      Extract {{shadowing_count}} sentences from the content that are good for shadowing practice.
 
       Choose sentences that:
       1. Are natural spoken English (not too formal or written)
@@ -261,19 +270,20 @@ public final class CustomMaterialPrompts {
       <instructions>
       Based on the target options, generate the requested learning materials for {{cefr_level}} level learners.
 
-      If VOCABULARY is requested: Extract 10-15 vocabulary items with structure:
+      If VOCABULARY is requested: Extract {{vocab_count}} vocabulary items with structure:
         {"id": "v1", "word": "term", "ipa": "IPA pronunciation", "partOfSpeech": "noun", "definition": "...", "example": "...", "context": "..."}
-      If QUIZ is requested: Create 5-8 quiz questions
-      If SUMMARY is requested: Write a 3-5 paragraph summary
+      If QUIZ is requested: Create {{quiz_count}} quiz questions. You MUST include a mix of multiple choice, true/false, and fill-in-the-blank.
+      Each question MUST have "id", "type", "question", "options", "answer", and "explanation".
+      If SUMMARY is requested: Write a {{summary_paragraphs}} paragraph summary
       If ROLE_PLAY is requested: Create a role-play scenario with structure:
         {
           "title": "...",
           "context": "...",
           "contextDetails": {
-            "setting": "...", 
-            "situation": "... (Design this as an ongoing conversation or continuation of a story based on the content)", 
-            "keyInfo": ["..."], 
-            "yourGoal": "...", 
+            "setting": "...",
+            "situation": "... (Design this as an ongoing conversation or continuation of a story based on the content)",
+            "keyInfo": ["..."],
+            "yourGoal": "...",
             "tips": ["..."]
           },
           "yourRole": "...",
@@ -283,7 +293,7 @@ public final class CustomMaterialPrompts {
           "keyVocabulary": [{"term": "...", "ipa": "...", "definition": "...", "example": "..."}],
           "openingLine": "... (The AI's first message to the user, initiating the interaction. AI must prioritize using vocabulary and patterns from the content)"
         }
-      If SHADOWING is requested: Extract 5-10 shadowing sentences with structure:
+      If SHADOWING is requested: Extract {{shadowing_count}} shadowing sentences with structure:
         {"id": "s1", "sentence": "...", "phonetic": "...", "notes": "..."}
 
       Return as JSON with this structure (include only requested sections):

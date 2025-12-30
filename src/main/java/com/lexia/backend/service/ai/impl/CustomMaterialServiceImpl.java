@@ -338,7 +338,11 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
         }
 
         try {
-            var response = geminiClient.generateContent(prompt);
+            var response = geminiClient.generateContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
             return parseStyleTransformResponse(response.content(), request.isIncludeExplanation());
         } catch (Exception e) {
             log.error("Style transform failed: {}", e.getMessage(), e);
@@ -372,17 +376,17 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
                     String trimmedLine = line.trim();
                     if (trimmedLine.startsWith("-")) {
                         String contentLine = trimmedLine.substring(1).trim();
-                        
+
                         // Try to parse: [Original] -> [Changed]: [Reason]
                         if (contentLine.contains("->") && contentLine.contains(":")) {
                             try {
                                 String[] arrowParts = contentLine.split("->", 2);
                                 String original = arrowParts[0].trim();
-                                
+
                                 String[] colonParts = arrowParts[1].split(":", 2);
                                 String changed = colonParts[0].trim();
                                 String reason = colonParts[1].trim();
-                                
+
                                 explanations.add(StyleTransformResponseDTO.StyleExplanation.builder()
                                         .original(original)
                                         .changed(changed)
@@ -440,8 +444,14 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
             audioUrl = fileStorageService.getPublicUrl(fileEntity.getId());
         }
 
-        // Generate pronunciation assessment via AI
-        ShadowingScoreResponseDTO result = generatePronunciationScore(targetSentence, audioUrl);
+        // Check if feature is enabled
+        var featureConfig = aiConfigService.getFeatureConfig("custom_materials");
+        if (!featureConfig.isEnabled()) {
+            throw new AiServiceException("Custom materials feature is currently disabled");
+        }
+
+        // Generate pronunciation assessment via AI using configured model
+        ShadowingScoreResponseDTO result = generatePronunciationScore(targetSentence, audioUrl, featureConfig);
 
         // Save attempt to database
         saveAttempt(material, userId, sentenceId, audioUrl, result);
@@ -458,12 +468,12 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
         if (shadowingObj instanceof List<?> shadowingList) {
             for (int i = 0; i < shadowingList.size(); i++) {
                 Object item = shadowingList.get(i);
-                
+
                 // Case 1: Item is a Map (Object with id and sentence)
                 if (item instanceof Map<?, ?> sentenceMap) {
                     Object idObj = ((Map<String, Object>) sentenceMap).get("id");
                     String id = idObj != null ? String.valueOf(idObj) : "s-" + i;
-                    
+
                     if (sentenceId.equals(id)) {
                         // Try "sentence" then "text" as fallback
                         Object sentenceObj = ((Map<String, Object>) sentenceMap).get("sentence");
@@ -472,7 +482,7 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
                         }
                         return sentenceObj != null ? String.valueOf(sentenceObj) : null;
                     }
-                } 
+                }
                 // Case 2: Item is a String (Legacy/Simple format)
                 else if (item instanceof String sentenceStr) {
                     String id = "s-" + i;
@@ -485,7 +495,8 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
         return null;
     }
 
-    private ShadowingScoreResponseDTO generatePronunciationScore(String targetSentence, String audioUrl) {
+    private ShadowingScoreResponseDTO generatePronunciationScore(String targetSentence, String audioUrl,
+            com.lexia.backend.dto.ai.AIFeatureConfig featureConfig) {
         // Build pronunciation assessment prompt
         String prompt = String.format("""
                 You are a pronunciation assessment expert. Analyze the user's pronunciation attempt.
@@ -519,7 +530,11 @@ public class CustomMaterialServiceImpl implements CustomMaterialService {
                         : "(No audio provided - provide mock assessment for demo purposes)");
 
         try {
-            var response = geminiClient.generateContent(prompt);
+            var response = geminiClient.generateStructuredContent(
+                    prompt,
+                    featureConfig.getModelId(),
+                    (float) featureConfig.getTemperature(),
+                    featureConfig.getMaxTokens());
             return parseShadowingScore(response.content());
         } catch (Exception e) {
             log.error("Failed to generate pronunciation score: {}", e.getMessage(), e);
