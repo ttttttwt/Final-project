@@ -7,6 +7,7 @@ import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.model.Invoice;
 import com.stripe.model.Subscription;
+import com.stripe.model.Charge;
 import com.stripe.net.Webhook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,12 +65,34 @@ public class StripeWebhookController {
             case "checkout.session.completed":
                 Session session = (Session) stripeObject;
                 log.info("Handling checkout.session.completed for session: {}", session.getId());
-                subscriptionService.handleCheckoutSessionCompleted(session);
+                
+                // Retrieve subscription details outside of transaction to avoid holding DB connections
+                java.time.LocalDateTime periodEnd = null;
+                if (session.getSubscription() != null) {
+                    try {
+                        com.stripe.model.Subscription stripeSub = com.stripe.model.Subscription.retrieve(session.getSubscription());
+                        periodEnd = java.time.LocalDateTime.ofEpochSecond(stripeSub.getCurrentPeriodEnd(), 0, java.time.ZoneOffset.UTC);
+                    } catch (Exception e) {
+                        log.error("Error retrieving subscription details from Stripe", e);
+                    }
+                }
+                
+                subscriptionService.handleCheckoutSessionCompleted(session, periodEnd);
                 break;
             case "invoice.payment_succeeded":
                 Invoice invoice = (Invoice) stripeObject;
                 log.info("Handling invoice.payment_succeeded for invoice: {}", invoice.getId());
                 subscriptionService.handleInvoicePaymentSucceeded(invoice);
+                break;
+            case "invoice.payment_failed":
+                Invoice failedInvoice = (Invoice) stripeObject;
+                log.info("Handling invoice.payment_failed for invoice: {}", failedInvoice.getId());
+                subscriptionService.handleInvoicePaymentFailed(failedInvoice);
+                break;
+            case "charge.refunded":
+                Charge charge = (Charge) stripeObject;
+                log.info("Handling charge.refunded for charge: {}", charge.getId());
+                subscriptionService.handleChargeRefunded(charge);
                 break;
             case "customer.subscription.deleted":
                 Subscription subscription = (Subscription) stripeObject;
