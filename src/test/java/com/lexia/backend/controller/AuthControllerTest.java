@@ -11,6 +11,7 @@ import com.lexia.backend.exception.UserAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.lexia.backend.common.GlobalExceptionHandler;
@@ -28,7 +29,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests all authentication endpoints with various scenarios.
  */
 @WebMvcTest(AuthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @ContextConfiguration(classes = { AuthController.class, GlobalExceptionHandler.class })
 class AuthControllerTest {
 
@@ -131,7 +132,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/register")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRegisterDTO)))
                                 .andExpect(status().isCreated())
@@ -153,7 +153,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/register")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidDTO)))
                                 .andExpect(status().isBadRequest());
@@ -168,7 +167,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/register")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRegisterDTO)))
                                 .andExpect(status().isConflict());
@@ -184,7 +182,7 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/login")
-                                .with(csrf())
+                                //.with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validLoginDTO)))
                                 .andExpect(status().isOk())
@@ -203,7 +201,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/login")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validLoginDTO)))
                                 .andExpect(status().isConflict());
@@ -219,7 +216,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/login")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidDTO)))
                                 .andExpect(status().isBadRequest());
@@ -235,7 +231,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/refresh")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRefreshTokenDTO)))
                                 .andExpect(status().isOk())
@@ -253,7 +248,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/refresh")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRefreshTokenDTO)))
                                 .andExpect(status().isUnauthorized());
@@ -267,7 +261,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/refresh")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidDTO)))
                                 .andExpect(status().isBadRequest());
@@ -284,7 +277,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/logout")
-                                .with(csrf())
                                 .header("Authorization", authHeader))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.message").value("Logged out successfully"));
@@ -300,8 +292,7 @@ class AuthControllerTest {
                                 .when(authService).logout(isNull());
 
                 // When & Then
-                mockMvc.perform(post("/api/v1/auth/logout")
-                                .with(csrf()))
+                mockMvc.perform(post("/api/v1/auth/logout"))
                                 .andExpect(status().isUnauthorized())
                                 .andExpect(jsonPath("$.error").value("Invalid Token"))
                                 .andExpect(jsonPath("$.message").value("Authorization header is required"));
@@ -317,7 +308,6 @@ class AuthControllerTest {
 
                 // When & Then
                 mockMvc.perform(post("/api/v1/auth/logout")
-                                .with(csrf())
                                 .header("Authorization", invalidHeader))
                                 .andExpect(status().isUnauthorized())
                                 .andExpect(jsonPath("$.error").value("Invalid Token"))

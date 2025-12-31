@@ -251,13 +251,20 @@ class GrammarExerciseServiceImplTest {
                         GrammarTopic topic = createTopic("Present Simple");
                         GrammarExerciseSet savedSet = createExerciseSet(USER_ID);
 
+                        com.lexia.backend.dto.ai.AIFeatureConfig config = new com.lexia.backend.dto.ai.AIFeatureConfig();
+                        config.setEnabled(true);
+                        config.setModelId("model");
+                        config.setTemperature(1.0);
+                        config.setMaxTokens(100);
+                        when(aiConfigService.getFeatureConfig("grammar")).thenReturn(config);
+
                         when(topicRepository.findByNameIgnoreCase("Present Simple"))
                                         .thenReturn(Optional.of(topic));
                         when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
                                         .thenReturn(5L);
                         when(promptTemplateService.getAndResolve(anyString(), anyMap()))
                                         .thenReturn(Optional.of("Generated prompt"));
-                        when(geminiClientService.generateStructuredContent(anyString()))
+                        when(geminiClientService.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt()))
                                         .thenReturn(createSuccessfulResponse());
                         when(exerciseSetRepository.save(any(GrammarExerciseSet.class)))
                                         .thenReturn(savedSet);
@@ -334,13 +341,20 @@ class GrammarExerciseServiceImplTest {
                         GrammarExerciseSet fallbackSet = createExerciseSet(null);
                         fallbackSet.setIsFallback(true);
 
+                        com.lexia.backend.dto.ai.AIFeatureConfig config = new com.lexia.backend.dto.ai.AIFeatureConfig();
+                        config.setEnabled(true);
+                        config.setModelId("model");
+                        config.setTemperature(1.0);
+                        config.setMaxTokens(100);
+                        when(aiConfigService.getFeatureConfig("grammar")).thenReturn(config);
+
                         when(topicRepository.findByNameIgnoreCase("Present Simple"))
                                         .thenReturn(Optional.of(topic));
                         when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
                                         .thenReturn(5L);
                         when(promptTemplateService.getAndResolve(anyString(), anyMap()))
                                         .thenReturn(Optional.of("Prompt"));
-                        when(geminiClientService.generateStructuredContent(anyString()))
+                        when(geminiClientService.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt()))
                                         .thenThrow(new AiServiceException("API unavailable"));
                         when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
                                         .thenReturn(List.of(fallbackSet));
@@ -361,13 +375,20 @@ class GrammarExerciseServiceImplTest {
                         GrammarExerciseSet savedSet = createExerciseSet(USER_ID);
                         savedSet.setIsFallback(true);
 
+                        com.lexia.backend.dto.ai.AIFeatureConfig config = new com.lexia.backend.dto.ai.AIFeatureConfig();
+                        config.setEnabled(true);
+                        config.setModelId("model");
+                        config.setTemperature(1.0);
+                        config.setMaxTokens(100);
+                        when(aiConfigService.getFeatureConfig("grammar")).thenReturn(config);
+
                         when(topicRepository.findByNameIgnoreCase("Present Simple"))
                                         .thenReturn(Optional.of(topic));
                         when(aiUsageTracker.getDailyUsageCount(USER_ID, AiUsageTracker.CONTENT_TYPE_GRAMMAR))
                                         .thenReturn(5L);
                         when(promptTemplateService.getAndResolve(anyString(), anyMap()))
                                         .thenReturn(Optional.of("Prompt"));
-                        when(geminiClientService.generateStructuredContent(anyString()))
+                        when(geminiClientService.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt()))
                                         .thenThrow(new AiServiceException("API unavailable"));
                         when(exerciseSetRepository.findFallbackByCefrLevelAndGrammarPoint("B1", "Present Simple"))
                                         .thenReturn(Collections.emptyList());

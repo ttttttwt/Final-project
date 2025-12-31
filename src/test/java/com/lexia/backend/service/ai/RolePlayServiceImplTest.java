@@ -104,7 +104,7 @@ class RolePlayServiceImplTest {
                 GeminiResponseDTO geminiResponse = new GeminiResponseDTO(jsonResponse, "model", null, Instant.now(),
                                 100, false, "STOP");
 
-                when(geminiClientService.generateContent(anyString())).thenReturn(geminiResponse);
+                when(geminiClientService.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt())).thenReturn(geminiResponse);
                 when(objectMapper.readValue(anyString(), eq(RolePlayScenarioDTO.class)))
                                 .thenReturn(RolePlayScenarioDTO.builder().title("Test Scenario").build());
                 when(scenarioRepository.save(any(RolePlayScenario.class))).thenReturn(scenario);
@@ -113,7 +113,7 @@ class RolePlayServiceImplTest {
 
                 assertNotNull(result);
                 assertEquals("Test Scenario", result.getTitle());
-                verify(geminiClientService).generateContent(anyString());
+                verify(geminiClientService).generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt());
                 verify(scenarioRepository).save(any(RolePlayScenario.class));
         }
 
@@ -135,13 +135,20 @@ class RolePlayServiceImplTest {
 
         @Test
         void sendMessage_Success() {
+                AIFeatureConfig config = new AIFeatureConfig();
+                config.setEnabled(true);
+                config.setModelId("model");
+                config.setTemperature(1.0);
+                config.setMaxTokens(100);
+                when(aiConfigService.getFeatureConfig("roleplay")).thenReturn(config);
+
                 when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
                 when(contextWindowManager.buildContextWindow(any(RolePlayConversation.class)))
                                 .thenReturn("Previous context");
 
                 GeminiResponseDTO geminiResponse = new GeminiResponseDTO("AI Response", "model", null, Instant.now(),
                                 100, false, "STOP");
-                when(geminiClientService.generateContent(anyString())).thenReturn(geminiResponse);
+                when(geminiClientService.generateContent(anyString(), anyString(), anyFloat(), anyInt())).thenReturn(geminiResponse);
 
                 RolePlayMessageDTO result = rolePlayService.sendMessage(conversation.getId(), conversation.getUserId(),
                                 "Hello AI");

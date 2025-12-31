@@ -56,6 +56,8 @@ class CustomMaterialProcessingServiceImplTest {
         private FlashcardService flashcardService;
         @Mock
         private com.lexia.backend.service.ai.AiUsageTracker usageTracker;
+        @Mock
+        private com.lexia.backend.service.ai.AIConfigService aiConfigService;
         @Spy
         private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -95,6 +97,13 @@ class CustomMaterialProcessingServiceImplTest {
                 when(promptSanitizer.sanitize(anyString(), anyInt())).thenReturn("Sanitized content");
                 when(settingsRepository.findByMaterialId(materialId)).thenReturn(Optional.empty()); // Default options
 
+                com.lexia.backend.dto.ai.AIFeatureConfig config = new com.lexia.backend.dto.ai.AIFeatureConfig();
+                config.setEnabled(true);
+                config.setModelId("model");
+                config.setTemperature(1.0);
+                config.setMaxTokens(100);
+                when(aiConfigService.getFeatureConfig("custom_materials")).thenReturn(config);
+
                 // Mock Gemini response
                 String jsonResponse = """
                                 ```json
@@ -106,7 +115,7 @@ class CustomMaterialProcessingServiceImplTest {
                 GeminiResponseDTO geminiResponse = new GeminiResponseDTO(jsonResponse, "model", null, Instant.now(),
                                 100, false,
                                 "STOP");
-                when(geminiClient.generateStructuredContent(anyString())).thenReturn(geminiResponse);
+                when(geminiClient.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt())).thenReturn(geminiResponse);
 
                 // Execute
                 processingService.processMaterial(materialId);
@@ -151,7 +160,15 @@ class CustomMaterialProcessingServiceImplTest {
                 when(jobRepository.findByMaterialId(materialId)).thenReturn(Optional.of(job));
                 when(contentExtractor.extractContent(material)).thenReturn("Content");
                 when(promptSanitizer.sanitize(anyString(), anyInt())).thenReturn("Content");
-                when(geminiClient.generateStructuredContent(anyString())).thenThrow(new RuntimeException("API Error"));
+
+                com.lexia.backend.dto.ai.AIFeatureConfig config = new com.lexia.backend.dto.ai.AIFeatureConfig();
+                config.setEnabled(true);
+                config.setModelId("model");
+                config.setTemperature(1.0);
+                config.setMaxTokens(100);
+                when(aiConfigService.getFeatureConfig("custom_materials")).thenReturn(config);
+
+                when(geminiClient.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt())).thenThrow(new RuntimeException("API Error"));
 
                 // Execute
                 processingService.processMaterial(materialId);
@@ -170,6 +187,13 @@ class CustomMaterialProcessingServiceImplTest {
                 when(contentExtractor.extractContent(material)).thenReturn("Content");
                 when(promptSanitizer.sanitize(anyString(), anyInt())).thenReturn("Content");
 
+                com.lexia.backend.dto.ai.AIFeatureConfig config = new com.lexia.backend.dto.ai.AIFeatureConfig();
+                config.setEnabled(true);
+                config.setModelId("model");
+                config.setTemperature(1.0);
+                config.setMaxTokens(100);
+                when(aiConfigService.getFeatureConfig("custom_materials")).thenReturn(config);
+
                 // Mock Settings to request specific options
                 UserCustomMaterialSettings settings = new UserCustomMaterialSettings();
                 settings.setTargetOptions(List.of("VOCABULARY"));
@@ -184,7 +208,7 @@ class CustomMaterialProcessingServiceImplTest {
                                 false, "STOP");
 
                 // Mock sequential calls: 1. Combined (fails parsing), 2. Vocabulary (succeeds)
-                when(geminiClient.generateStructuredContent(anyString()))
+                when(geminiClient.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt()))
                                 .thenReturn(invalidResponse)
                                 .thenReturn(vocabResponse);
 
@@ -209,7 +233,15 @@ class CustomMaterialProcessingServiceImplTest {
                 when(materialRepository.findById(materialId)).thenReturn(Optional.of(material));
                 when(contentExtractor.extractContent(material)).thenReturn("Content");
                 when(promptSanitizer.sanitize(anyString(), anyInt())).thenReturn("Sanitized");
-                when(geminiClient.generateStructuredContent(anyString()))
+
+                com.lexia.backend.dto.ai.AIFeatureConfig config = new com.lexia.backend.dto.ai.AIFeatureConfig();
+                config.setEnabled(true);
+                config.setModelId("model");
+                config.setTemperature(1.0);
+                config.setMaxTokens(100);
+                when(aiConfigService.getFeatureConfig("custom_materials")).thenReturn(config);
+
+                when(geminiClient.generateStructuredContent(anyString(), anyString(), anyFloat(), anyInt()))
                                 .thenReturn(new GeminiResponseDTO("{}", "model", null, Instant.now(), 100, false,
                                                 "STOP"));
 
