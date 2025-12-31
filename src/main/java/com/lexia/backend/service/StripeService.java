@@ -3,7 +3,9 @@ package com.lexia.backend.service;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
+import com.stripe.model.Refund;
 import com.stripe.param.checkout.SessionCreateParams;
+import com.stripe.param.RefundCreateParams;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -46,5 +48,12 @@ public class StripeService {
                 .setReturnUrl(returnUrl)
                 .build();
         return com.stripe.model.billingportal.Session.create(params);
+    }
+
+    public Refund refundPayment(String paymentIntentId) throws StripeException {
+        RefundCreateParams params = RefundCreateParams.builder()
+                .setPaymentIntent(paymentIntentId)
+                .build();
+        return Refund.create(params);
     }
 }

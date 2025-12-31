@@ -101,44 +101,75 @@ public class SubscriptionService {
     @Transactional
     public void handleInvoicePaymentSucceeded(Invoice invoice) {
         String stripeSubscriptionId = invoice.getSubscription();
-        if (stripeSubscriptionId == null) {
-            log.warn("Stripe subscription ID is null in invoice. Skipping processing.");
+        Subscription subscription = null;
+
+        if (stripeSubscriptionId != null) {
+            subscription = subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId).orElse(null);
+        }
+
+        if (subscription == null) {
+            log.warn("Stripe subscription ID is null or not found in DB. Attempting fallback via Invoice ID: {}", invoice.getId());
+            // Fallback: Try to find payment by invoice ID, which links to subscription
+            Payment payment = paymentRepository.findByStripeInvoiceId(invoice.getId()).orElse(null);
+            if (payment != null) {
+                subscription = payment.getSubscription();
+                if (subscription != null) {
+                    log.info("Resolved Subscription via Payment record. ID: {}", subscription.getStripeSubscriptionId());
+                }
+            }
+        }
+
+        if (subscription == null) {
+            log.warn("Could not resolve Subscription for Invoice: {}. Skipping processing.", invoice.getId());
             return;
         }
-        log.info("Handling invoice payment succeeded. SubscriptionId: {}", stripeSubscriptionId);
-        subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId).ifPresentOrElse(subscription -> {
-            if (invoice.getLines() != null && !invoice.getLines().getData().isEmpty()) {
-                subscription.setCurrentPeriodEnd(LocalDateTime
-                        .ofEpochSecond(invoice.getLines().getData().get(0).getPeriod().getEnd(), 0, ZoneOffset.UTC));
-            } else {
-                log.warn("No line items found in invoice: {}", invoice.getId());
-            }
-            subscription.setStatus(SubscriptionStatus.ACTIVE);
-            subscriptionRepository.save(subscription);
 
-            // Save payment record
-            savePaymentFromInvoice(invoice, subscription);
+        log.info("Handling invoice payment succeeded. SubscriptionId: {}", subscription.getStripeSubscriptionId());
+        
+        if (invoice.getLines() != null && !invoice.getLines().getData().isEmpty()) {
+            subscription.setCurrentPeriodEnd(LocalDateTime
+                    .ofEpochSecond(invoice.getLines().getData().get(0).getPeriod().getEnd(), 0, ZoneOffset.UTC));
+        } else {
+            log.warn("No line items found in invoice: {}", invoice.getId());
+        }
+        subscription.setStatus(SubscriptionStatus.ACTIVE);
+        subscriptionRepository.save(subscription);
 
-            // Sync AI quota with renewed subscription
-            User user = subscription.getUser();
-            subscriptionQuotaService.syncQuotaWithSubscription(user, subscription);
+        // Save payment record
+        savePaymentFromInvoice(invoice, subscription);
 
-            log.info("Subscription renewed successfully for subscriptionId: {}", stripeSubscriptionId);
-        }, () -> log.warn("Subscription not found for subscriptionId: {}", stripeSubscriptionId));
+        // Sync AI quota with renewed subscription
+        User user = subscription.getUser();
+        subscriptionQuotaService.syncQuotaWithSubscription(user, subscription);
+
+        log.info("Subscription renewed successfully for subscriptionId: {}", subscription.getStripeSubscriptionId());
     }
 
     @Transactional
     public void handleInvoicePaymentFailed(Invoice invoice) {
         String stripeSubscriptionId = invoice.getSubscription();
-        if (stripeSubscriptionId == null) {
-            log.warn("Stripe subscription ID is null in failed invoice. Skipping processing.");
+        Subscription subscription = null;
+
+        if (stripeSubscriptionId != null) {
+            subscription = subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId).orElse(null);
+        }
+
+        if (subscription == null) {
+            log.warn("Stripe subscription ID is null or not found in DB (failed payment). Attempting fallback via Invoice ID: {}", invoice.getId());
+            Payment payment = paymentRepository.findByStripeInvoiceId(invoice.getId()).orElse(null);
+            if (payment != null) {
+                subscription = payment.getSubscription();
+            }
+        }
+
+        if (subscription == null) {
+            log.warn("Could not resolve Subscription for failed Invoice: {}. Skipping processing.", invoice.getId());
             return;
         }
-        log.info("Handling invoice payment failed. SubscriptionId: {}", stripeSubscriptionId);
-        subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId).ifPresent(subscription -> {
-            // Record failed payment
-            saveFailedPaymentFromInvoice(invoice, subscription);
-        });
+
+        log.info("Handling invoice payment failed. SubscriptionId: {}", subscription.getStripeSubscriptionId());
+        // Record failed payment
+        saveFailedPaymentFromInvoice(invoice, subscription);
     }
 
     @Transactional
@@ -154,6 +185,22 @@ public class SubscriptionService {
             payment.setStatus(Payment.PaymentStatus.REFUNDED);
             paymentRepository.save(payment);
             log.info("Payment record updated to REFUNDED for paymentIntentId: {}", paymentIntentId);
+
+            // Downgrade subscription to FREE
+            Subscription subscription = payment.getSubscription();
+            if (subscription != null) {
+                subscription.setStatus(SubscriptionStatus.CANCELED);
+                subscription.setPlanType(PlanType.FREE);
+                subscriptionRepository.save(subscription);
+
+                // Sync AI quota
+                User user = subscription.getUser();
+                subscriptionQuotaService.syncQuotaWithSubscription(user, subscription);
+
+                log.info("Subscription downgraded to FREE after refund. SubscriptionId: {}", subscription.getId());
+            } else {
+                log.warn("No subscription found for refunded payment: {}", payment.getId());
+            }
         });
     }
 
@@ -192,9 +239,20 @@ public class SubscriptionService {
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         String currency = session.getCurrency() != null ? session.getCurrency().toUpperCase() : "USD";
 
+        String paymentIntentId = session.getPaymentIntent();
+        if (paymentIntentId == null) {
+            try {
+                Invoice invoice = Invoice.retrieve(invoiceId);
+                paymentIntentId = invoice.getPaymentIntent();
+                log.info("Retrieved PaymentIntentId from Invoice: {}", paymentIntentId);
+            } catch (Exception e) {
+                log.error("Failed to retrieve invoice to get PaymentIntentId", e);
+            }
+        }
+
         payment.setUser(subscription.getUser());
         payment.setSubscription(subscription);
-        payment.setStripePaymentId(session.getPaymentIntent());
+        payment.setStripePaymentId(paymentIntentId);
         payment.setStripeInvoiceId(invoiceId);
         payment.setAmount(amount);
         payment.setCurrency(currency);
@@ -213,6 +271,12 @@ public class SubscriptionService {
                 .orElse(new Payment());
 
         if (payment.getStatus() == Payment.PaymentStatus.SUCCEEDED) {
+            // Fix: If payment ID is missing (e.g. created by session without PI), update it
+            if (payment.getStripePaymentId() == null && invoice.getPaymentIntent() != null) {
+                payment.setStripePaymentId(invoice.getPaymentIntent());
+                paymentRepository.save(payment);
+                log.info("Updated existing payment with Stripe Payment ID: {}", invoice.getPaymentIntent());
+            }
             log.info("Payment record already exists and succeeded for invoice: {}", invoiceId);
             return;
         }
