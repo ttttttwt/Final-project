@@ -9,6 +9,7 @@ import com.lexia.backend.repository.UserRepository;
 import com.stripe.model.Invoice;
 import com.stripe.model.checkout.Session;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
@@ -49,6 +51,8 @@ public class SubscriptionService {
         String stripeCustomerId = session.getCustomer();
         String stripeSubscriptionId = session.getSubscription();
 
+        log.info("Handling checkout session completed. UserId: {}, CustomerId: {}, SubscriptionId: {}", userIdStr, stripeCustomerId, stripeSubscriptionId);
+
         if (userIdStr != null) {
             UUID userId = UUID.fromString(userIdStr);
             Subscription subscription = getSubscription(userId);
@@ -58,9 +62,11 @@ public class SubscriptionService {
             
             if (session.getMetadata() != null && session.getMetadata().containsKey("plan_type")) {
                 String planTypeStr = session.getMetadata().get("plan_type");
+                log.info("Updating plan type to: {}", planTypeStr);
                 try {
                     subscription.setPlanType(PlanType.valueOf(planTypeStr));
                 } catch (IllegalArgumentException e) {
+                    log.warn("Invalid plan type: {}. Defaulting to MONTHLY.", planTypeStr);
                     // Fallback to MONTHLY if invalid
                     subscription.setPlanType(PlanType.MONTHLY);
                 }
@@ -70,21 +76,31 @@ public class SubscriptionService {
                 com.stripe.model.Subscription stripeSub = com.stripe.model.Subscription.retrieve(stripeSubscriptionId);
                 subscription.setCurrentPeriodEnd(LocalDateTime.ofEpochSecond(stripeSub.getCurrentPeriodEnd(), 0, ZoneOffset.UTC));
             } catch (Exception e) {
+                log.error("Error retrieving subscription details from Stripe", e);
                 // Log error or ignore
             }
             
             subscriptionRepository.save(subscription);
+            log.info("Subscription updated successfully for user: {}", userId);
+        } else {
+            log.warn("User ID is null in checkout session");
         }
     }
 
     @Transactional
     public void handleInvoicePaymentSucceeded(Invoice invoice) {
         String stripeSubscriptionId = invoice.getSubscription();
-        subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId).ifPresent(subscription -> {
+        if (stripeSubscriptionId == null) {
+            log.warn("Stripe subscription ID is null in invoice. Skipping processing.");
+            return;
+        }
+        log.info("Handling invoice payment succeeded. SubscriptionId: {}", stripeSubscriptionId);
+        subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId).ifPresentOrElse(subscription -> {
             subscription.setCurrentPeriodEnd(LocalDateTime.ofEpochSecond(invoice.getLines().getData().get(0).getPeriod().getEnd(), 0, ZoneOffset.UTC));
             subscription.setStatus(SubscriptionStatus.ACTIVE);
             subscriptionRepository.save(subscription);
-        });
+            log.info("Subscription renewed successfully for subscriptionId: {}", stripeSubscriptionId);
+        }, () -> log.warn("Subscription not found for subscriptionId: {}", stripeSubscriptionId));
     }
 
     @Transactional
