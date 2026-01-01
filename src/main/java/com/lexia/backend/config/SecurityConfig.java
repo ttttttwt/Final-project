@@ -85,6 +85,9 @@ public class SecurityConfig {
                         // Allow public access to Stripe Webhook
                         .requestMatchers("/api/v1/webhook/stripe").permitAll()
 
+                        // Allow public access to Pricing API (for pricing page)
+                        .requestMatchers("/api/v1/pricing/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
 
@@ -107,7 +110,7 @@ public class SecurityConfig {
 
                 // Add JWT filter before the username/password authentication filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                
+
                 // Add User Activity filter after JWT filter to track active users
                 .addFilterAfter(userActivityFilter, JwtAuthFilter.class)
 
