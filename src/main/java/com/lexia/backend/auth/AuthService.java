@@ -133,6 +133,14 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         LOG.info("User registered successfully: {}", savedUser.getEmail());
 
+        // Send welcome email to new user
+        try {
+            authEmailService.sendWelcomeEmail(savedUser);
+        } catch (Exception e) {
+            // Don't fail registration if email fails
+            LOG.warn("Failed to send welcome email for user: {}, error: {}", savedUser.getEmail(), e.getMessage());
+        }
+
         return savedUser;
     }
 

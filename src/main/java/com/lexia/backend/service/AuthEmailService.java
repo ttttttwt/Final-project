@@ -133,4 +133,35 @@ public class AuthEmailService {
         // Fallback to email username
         return user.getEmail() != null ? user.getEmail().split("@")[0] : "there";
     }
+
+    /**
+     * Send welcome email to newly registered user.
+     * Includes onboarding tips and link to dashboard.
+     *
+     * @param user the newly registered user
+     */
+    public void sendWelcomeEmail(User user) {
+        if (user == null || user.getEmail() == null) {
+            log.warn("Cannot send welcome email: user or email is null");
+            return;
+        }
+
+        String dashboardUrl = baseUrl + "/dashboard";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("userName", getUserDisplayName(user));
+        data.put("dashboardUrl", dashboardUrl);
+
+        EmailRequest request = EmailRequest.builder()
+                .recipientId(user.getId())
+                .recipientEmail(user.getEmail())
+                .recipientName(getUserDisplayName(user))
+                .emailType(EmailType.WELCOME)
+                .templateData(data)
+                .build();
+
+        // Queue for delivery (not critical, but nice to have)
+        emailService.queueEmail(request);
+        log.info("Queued welcome email for new user: {}", user.getId());
+    }
 }
