@@ -5,6 +5,7 @@ import com.lexia.backend.exception.DuplicateCourseException;
 import com.lexia.backend.exception.EnrollmentNotFoundException;
 import com.lexia.backend.exception.InvalidInputException;
 import com.lexia.backend.exception.InvalidLessonContentException;
+import com.lexia.backend.exception.InvalidPasswordException;
 import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.LearningPathNotFoundException;
 import com.lexia.backend.exception.LessonNotFoundException;
@@ -210,6 +211,26 @@ public class GlobalExceptionHandler {
                 ErrorResponse errorResponse = ErrorResponse.builder()
                                 .status(HttpStatus.BAD_REQUEST.value())
                                 .error("Invalid Input")
+                                .message(ex.getMessage())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        /**
+         * Handle invalid password exception.
+         * Returns 400 Bad Request when password validation fails.
+         */
+        @ExceptionHandler(InvalidPasswordException.class)
+        public ResponseEntity<ErrorResponse> handleInvalidPasswordException(
+                        InvalidPasswordException ex, HttpServletRequest request) {
+
+                LOG.warn("Invalid password: {}", ex.getMessage());
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .error("Invalid Password")
                                 .message(ex.getMessage())
                                 .path(request.getRequestURI())
                                 .build();

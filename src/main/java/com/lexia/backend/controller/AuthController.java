@@ -1,14 +1,15 @@
 package com.lexia.backend.controller;
 
 import com.lexia.backend.auth.AuthService;
-import com.lexia.backend.auth.AuthenticatedUserDetails;
 import com.lexia.backend.dto.ChangePasswordDTO;
+import com.lexia.backend.dto.ForgotPasswordDTO;
 import com.lexia.backend.dto.LoginDTO;
 import com.lexia.backend.dto.LoginResponseDTO;
 import com.lexia.backend.dto.LogoutResponseDTO;
 import com.lexia.backend.dto.RefreshTokenDTO;
 import com.lexia.backend.dto.RefreshTokenResponseDTO;
 import com.lexia.backend.dto.RegisterDTO;
+import com.lexia.backend.dto.ResetPasswordDTO;
 import com.lexia.backend.dto.UserDTO;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.service.UserSessionService;
@@ -371,16 +372,118 @@ public class AuthController {
   @PostMapping("/change-password")
   public ResponseEntity<LogoutResponseDTO> changePassword(
       @Valid @RequestBody ChangePasswordDTO changePasswordDTO,
-      @AuthenticationPrincipal AuthenticatedUserDetails userDetails) {
-    LOG.info("Received change password request for user: {}", userDetails.getUsername());
+      @AuthenticationPrincipal User user) {
 
-    authService.changePassword(userDetails.getUser().getId(), changePasswordDTO);
+    // Validate user is authenticated
+    if (user == null) {
+      LOG.warn("Change password failed: User not authenticated");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(LogoutResponseDTO.builder()
+              .message("Authentication required. Please login first.")
+              .build());
+    }
+
+    LOG.info("Received change password request for user: {}", user.getEmail());
+
+    authService.changePassword(user.getId(), changePasswordDTO);
 
     LogoutResponseDTO response = LogoutResponseDTO.builder()
         .message("Password changed successfully. Please login again.")
         .build();
 
-    LOG.info("Password changed successfully for user: {}", userDetails.getUsername());
+    LOG.info("Password changed successfully for user: {}", user.getEmail());
+    return ResponseEntity.ok(response);
+  }
+
+  // ========== Password Reset Endpoints ==========
+
+  /**
+   * Request password reset - sends email with reset link.
+   * For security, always returns success even if email doesn't exist.
+   *
+   * @param forgotPasswordDTO the forgot password request
+   * @return confirmation message
+   */
+  @Operation(summary = "Request password reset", description = "Initiates password reset process. "
+      + "If the email exists, a reset link will be sent (valid for 1 hour). "
+      + "For security reasons, always returns success even if email doesn't exist.", requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Email address to send reset link", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ForgotPasswordDTO.class), examples = @ExampleObject(name = "Forgot Password Example", value = """
+          {
+            "email": "john.doe@example.com"
+          }
+          """))))
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Password reset email sent (if account exists)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = LogoutResponseDTO.class), examples = @ExampleObject(name = "Success Response", value = """
+          {
+            "message": "If an account exists with that email, a password reset link has been sent."
+          }
+          """))),
+      @ApiResponse(responseCode = "400", description = "Invalid email format", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, examples = @ExampleObject(name = "Validation Error", value = """
+          {
+            "timestamp": "2025-10-28T19:30:00",
+            "status": 400,
+            "error": "Bad Request",
+            "message": "Please provide a valid email address",
+            "path": "/api/v1/auth/forgot-password"
+          }
+          """)))
+  })
+  @PostMapping("/forgot-password")
+  public ResponseEntity<LogoutResponseDTO> forgotPassword(
+      @Valid @RequestBody ForgotPasswordDTO forgotPasswordDTO) {
+    LOG.info("Received forgot password request for email: {}", forgotPasswordDTO.getEmail());
+
+    authService.requestPasswordReset(forgotPasswordDTO);
+
+    // Always return success message for security (don't reveal if email exists)
+    LogoutResponseDTO response = LogoutResponseDTO.builder()
+        .message("If an account exists with that email, a password reset link has been sent.")
+        .build();
+
+    return ResponseEntity.ok(response);
+  }
+
+  /**
+   * Reset password using token from email.
+   *
+   * @param resetPasswordDTO the reset password request
+   * @return confirmation message
+   */
+  @Operation(summary = "Reset password with token", description = "Resets password using the token received via email. "
+      + "Token is valid for 1 hour. After successful reset, user must login with new password.", requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Token and new password", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ResetPasswordDTO.class), examples = @ExampleObject(name = "Reset Password Example", value = """
+          {
+            "token": "a1b2c3d4e5f6g7h8i9j0...",
+            "newPassword": "NewSecurePass123",
+            "confirmPassword": "NewSecurePass123"
+          }
+          """))))
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Password reset successful", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = LogoutResponseDTO.class), examples = @ExampleObject(name = "Success Response", value = """
+          {
+            "message": "Password has been reset successfully. Please login with your new password."
+          }
+          """))),
+      @ApiResponse(responseCode = "400", description = "Invalid input or token expired/used", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, examples = @ExampleObject(name = "Token Error", value = """
+          {
+            "timestamp": "2025-10-28T19:30:00",
+            "status": 400,
+            "error": "Bad Request",
+            "message": "This reset link has expired. Please request a new one.",
+            "path": "/api/v1/auth/reset-password"
+          }
+          """)))
+  })
+  @PostMapping("/reset-password")
+  public ResponseEntity<LogoutResponseDTO> resetPassword(
+      @Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
+    LOG.info("Received reset password request");
+
+    authService.resetPassword(resetPasswordDTO);
+
+    LogoutResponseDTO response = LogoutResponseDTO.builder()
+        .message("Password has been reset successfully. Please login with your new password.")
+        .build();
+
+    LOG.info("Password reset completed successfully");
     return ResponseEntity.ok(response);
   }
 }

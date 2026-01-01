@@ -1,30 +1,42 @@
 package com.lexia.backend.auth;
 
 import com.lexia.backend.dto.ChangePasswordDTO;
+import com.lexia.backend.dto.ForgotPasswordDTO;
 import com.lexia.backend.dto.LoginDTO;
 import com.lexia.backend.dto.LoginResponseDTO;
 import com.lexia.backend.dto.RefreshTokenDTO;
 import com.lexia.backend.dto.RefreshTokenResponseDTO;
 import com.lexia.backend.dto.RegisterDTO;
+import com.lexia.backend.dto.ResetPasswordDTO;
 import com.lexia.backend.dto.UserDTO;
+import com.lexia.backend.entity.PasswordResetToken;
 import com.lexia.backend.entity.RefreshToken;
 import com.lexia.backend.entity.Role;
 import com.lexia.backend.entity.User;
 import com.lexia.backend.entity.UserProfile;
 import com.lexia.backend.entity.UserRole;
+import com.lexia.backend.exception.InvalidPasswordException;
 import com.lexia.backend.exception.InvalidTokenException;
 import com.lexia.backend.exception.UserAlreadyExistsException;
+import com.lexia.backend.repository.PasswordResetTokenRepository;
 import com.lexia.backend.repository.RefreshTokenRepository;
 import com.lexia.backend.repository.RoleRepository;
 import com.lexia.backend.repository.UserRepository;
+import com.lexia.backend.service.AuthEmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,19 +55,30 @@ public class AuthService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthService.class);
     private static final long ACCESS_TOKEN_EXPIRATION_MS = 15 * 60 * 1000; // 15 minutes
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthEmailService authEmailService;
+
+    @Value("${lexia.auth.password-reset.token-expiry-hours:1}")
+    private int passwordResetTokenExpiryHours;
     private final BCryptPasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository, RoleRepository roleRepository,
-            RefreshTokenRepository refreshTokenRepository, JwtTokenProvider jwtTokenProvider) {
+            RefreshTokenRepository refreshTokenRepository,
+            PasswordResetTokenRepository passwordResetTokenRepository,
+            JwtTokenProvider jwtTokenProvider,
+            AuthEmailService authEmailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.authEmailService = authEmailService;
         // BCrypt with cost factor 12 for strong password hashing
         this.passwordEncoder = new BCryptPasswordEncoder(12);
     }
@@ -396,7 +419,7 @@ public class AuthService {
         // Validate current password
         if (!validatePassword(changePasswordDTO.getCurrentPassword(), user.getPasswordHash())) {
             LOG.warn("Change password failed: Invalid current password for user: {}", user.getEmail());
-            throw new UserAlreadyExistsException("Current password is incorrect");
+            throw new InvalidPasswordException("Current password is incorrect");
         }
 
         // Validate new password != current password
@@ -423,5 +446,146 @@ public class AuthService {
         // Revoke all refresh tokens for security (force re-login on all devices)
         refreshTokenRepository.deleteByUserId(userId);
         LOG.info("All refresh tokens revoked for user: {} after password change", user.getEmail());
+
+        // Send password changed notification email
+        authEmailService.sendPasswordChangedEmail(user);
+    }
+
+    // ========== Password Reset Methods ==========
+
+    /**
+     * Initiates password reset by generating a token and sending reset email.
+     * For security, always returns success even if email doesn't exist.
+     *
+     * @param forgotPasswordDTO the forgot password request
+     */
+    @Transactional
+    public void requestPasswordReset(ForgotPasswordDTO forgotPasswordDTO) {
+        String email = forgotPasswordDTO.getEmail().toLowerCase().trim();
+        LOG.info("Password reset requested for email: {}", email);
+
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            // Don't reveal if email exists - just log and return
+            LOG.warn("Password reset requested for non-existent email: {}", email);
+            return;
+        }
+
+        User user = userOpt.get();
+
+        // Check if user is active
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            LOG.warn("Password reset requested for inactive user: {}", email);
+            return;
+        }
+
+        // Invalidate any existing reset tokens for this user
+        passwordResetTokenRepository.invalidateAllForUser(user.getId(), LocalDateTime.now());
+
+        // Generate secure random token
+        String plainToken = generateSecureToken();
+        String tokenHash = hashToken(plainToken);
+
+        // Create and save token entity
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .user(user)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusHours(passwordResetTokenExpiryHours))
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+        LOG.debug("Password reset token created for user: {}", user.getId());
+
+        // Send reset email with plain token
+        authEmailService.sendPasswordResetEmail(user, plainToken);
+        LOG.info("Password reset email sent for user: {}", user.getId());
+    }
+
+    /**
+     * Resets password using a valid reset token.
+     *
+     * @param resetPasswordDTO the reset password request
+     * @throws InvalidTokenException    if token is invalid, expired, or already
+     *                                  used
+     * @throws IllegalArgumentException if passwords don't match
+     */
+    @Transactional
+    public void resetPassword(ResetPasswordDTO resetPasswordDTO) {
+        LOG.info("Attempting to reset password with token");
+
+        // Validate passwords match
+        if (!resetPasswordDTO.getNewPassword().equals(resetPasswordDTO.getConfirmPassword())) {
+            LOG.warn("Password reset failed: Password confirmation mismatch");
+            throw new IllegalArgumentException("New password and confirmation do not match");
+        }
+
+        // Hash the provided token and look it up
+        String tokenHash = hashToken(resetPasswordDTO.getToken());
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> {
+                    LOG.warn("Password reset failed: Invalid token");
+                    return new InvalidTokenException("Invalid or expired reset token");
+                });
+
+        // Check if token is valid
+        if (!resetToken.isValid()) {
+            if (resetToken.isUsed()) {
+                LOG.warn("Password reset failed: Token already used");
+                throw new InvalidTokenException("This reset link has already been used");
+            } else {
+                LOG.warn("Password reset failed: Token expired");
+                throw new InvalidTokenException("This reset link has expired. Please request a new one.");
+            }
+        }
+
+        User user = resetToken.getUser();
+
+        // Check if user is active
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            LOG.warn("Password reset failed: User account is inactive: {}", user.getEmail());
+            throw new InvalidTokenException("User account is inactive");
+        }
+
+        // Hash and update password
+        String newHashedPassword = passwordEncoder.encode(resetPasswordDTO.getNewPassword());
+        user.setPasswordHash(newHashedPassword);
+        userRepository.save(user);
+        LOG.info("Password reset successfully for user: {}", user.getEmail());
+
+        // Mark token as used
+        resetToken.markAsUsed();
+        passwordResetTokenRepository.save(resetToken);
+
+        // Revoke all refresh tokens (force re-login on all devices)
+        refreshTokenRepository.deleteByUserId(user.getId());
+        LOG.info("All refresh tokens revoked for user: {} after password reset", user.getEmail());
+
+        // Send password changed notification
+        authEmailService.sendPasswordChangedEmail(user);
+    }
+
+    // ========== Helper Methods ==========
+
+    /**
+     * Generates a cryptographically secure random token.
+     */
+    private String generateSecureToken() {
+        byte[] tokenBytes = new byte[32];
+        SECURE_RANDOM.nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    /**
+     * Hashes a token using SHA-256.
+     */
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
     }
 }
