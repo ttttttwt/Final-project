@@ -11,7 +11,6 @@ import com.lexia.backend.repository.UserRepository;
 import com.stripe.model.Invoice;
 import com.stripe.model.InvoiceLineItem;
 import com.stripe.model.InvoiceLineItemCollection;
-// import com.stripe.model.InvoiceLineItemPeriod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +23,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +36,8 @@ class SubscriptionServiceTest {
     private SubscriptionQuotaService subscriptionQuotaService;
     @Mock
     private PaymentRepository paymentRepository;
+    @Mock
+    private PaymentEmailService paymentEmailService;
 
     @InjectMocks
     private SubscriptionService subscriptionService;
@@ -71,20 +71,20 @@ class SubscriptionServiceTest {
         // Arrange
         when(invoice.getSubscription()).thenReturn(null);
         when(invoice.getId()).thenReturn("in_123");
-        
+
         // Mock payment repository to return payment linked to subscription
         when(paymentRepository.findByStripeInvoiceId("in_123")).thenReturn(Optional.of(payment));
-        
+
         // Mock invoice details for processing
         InvoiceLineItemCollection lines = mock(InvoiceLineItemCollection.class);
         InvoiceLineItem lineItem = mock(InvoiceLineItem.class);
         InvoiceLineItem.Period period = mock(InvoiceLineItem.Period.class);
-        
+
         when(invoice.getLines()).thenReturn(lines);
         when(lines.getData()).thenReturn(Collections.singletonList(lineItem));
         when(lineItem.getPeriod()).thenReturn(period);
         when(period.getEnd()).thenReturn(1735689600L); // 2025-01-01
-        
+
         when(invoice.getAmountPaid()).thenReturn(1000L);
         when(invoice.getCurrency()).thenReturn("usd");
         when(invoice.getBillingReason()).thenReturn("subscription_create");
@@ -95,7 +95,8 @@ class SubscriptionServiceTest {
 
         // Assert
         verify(subscriptionRepository).save(subscription);
-        verify(paymentRepository, times(2)).findByStripeInvoiceId("in_123"); // Once for fallback, once in savePaymentFromInvoice
+        // Fallback + savePaymentFromInvoice + send email check
+        verify(paymentRepository, times(3)).findByStripeInvoiceId("in_123");
         verify(paymentRepository).save(any(Payment.class));
         verify(subscriptionQuotaService).syncQuotaWithSubscription(user, subscription);
     }
@@ -120,10 +121,10 @@ class SubscriptionServiceTest {
         // Arrange
         com.stripe.model.Charge charge = mock(com.stripe.model.Charge.class);
         when(charge.getPaymentIntent()).thenReturn("pi_123");
-        
+
         payment.setStripePaymentId("pi_123");
         payment.setStatus(Payment.PaymentStatus.SUCCEEDED);
-        
+
         when(paymentRepository.findByStripePaymentId("pi_123")).thenReturn(Optional.of(payment));
 
         // Act
@@ -132,11 +133,12 @@ class SubscriptionServiceTest {
         // Assert
         verify(paymentRepository).save(payment);
         assert payment.getStatus() == Payment.PaymentStatus.REFUNDED;
-        
+
         verify(subscriptionRepository).save(subscription);
         assert subscription.getStatus() == SubscriptionStatus.CANCELED;
         assert subscription.getPlanType() == PlanType.FREE;
-        
+
         verify(subscriptionQuotaService).syncQuotaWithSubscription(user, subscription);
+        verify(paymentEmailService).sendRefundEmail(any(), eq(payment));
     }
 }

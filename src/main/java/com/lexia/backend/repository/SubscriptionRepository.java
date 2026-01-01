@@ -56,4 +56,17 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
     default BigDecimal sumRevenueBetween(LocalDateTime start, LocalDateTime end) {
         return BigDecimal.ZERO; // Placeholder
     }
+
+    /**
+     * Find subscriptions that are ACTIVE or PAST_DUE but their period has ended.
+     * These should be expired and downgraded.
+     */
+    @Query("SELECT s FROM Subscription s WHERE " +
+            "s.status IN (com.lexia.backend.enums.SubscriptionStatus.ACTIVE, " +
+            "             com.lexia.backend.enums.SubscriptionStatus.PAST_DUE) " +
+            "AND s.planType IN (com.lexia.backend.enums.PlanType.MONTHLY, " +
+            "                   com.lexia.backend.enums.PlanType.YEARLY) " +
+            "AND s.currentPeriodEnd IS NOT NULL " +
+            "AND s.currentPeriodEnd < :now")
+    java.util.List<Subscription> findExpiredSubscriptions(@Param("now") LocalDateTime now);
 }

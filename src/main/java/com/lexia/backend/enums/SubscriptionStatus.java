@@ -5,5 +5,6 @@ public enum SubscriptionStatus {
     CANCELED,
     PAST_DUE,
     INCOMPLETE,
-    TRIALING
+    TRIALING,
+    EXPIRED // Subscription period ended without renewal
 }

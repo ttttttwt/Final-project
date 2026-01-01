@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base/layout :: layout(~{::content})}" lang="en">
+
+<head>
+    <title>Payment Failed - LEXIA</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <h1>⚠️ Payment Failed</h1>
+
+        <p>
+            <span>Hi</span>
+            <strong th:text="${userName ?: 'there'}">John</strong>,
+        </p>
+
+        <p>
+            We were unable to process your payment for your LEXIA
+            <strong th:text="${planType}">Pro</strong> subscription.
+            Don't worry - your subscription is still active while we retry.
+        </p>
+
+        <div class="card" style="background-color: #fff3cd; border-left: 4px solid #ffc107;">
+            <h2 style="margin-top: 0; color: #856404;">🔔 Action Required</h2>
+            <p style="margin-bottom: 0;">
+                Please update your payment method to avoid any interruption to your Pro benefits.
+                We'll automatically retry the payment in a few days.
+            </p>
+        </div>
+
+        <div class="btn-container">
+            <a th:href="${updatePaymentUrl}" class="btn" style="background-color: #ffc107; color: #000;">
+                Update Payment Method
+            </a>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="card card-highlight">
+            <h2 style="margin-top: 0">💡 Common Reasons for Payment Failure</h2>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>Expired credit card</li>
+                <li>Insufficient funds</li>
+                <li>Card declined by bank</li>
+                <li>Outdated billing information</li>
+            </ul>
+        </div>
+
+        <hr class="divider" />
+
+        <p class="small-text">
+            Need help? Reply to this email or contact our support team.
+            We're here to help you continue your learning journey.
+        </p>
+    </div>
+</body>
+
+</html>

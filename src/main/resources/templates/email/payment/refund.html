@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base/layout :: layout(~{::content})}" lang="en">
+
+<head>
+    <title>Refund Processed - LEXIA</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <h1>💰 Refund Processed</h1>
+
+        <p>
+            <span>Hi</span>
+            <strong th:text="${userName ?: 'there'}">John</strong>,
+        </p>
+
+        <p>
+            Your refund has been processed successfully.
+            The amount will be credited back to your original payment method within 5-10 business days.
+        </p>
+
+        <div class="card card-success">
+            <h2 style="margin-top: 0">📋 Refund Details</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Amount Refunded:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;" th:text="${amount}">$9.99</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Refund Date:</td>
+                    <td style="padding: 8px 0; text-align: right;" th:text="${refundDate}">Jan 01, 2024</td>
+                </tr>
+                <tr th:if="${paymentId}">
+                    <td style="padding: 8px 0; color: #666;">Reference ID:</td>
+                    <td style="padding: 8px 0; text-align: right; font-size: 12px;" th:text="${paymentId}">pi_xxx</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card" style="background-color: #e8f4fd; border-left: 4px solid #2196f3;">
+            <h2 style="margin-top: 0; color: #1565c0;">📝 What Happens Next?</h2>
+            <p style="margin-bottom: 0;">
+                Your account has been downgraded to the Free plan.
+                You can still access basic features and your learning progress is saved.
+                You can upgrade again anytime!
+            </p>
+        </div>
+
+        <div class="btn-container">
+            <a th:href="${supportUrl}" class="btn">
+                Contact Support
+            </a>
+        </div>
+
+        <hr class="divider" />
+
+        <p class="small-text">
+            We're sorry to see you go! If you have any feedback about your experience,
+            we'd love to hear from you. Reply to this email anytime.
+        </p>
+    </div>
+</body>
+
+</html>

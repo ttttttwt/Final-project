@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base/layout :: layout(~{::content})}" lang="en">
+
+<head>
+    <title>Subscription Renewed - LEXIA</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <h1>✅ Subscription Renewed</h1>
+
+        <p>
+            <span>Hi</span>
+            <strong th:text="${userName ?: 'there'}">John</strong>,
+        </p>
+
+        <p>
+            Great news! Your LEXIA Pro subscription has been successfully renewed.
+            Keep up the amazing work on your English learning journey!
+        </p>
+
+        <div class="card card-success">
+            <h2 style="margin-top: 0">📋 Renewal Details</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Plan:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;" th:text="${planType}">Pro Monthly
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Amount:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;" th:text="${amount}">$9.99</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Renewal Date:</td>
+                    <td style="padding: 8px 0; text-align: right;" th:text="${paymentDate}">Jan 01, 2024</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Next Billing:</td>
+                    <td style="padding: 8px 0; text-align: right;" th:text="${nextBillingDate}">Feb 01, 2024</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="btn-container">
+            <a th:href="${dashboardUrl}" class="btn">
+                Continue Learning
+            </a>
+        </div>
+
+        <hr class="divider" />
+
+        <p class="small-text">
+            Want to manage your subscription? Visit your account settings or reply to this email.
+        </p>
+    </div>
+</body>
+
+</html>

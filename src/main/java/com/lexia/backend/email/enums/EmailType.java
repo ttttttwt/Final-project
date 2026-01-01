@@ -40,7 +40,14 @@ public enum EmailType {
     AI_BUDGET_WARNING("AI Budget Warning", "admin/ai-budget-warning", true),
     AI_BUDGET_EXCEEDED("AI Budget Exceeded", "admin/ai-budget-exceeded", true),
     AI_QUOTA_WARNING("AI Quota Warning", "admin/ai-quota-warning", true),
-    AI_QUOTA_EXCEEDED("AI Quota Exceeded", "admin/ai-quota-exceeded", true);
+    AI_QUOTA_EXCEEDED("AI Quota Exceeded", "admin/ai-quota-exceeded", true),
+
+    // Payment emails
+    PAYMENT_SUCCESS("Payment Success", "payment/success", false),
+    PAYMENT_RENEWAL("Payment Renewal", "payment/renewal", false),
+    PAYMENT_FAILED("Payment Failed", "payment/failed", true),
+    PAYMENT_REFUND("Payment Refunded", "payment/refund", true),
+    SUBSCRIPTION_EXPIRED("Subscription Expired", "payment/expired", false);
 
     private final String displayName;
     private final String templateName;
@@ -95,6 +102,7 @@ public enum EmailType {
             case ACCOUNT_DEACTIVATION -> "Account";
             case SYSTEM_ANNOUNCEMENT, MAINTENANCE_NOTICE, SECURITY_ALERT -> "System";
             case AI_BUDGET_WARNING, AI_BUDGET_EXCEEDED, AI_QUOTA_WARNING, AI_QUOTA_EXCEEDED -> "Admin";
+            case PAYMENT_SUCCESS, PAYMENT_RENEWAL, PAYMENT_FAILED, PAYMENT_REFUND, SUBSCRIPTION_EXPIRED -> "Payment";
         };
     }
 }

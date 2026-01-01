@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/base/layout :: layout(~{::content})}" lang="en">
+
+<head>
+    <title>Subscription Expired - LEXIA</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <h1>Your Pro Subscription Has Expired</h1>
+
+        <p>
+            <span>Hi</span>
+            <strong th:text="${userName ?: 'there'}">John</strong>,
+        </p>
+
+        <p>
+            Your LEXIA <strong th:text="${planType}">Pro</strong> subscription expired on
+            <strong th:text="${expiredDate}">Jan 01, 2024</strong>.
+            Your account has been downgraded to the Free plan.
+        </p>
+
+        <div class="card" style="background-color: #fff3cd; border-left: 4px solid #ffc107;">
+            <h2 style="margin-top: 0; color: #856404;">⚠️ You're Missing Out On</h2>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>Unlimited AI-powered lessons</li>
+                <li>Advanced roleplay scenarios</li>
+                <li>Custom learning materials</li>
+                <li>Priority support</li>
+            </ul>
+        </div>
+
+        <div class="btn-container">
+            <a th:href="${upgradeUrl}" class="btn">
+                Reactivate Pro Now
+            </a>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="card card-highlight">
+            <h2 style="margin-top: 0">🎯 Don't Lose Your Progress!</h2>
+            <p style="margin-bottom: 0;">
+                Your learning progress and achievements are saved.
+                Upgrade back to Pro to continue where you left off with full access to all features.
+            </p>
+        </div>
+
+        <hr class="divider" />
+
+        <p class="small-text">
+            Questions about your subscription? Reply to this email or visit our Help Center.
+        </p>
+    </div>
+</body>
+
+</html>

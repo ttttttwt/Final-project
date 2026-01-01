@@ -2,6 +2,7 @@ package com.lexia.backend.service;
 
 import com.lexia.backend.dto.admin.AdminPaymentDTO;
 import com.lexia.backend.entity.Payment;
+import com.lexia.backend.entity.Subscription;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.repository.PaymentRepository;
 import com.stripe.exception.StripeException;
@@ -27,6 +28,8 @@ public class AdminPaymentService {
 
     private final PaymentRepository paymentRepository;
     private final TransactionTemplate transactionTemplate;
+    private final SubscriptionService subscriptionService;
+    private final PaymentEmailService paymentEmailService;
 
     @Transactional(readOnly = true)
     public Page<AdminPaymentDTO> getPayments(int page, int size, String search, String status) {
@@ -39,8 +42,7 @@ public class AdminPaymentService {
             spec = spec.and((root, query, cb) -> cb.or(
                     cb.like(cb.lower(root.get("user").get("email")), "%" + searchLower + "%"),
                     cb.like(cb.lower(root.get("stripePaymentId")), "%" + searchLower + "%"),
-                    cb.like(cb.lower(root.get("stripeInvoiceId")), "%" + searchLower + "%")
-            ));
+                    cb.like(cb.lower(root.get("stripeInvoiceId")), "%" + searchLower + "%")));
         }
 
         if (status != null && !status.isBlank()) {
@@ -65,7 +67,8 @@ public class AdminPaymentService {
         }
 
         if (payment.getStatus() != Payment.PaymentStatus.SUCCEEDED) {
-            throw new IllegalStateException("Only succeeded payments can be refunded. Current status: " + payment.getStatus());
+            throw new IllegalStateException(
+                    "Only succeeded payments can be refunded. Current status: " + payment.getStatus());
         }
 
         if (payment.getStripePaymentId() == null) {
@@ -77,7 +80,8 @@ public class AdminPaymentService {
         try {
             RefundCreateParams params = RefundCreateParams.builder()
                     .setPaymentIntent(payment.getStripePaymentId())
-                    .setReason(reason != null ? RefundCreateParams.Reason.valueOf(reason.toUpperCase()) : RefundCreateParams.Reason.REQUESTED_BY_CUSTOMER)
+                    .setReason(reason != null ? RefundCreateParams.Reason.valueOf(reason.toUpperCase())
+                            : RefundCreateParams.Reason.REQUESTED_BY_CUSTOMER)
                     .build();
 
             RequestOptions options = RequestOptions.builder()
@@ -91,18 +95,30 @@ public class AdminPaymentService {
             log.error("Error creating refund in Stripe", e);
             throw new RuntimeException("Failed to process refund with Stripe: " + e.getMessage());
         } catch (IllegalArgumentException e) {
-             log.error("Invalid refund reason", e);
-             throw new IllegalArgumentException("Invalid refund reason: " + reason);
+            log.error("Invalid refund reason", e);
+            throw new IllegalArgumentException("Invalid refund reason: " + reason);
         }
 
         // 3. Update DB (Transaction)
         return transactionTemplate.execute(status -> {
             Payment p = paymentRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + id));
-            
+
             if ("succeeded".equals(refund.getStatus())) {
                 p.setStatus(Payment.PaymentStatus.REFUNDED);
                 paymentRepository.save(p);
+
+                // Downgrade subscription to FREE
+                Subscription subscription = p.getSubscription();
+                if (subscription != null && subscription.getPlanType() != null
+                        && subscription.getPlanType().isPro()) {
+                    subscriptionService.downgradeToFree(subscription);
+                    log.info("Subscription downgraded after admin refund. PaymentId: {}, SubscriptionId: {}",
+                            id, subscription.getId());
+                }
+
+                // Send refund email
+                paymentEmailService.sendRefundEmail(p.getUser(), p);
             }
             return AdminPaymentDTO.fromEntity(p);
         });
