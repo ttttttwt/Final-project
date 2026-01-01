@@ -13,6 +13,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import org.springframework.data.domain.Persistable;
 
 /**
  * Entity representing user notification preferences.
@@ -24,7 +25,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class NotificationPreferences {
+public class NotificationPreferences implements Persistable<UUID> {
 
     @Id
     @Column(name = "user_id", columnDefinition = "UUID")
@@ -84,6 +85,20 @@ public class NotificationPreferences {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    @Version
+    private Long version;
+
+    @Override
+    public UUID getId() {
+        return userId;
+    }
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return createdAt == null;
+    }
 
     /**
      * Check if notifications are enabled for a specific category.
