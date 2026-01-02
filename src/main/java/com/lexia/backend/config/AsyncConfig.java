@@ -91,4 +91,23 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * Dedicated executor for flashcard image generation.
+     * Lower priority than other AI tasks, uses CallerRunsPolicy to ensure
+     * completion.
+     *
+     * @since Sprint 6
+     */
+    @Bean(name = "imageGenerationExecutor")
+    public Executor imageGenerationExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("image-gen-");
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

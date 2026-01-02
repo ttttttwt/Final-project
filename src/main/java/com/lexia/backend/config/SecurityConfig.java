@@ -89,6 +89,9 @@ public class SecurityConfig {
                         // Allow public access to Pricing API (for pricing page)
                         .requestMatchers("/api/v1/pricing/**").permitAll()
 
+                        // Allow public access to uploaded files
+                        .requestMatchers("/uploads/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
 

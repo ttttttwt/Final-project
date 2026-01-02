@@ -10,9 +10,13 @@ import java.util.List;
 /**
  * POJO representing the back side of a flashcard.
  * Contains the definition and additional vocabulary details.
- * This class is serialized to/from JSONB in PostgreSQL as part of FlashcardCard.
+ * This class is serialized to/from JSONB in PostgreSQL as part of
+ * FlashcardCard.
  * 
- * <p>Structure:</p>
+ * <p>
+ * Structure:
+ * </p>
+ * 
  * <pre>
  * {
  *   "definition": "to work together with others towards a shared goal",
@@ -81,12 +85,19 @@ public class FlashcardBack implements Serializable {
     private String imageUrl;
 
     /**
+     * Status of AI-generated image.
+     * PENDING = queued, GENERATING = in progress, COMPLETED = ready, FAILED = error
+     */
+    private String imageStatus;
+
+    /**
      * Audio URL for pronunciation (optional).
      */
     private String audioUrl;
 
     /**
      * Creates a simple back with just definition.
+     * 
      * @param definition the word definition
      * @return a new FlashcardBack
      */
@@ -98,9 +109,10 @@ public class FlashcardBack implements Serializable {
 
     /**
      * Creates a vocabulary back with common fields.
-     * @param definition the word definition
-     * @param partOfSpeech part of speech (noun, verb, etc.)
-     * @param pronunciation IPA pronunciation
+     * 
+     * @param definition      the word definition
+     * @param partOfSpeech    part of speech (noun, verb, etc.)
+     * @param pronunciation   IPA pronunciation
      * @param exampleSentence example usage
      * @return a new FlashcardBack
      */
@@ -119,7 +131,9 @@ public class FlashcardBack implements Serializable {
 
     /**
      * Checks if this back has complete vocabulary information.
-     * @return true if definition, partOfSpeech, pronunciation, and example are all present
+     * 
+     * @return true if definition, partOfSpeech, pronunciation, and example are all
+     *         present
      */
     @JsonIgnore
     public boolean isComplete() {
@@ -131,6 +145,7 @@ public class FlashcardBack implements Serializable {
 
     /**
      * Checks if this back has minimal required information.
+     * 
      * @return true if at least definition is present
      */
     @JsonIgnore

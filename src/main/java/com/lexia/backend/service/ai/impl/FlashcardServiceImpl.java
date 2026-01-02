@@ -15,6 +15,7 @@ import com.lexia.backend.repository.LessonRepository;
 import com.lexia.backend.repository.UserFlashcardProgressRepository;
 import com.lexia.backend.service.ai.AiUsageTracker;
 import com.lexia.backend.service.ai.FlashcardService;
+import com.lexia.backend.service.ai.FlashcardImageService;
 import com.lexia.backend.service.ai.GeminiClientService;
 import com.lexia.backend.service.ai.AIConfigService;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +61,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     private final AiUsageTracker aiUsageTracker;
     private final ObjectMapper objectMapper;
     private final AIConfigService aiConfigService;
+    private final FlashcardImageService flashcardImageService;
 
     /** Default number of cards to include in a study session */
     private static final int DEFAULT_STUDY_SESSION_SIZE = 20;
@@ -203,6 +205,9 @@ public class FlashcardServiceImpl implements FlashcardService {
         log.info("Created flashcard deck {} with {} cards (fallback: {})",
                 deck.getId(), cards.size(), usedFallback);
 
+        // Trigger async image generation
+        triggerImageGeneration(deck.getId(), userId);
+
         return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
@@ -263,6 +268,9 @@ public class FlashcardServiceImpl implements FlashcardService {
         log.info("Created AI-generated deck {} with {} cards from topic '{}' (fallback: {})",
                 deck.getId(), cards.size(), request.getTopic(), usedFallback);
 
+        // Trigger async image generation
+        triggerImageGeneration(deck.getId(), userId);
+
         return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
@@ -308,6 +316,12 @@ public class FlashcardServiceImpl implements FlashcardService {
         }
 
         log.info("Created deck {} with {} cards", deck.getId(), cards.size());
+
+        // Trigger async image generation if deck has cards
+        if (!cards.isEmpty()) {
+            triggerImageGeneration(deck.getId(), userId);
+        }
+
         return enrichDeckDTO(FlashcardMapper.toDeckDTO(deck));
     }
 
@@ -803,6 +817,29 @@ public class FlashcardServiceImpl implements FlashcardService {
                 .reviewingCount((int) reviewingCount)
                 .masteredCount((int) masteredCount)
                 .build();
+    }
+
+    /**
+     * Triggers asynchronous image generation for a deck.
+     * Uses TransactionSynchronization to ensure the deck is committed
+     * before the async job tries to read it.
+     */
+    private void triggerImageGeneration(UUID deckId, UUID userId) {
+        if (flashcardImageService != null) {
+            // Register to run AFTER the current transaction commits
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            try {
+                                flashcardImageService.generateImagesForDeck(deckId, userId);
+                                log.debug("Triggered image generation for deck {}", deckId);
+                            } catch (Exception e) {
+                                log.warn("Failed to trigger image generation for deck {}: {}", deckId, e.getMessage());
+                            }
+                        }
+                    });
+        }
     }
 
     private List<FlashcardCard> generateCardsWithAI(
