@@ -62,12 +62,24 @@ public class UserProfileMapper {
             throw new IllegalArgumentException("UpdateProfileDTO cannot be null");
         }
 
-        profile.setFirstName(dto.getFirstName());
-        profile.setLastName(dto.getLastName());
-        profile.setBio(dto.getBio());
-        profile.setPhoneNumber(dto.getPhoneNumber());
-        profile.setTimezone(dto.getTimezone());
-        profile.setLanguage(dto.getLanguage());
+        if (dto.getFirstName() != null) {
+            profile.setFirstName(dto.getFirstName());
+        }
+        if (dto.getLastName() != null) {
+            profile.setLastName(dto.getLastName());
+        }
+        if (dto.getBio() != null) {
+            profile.setBio(dto.getBio());
+        }
+        if (dto.getPhoneNumber() != null) {
+            profile.setPhoneNumber(dto.getPhoneNumber());
+        }
+        if (dto.getTimezone() != null) {
+            profile.setTimezone(dto.getTimezone());
+        }
+        if (dto.getLanguage() != null) {
+            profile.setLanguage(dto.getLanguage());
+        }
 
         // Update full_name for backward compatibility
         if (dto.getFirstName() != null && dto.getLastName() != null) {

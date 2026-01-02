@@ -22,17 +22,15 @@ public class UpdateProfileDTO {
     /**
      * User's first name
      */
-    @NotBlank(message = "First name is required")
     @Size(max = 100, message = "First name must not exceed 100 characters")
-    @Schema(description = "User's first name", example = "John", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 100)
+    @Schema(description = "User's first name", example = "John", requiredMode = Schema.RequiredMode.NOT_REQUIRED, maxLength = 100)
     private String firstName;
 
     /**
      * User's last name
      */
-    @NotBlank(message = "Last name is required")
     @Size(max = 100, message = "Last name must not exceed 100 characters")
-    @Schema(description = "User's last name", example = "Doe", requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 100)
+    @Schema(description = "User's last name", example = "Doe", requiredMode = Schema.RequiredMode.NOT_REQUIRED, maxLength = 100)
     private String lastName;
 
     /**
