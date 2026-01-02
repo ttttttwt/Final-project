@@ -42,16 +42,17 @@ public interface LearningPathService {
     LearningPathDTO getPathById(Long id);
 
     /**
-     * Recommends a learning path for a user based on their CEFR level.
+     * Recommends a learning path for a user based on their CEFR level and completion history.
      * 
      * <p>
-     * Business rules:
+     * Business rules (Progressive Recommendation Algorithm):
      * </p>
      * <ul>
-     * <li>Returns the default path matching user's CEFR level</li>
-     * <li>Returns A1 beginner path if user has no level set</li>
-     * <li>TODO: Add progressive recommendation in Sprint 3 (based on completed
-     * paths)</li>
+     * <li>If user has completed paths → recommends next level after highest completed</li>
+     * <li>If user has no completed paths → uses current CEFR level from profile</li>
+     * <li>If user has no level set → defaults to A1 beginner path</li>
+     * <li>Level progression: A1 → A2 → B1 → B2 → C1 → C2</li>
+     * <li>If user completed C2 → continues recommending C2 advanced paths</li>
      * </ul>
      * 
      * @param user the user to recommend a path for

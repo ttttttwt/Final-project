@@ -9,6 +9,7 @@ import com.lexia.backend.exception.EnrollmentNotFoundException;
 import com.lexia.backend.exception.LessonNotFoundException;
 import com.lexia.backend.notification.event.LessonCompletedEvent;
 import com.lexia.backend.repository.EnrollmentRepository;
+import com.lexia.backend.repository.GoalRepository;
 import com.lexia.backend.repository.LessonProgressRepository;
 import com.lexia.backend.repository.LessonRepository;
 import com.lexia.backend.service.EnrollmentService;
@@ -39,6 +40,7 @@ public class ProgressServiceImpl implements ProgressService {
         private final LessonRepository lessonRepository;
         private final com.lexia.backend.repository.CourseRepository courseRepository;
         private final EnrollmentRepository enrollmentRepository;
+        private final GoalRepository goalRepository;
         private final EnrollmentService enrollmentService;
         private final ObjectMapper objectMapper;
         private final ApplicationEventPublisher eventPublisher;
@@ -326,7 +328,7 @@ public class ProgressServiceImpl implements ProgressService {
          * {@inheritDoc}
          */
         @Override
-        @Transactional(readOnly = true)
+        @Transactional
         public com.lexia.backend.dto.DashboardOverviewDTO getDashboardOverview(User user) {
                 log.debug("Fetching dashboard overview for user {}", user.getId());
 
@@ -384,38 +386,8 @@ public class ProgressServiceImpl implements ProgressService {
                                                 .build())
                                 .collect(Collectors.toList());
 
-                // 4. Generate Weekly Goals (Mock logic for now)
-                // In a real app, these would be stored in a GoalRepository
-                List<com.lexia.backend.dto.GoalDTO> weeklyGoals = new ArrayList<>();
-
-                // Goal 1: Complete 5 lessons this week
-                LocalDate startOfWeek = LocalDate.now()
-                                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-                long lessonsThisWeek = lessonProgressRepository.countByUserIdAndCompletedAtBetween(
-                                user.getId(),
-                                startOfWeek.atStartOfDay(),
-                                java.time.LocalDateTime.now());
-
-                weeklyGoals.add(com.lexia.backend.dto.GoalDTO.builder()
-                                .id("goal-weekly-lessons")
-                                .title("Weekly Warrior")
-                                .description("Complete 5 lessons this week")
-                                .currentProgress((int) lessonsThisWeek)
-                                .targetProgress(5)
-                                .unit("lessons")
-                                .isCompleted(lessonsThisWeek >= 5)
-                                .build());
-
-                // Goal 2: Maintain streak
-                weeklyGoals.add(com.lexia.backend.dto.GoalDTO.builder()
-                                .id("goal-streak")
-                                .title("Consistency is Key")
-                                .description("Reach a 3-day streak")
-                                .currentProgress(streak.getCurrentStreak())
-                                .targetProgress(3)
-                                .unit("days")
-                                .isCompleted(streak.getCurrentStreak() >= 3)
-                                .build());
+                // 4. Get or Create Weekly Goals (Persistent via GoalRepository)
+                List<com.lexia.backend.dto.GoalDTO> weeklyGoals = getOrCreateWeeklyGoals(user, streak);
 
                 // 5. Generate Recommendations
                 List<com.lexia.backend.dto.RecommendationDTO> recommendations = new ArrayList<>();
@@ -548,6 +520,189 @@ public class ProgressServiceImpl implements ProgressService {
                                 .averageTimePerLesson(averageTimePerLesson)
                                 .activeDays(activeDays)
                                 .dailyActivities(dailyActivities)
+                                .build();
+        }
+
+        /**
+         * Get or create weekly goals for a user.
+         * If goals don't exist for current week, creates default goals.
+         * Updates current progress in real-time before returning.
+         * 
+         * @param user   the user
+         * @param streak current streak data
+         * @return list of GoalDTO with updated progress
+         */
+        private List<com.lexia.backend.dto.GoalDTO> getOrCreateWeeklyGoals(User user, StreakDTO streak) {
+                log.debug("Fetching weekly goals for user {}", user.getId());
+
+                // Calculate current week boundaries (Monday to Sunday)
+                LocalDate today = LocalDate.now();
+                LocalDate startOfWeek = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(
+                                java.time.DayOfWeek.MONDAY));
+                LocalDate endOfWeek = startOfWeek.plusDays(6);
+
+                // Query existing goals for this week (all statuses for display)
+                List<Goal> existingGoals = goalRepository.findByUserIdAndStartDate(
+                                user.getId(),
+                                startOfWeek).stream()
+                                .filter(g -> g.getGoalType() == Goal.GoalType.WEEKLY_LESSONS ||
+                                             g.getGoalType() == Goal.GoalType.WEEKLY_STREAK)
+                                .collect(java.util.stream.Collectors.toList());
+
+                // If no goals exist for this week, create default goals
+                if (existingGoals.isEmpty()) {
+                        log.info("No weekly goals found for user {}, creating defaults", user.getId());
+                        existingGoals = createDefaultWeeklyGoals(user.getId(), startOfWeek, endOfWeek);
+                }
+
+                // Update current progress and status for each goal
+                for (Goal goal : existingGoals) {
+                        updateGoalProgress(goal, user, streak);
+                        goal.updateStatus(); // Update status based on completion/expiration
+                }
+
+                // Save updated goals
+                goalRepository.saveAll(existingGoals);
+
+                // Convert to DTOs
+                return existingGoals.stream()
+                                .map(this::toGoalDTO)
+                                .collect(Collectors.toList());
+        }
+
+        /**
+         * Create default weekly goals for a user.
+         * Creates two goals: "Weekly Warrior" (5 lessons) and "Consistency is Key" (3-day
+         * streak).
+         * 
+         * @param userId      the user's UUID
+         * @param startOfWeek start date of the week (Monday)
+         * @param endOfWeek   end date of the week (Sunday)
+         * @return list of newly created goals
+         */
+        private List<Goal> createDefaultWeeklyGoals(UUID userId, LocalDate startOfWeek, LocalDate endOfWeek) {
+                List<Goal> defaultGoals = new ArrayList<>();
+
+                // Goal 1: Complete 5 lessons this week
+                if (!goalRepository.existsByUserIdAndGoalTypeAndStartDate(userId, Goal.GoalType.WEEKLY_LESSONS,
+                                startOfWeek)) {
+                        Goal weeklyLessons = Goal.builder()
+                                        .userId(userId)
+                                        .goalType(Goal.GoalType.WEEKLY_LESSONS)
+                                        .title("Weekly Warrior")
+                                        .description("Complete 5 lessons this week")
+                                        .targetValue(5)
+                                        .currentValue(0)
+                                        .unit("lessons")
+                                        .startDate(startOfWeek)
+                                        .endDate(endOfWeek)
+                                        .status(Goal.GoalStatus.ACTIVE)
+                                        .build();
+                        defaultGoals.add(weeklyLessons);
+                }
+
+                // Goal 2: Maintain 3-day streak
+                if (!goalRepository.existsByUserIdAndGoalTypeAndStartDate(userId, Goal.GoalType.WEEKLY_STREAK,
+                                startOfWeek)) {
+                        Goal weeklyStreak = Goal.builder()
+                                        .userId(userId)
+                                        .goalType(Goal.GoalType.WEEKLY_STREAK)
+                                        .title("Consistency is Key")
+                                        .description("Reach a 3-day streak")
+                                        .targetValue(3)
+                                        .currentValue(0)
+                                        .unit("days")
+                                        .startDate(startOfWeek)
+                                        .endDate(endOfWeek)
+                                        .status(Goal.GoalStatus.ACTIVE)
+                                        .build();
+                        defaultGoals.add(weeklyStreak);
+                }
+
+                // If no goals need to be created (race: another thread created them), fetch existing
+                if (defaultGoals.isEmpty()) {
+                        log.debug("All weekly goals already exist for user {}, fetching from DB", userId);
+                        return goalRepository.findByUserIdAndStartDate(userId, startOfWeek).stream()
+                                        .filter(g -> g.getGoalType() == Goal.GoalType.WEEKLY_LESSONS ||
+                                                     g.getGoalType() == Goal.GoalType.WEEKLY_STREAK)
+                                        .collect(java.util.stream.Collectors.toList());
+                }
+
+                try {
+                        List<Goal> savedGoals = goalRepository.saveAll(defaultGoals);
+                        
+                        // Fetch all weekly goals for this week to ensure both types exist
+                        // (handles partial creation from race condition or data inconsistency)
+                        return goalRepository.findByUserIdAndStartDate(userId, startOfWeek).stream()
+                                        .filter(g -> g.getGoalType() == Goal.GoalType.WEEKLY_LESSONS ||
+                                                     g.getGoalType() == Goal.GoalType.WEEKLY_STREAK)
+                                        .collect(java.util.stream.Collectors.toList());
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // Handle race condition: another thread created the goals concurrently
+                        log.warn("Duplicate goal creation detected for user {}, fetching existing goals", userId);
+                        return goalRepository.findByUserIdAndStartDate(userId, startOfWeek).stream()
+                                        .filter(g -> g.getGoalType() == Goal.GoalType.WEEKLY_LESSONS ||
+                                                     g.getGoalType() == Goal.GoalType.WEEKLY_STREAK)
+                                        .collect(java.util.stream.Collectors.toList());
+                }
+        }
+
+        /**
+         * Update goal progress based on real-time data.
+         * 
+         * @param goal   the goal to update
+         * @param user   the user
+         * @param streak current streak data
+         */
+        private void updateGoalProgress(Goal goal, User user, StreakDTO streak) {
+                LocalDate startOfWeek = goal.getStartDate();
+
+                switch (goal.getGoalType()) {
+                        case WEEKLY_LESSONS:
+                                // Count lessons completed this week
+                                long lessonsThisWeek = lessonProgressRepository.countByUserIdAndCompletedAtBetween(
+                                                user.getId(),
+                                                startOfWeek.atStartOfDay(),
+                                                java.time.LocalDateTime.now());
+                                goal.setCurrentValue((int) lessonsThisWeek);
+                                break;
+
+                        case WEEKLY_STREAK:
+                                // Use current streak value
+                                goal.setCurrentValue(streak.getCurrentStreak());
+                                break;
+
+                        case MONTHLY_COURSES:
+                                // Count courses enrolled this month (if implemented in future)
+                                // For now, set to 0
+                                goal.setCurrentValue(0);
+                                break;
+
+                        case DAILY_PRACTICE:
+                                // Count lessons today (if implemented in future)
+                                goal.setCurrentValue(0);
+                                break;
+
+                        default:
+                                log.warn("Unknown goal type: {}", goal.getGoalType());
+                }
+        }
+
+        /**
+         * Convert Goal entity to GoalDTO.
+         * 
+         * @param goal the goal entity
+         * @return GoalDTO
+         */
+        private com.lexia.backend.dto.GoalDTO toGoalDTO(Goal goal) {
+                return com.lexia.backend.dto.GoalDTO.builder()
+                                .id(goal.getId().toString())
+                                .title(goal.getTitle())
+                                .description(goal.getDescription())
+                                .currentProgress(goal.getCurrentValue())
+                                .targetProgress(goal.getTargetValue())
+                                .unit(goal.getUnit())
+                                .isCompleted(goal.isCompleted())
                                 .build();
         }
 }

@@ -33,6 +33,7 @@ public class LearningPathServiceImpl implements LearningPathService {
 
     private final LearningPathRepository learningPathRepository;
     private final UserLearningPathRepository userLearningPathRepository;
+    private final com.lexia.backend.repository.EnrollmentRepository enrollmentRepository;
 
     /**
      * {@inheritDoc}
@@ -74,7 +75,76 @@ public class LearningPathServiceImpl implements LearningPathService {
     public LearningPathDTO getRecommendedPath(User user) {
         log.debug("Getting recommended learning path for user: {}", user.getEmail());
 
-        // Get user's CEFR level from profile
+        // Step 1: Check if user has completed any learning paths
+        String recommendedLevel = findNextRecommendedLevel(user);
+
+        // Step 2: Find default path for recommended level
+        LearningPath path = learningPathRepository.findByCefrLevelAndIsDefaultTrue(recommendedLevel)
+                .orElseThrow(() -> {
+                    log.error("No default learning path found for CEFR level: {}", recommendedLevel);
+                    return new LearningPathNotFoundException(
+                            "No default learning path found for CEFR level: " + recommendedLevel);
+                });
+
+        log.info("Recommended learning path '{}' for user {} (CEFR level: {})",
+                path.getName(), user.getEmail(), recommendedLevel);
+
+        return LearningPathMapper.toDTO(path);
+    }
+
+    /**
+     * Find the next recommended CEFR level for a user based on completion history.
+     * 
+     * <p>
+     * Logic:
+     * <ul>
+     * <li>If user has completed any paths → recommend next level after highest completed</li>
+     * <li>If user has no completed paths → use current level from profile</li>
+     * <li>If user has no level set → default to A1 (beginner)</li>
+     * <li>If user completed C2 → recommend C2 advanced paths</li>
+     * </ul>
+     * </p>
+     * 
+     * @param user the user
+     * @return the recommended CEFR level string
+     */
+    private String findNextRecommendedLevel(User user) {
+        // Get all completed learning paths
+        List<UserLearningPath> completedPaths = userLearningPathRepository.findByUserId(user.getId())
+                .stream()
+                .filter(ulp -> ulp.getCompletedAt() != null)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!completedPaths.isEmpty()) {
+            log.debug("User {} has completed {} learning paths", user.getEmail(), completedPaths.size());
+
+            // Find highest completed CEFR level
+            java.util.List<com.lexia.backend.enums.CEFRLevel> completedLevels = completedPaths.stream()
+                    .map(ulp -> ulp.getLearningPath().getCefrLevel())
+                    .filter(level -> level != null && !level.isEmpty())
+                    .map(level -> {
+                        try {
+                            return com.lexia.backend.enums.CEFRLevel.fromString(level);
+                        } catch (IllegalArgumentException e) {
+                            log.warn("Invalid CEFR level '{}' found in completed path, ignoring", level);
+                            return null;
+                        }
+                    })
+                    .filter(level -> level != null)
+                    .collect(java.util.stream.Collectors.toList());
+
+            if (!completedLevels.isEmpty()) {
+                com.lexia.backend.enums.CEFRLevel highestCompleted = com.lexia.backend.enums.CEFRLevel.max(completedLevels);
+                com.lexia.backend.enums.CEFRLevel nextLevel = highestCompleted.getNextLevel();
+
+                log.info("User {} completed highest level {}, recommending next level {}",
+                        user.getEmail(), highestCompleted, nextLevel);
+
+                return nextLevel.name();
+            }
+        }
+
+        // Fallback to current level from profile
         String userLevel = null;
         if (user.getProfile() != null && user.getProfile().getCurrentLevel() != null) {
             userLevel = user.getProfile().getCurrentLevel();
@@ -84,21 +154,12 @@ public class LearningPathServiceImpl implements LearningPathService {
         final String cefrLevel = (userLevel == null || userLevel.isEmpty()) ? "A1" : userLevel;
 
         if (userLevel == null || userLevel.isEmpty()) {
-            log.info("User {} has no CEFR level set, defaulting to A1", user.getEmail());
+            log.info("User {} has no CEFR level set and no completed paths, defaulting to A1", user.getEmail());
+        } else {
+            log.info("User {} has no completed paths, using current profile level: {}", user.getEmail(), cefrLevel);
         }
 
-        // Find default path for user's level
-        LearningPath path = learningPathRepository.findByCefrLevelAndIsDefaultTrue(cefrLevel)
-                .orElseThrow(() -> {
-                    log.error("No default learning path found for CEFR level: {}", cefrLevel);
-                    return new LearningPathNotFoundException(
-                            "No default learning path found for CEFR level: " + cefrLevel);
-                });
-
-        log.info("Recommended learning path '{}' for user {} (CEFR level: {})",
-                path.getName(), user.getEmail(), cefrLevel);
-
-        return LearningPathMapper.toDTO(path);
+        return cefrLevel;
     }
 
     /**
@@ -158,12 +219,32 @@ public class LearningPathServiceImpl implements LearningPathService {
         List<UserLearningPath> userPaths = userLearningPathRepository.findByUserId(user.getId());
         log.info("User {} has {} learning path enrollments", user.getEmail(), userPaths.size());
 
-        // Calculate courses completed for each path
-        // TODO: In Sprint 3, integrate with enrollment/progress tables
-        // For now, return 0 completed courses as placeholder
+        // Calculate courses completed for each path using real enrollment data
         Map<Long, Integer> coursesCompletedMap = new HashMap<>();
         for (UserLearningPath ulp : userPaths) {
-            coursesCompletedMap.put(ulp.getLearningPath().getId(), 0);
+            LearningPath path = ulp.getLearningPath();
+            
+            // Guard against null or empty course list
+            if (path.getLearningPathCourses() == null || path.getLearningPathCourses().isEmpty()) {
+                log.warn("Learning path {} has no courses, setting completed count to 0", path.getName());
+                coursesCompletedMap.put(path.getId(), 0);
+                continue;
+            }
+            
+            // Extract course IDs from the learning path
+            List<Long> courseIds = path.getLearningPathCourses().stream()
+                    .map(lpc -> lpc.getCourse().getId())
+                    .collect(java.util.stream.Collectors.toList());
+            
+            // Count completed courses in this path for this user
+            long completedCount = enrollmentRepository.countCompletedByUserIdAndCourseIdIn(
+                    user.getId(), 
+                    courseIds
+            );
+            
+            coursesCompletedMap.put(path.getId(), (int) completedCount);
+            log.debug("User {} completed {}/{} courses in path: {}", 
+                    user.getEmail(), completedCount, courseIds.size(), path.getName());
         }
 
         return LearningPathMapper.toProgressDTOList(userPaths, coursesCompletedMap);

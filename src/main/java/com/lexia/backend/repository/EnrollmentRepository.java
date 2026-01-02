@@ -153,4 +153,26 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      */
     @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.userId = :userId")
     int countByUserId(@Param("userId") UUID userId);
+
+    /**
+     * Count completed courses within a learning path for a user.
+     * Used to calculate real progress in learning paths.
+     * 
+     * <p>
+     * This method counts enrollments where:
+     * <ul>
+     * <li>User matches the given userId</li>
+     * <li>Course is in the provided list of course IDs (from learning path)</li>
+     * <li>Enrollment is marked as completed (completed_at IS NOT NULL)</li>
+     * </ul>
+     * </p>
+     * 
+     * @param userId    the user's UUID
+     * @param courseIds list of course IDs that belong to a learning path
+     * @return count of completed courses
+     */
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.userId = :userId " +
+           "AND e.course.id IN :courseIds AND e.completedAt IS NOT NULL")
+    long countCompletedByUserIdAndCourseIdIn(@Param("userId") UUID userId, 
+                                             @Param("courseIds") List<Long> courseIds);
 }
