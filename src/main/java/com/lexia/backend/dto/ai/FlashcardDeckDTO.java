@@ -24,111 +24,128 @@ import java.util.UUID;
 @Schema(description = "Flashcard deck with cards and metadata")
 public class FlashcardDeckDTO {
 
-    /**
-     * Deck unique identifier.
-     */
-    @Schema(description = "Deck UUID", example = "550e8400-e29b-41d4-a716-446655440000")
-    private UUID id;
+        /**
+         * Deck unique identifier.
+         */
+        @Schema(description = "Deck UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+        private UUID id;
 
-    /**
-     * Owner user ID.
-     */
-    @Schema(description = "Owner user UUID")
-    private UUID userId;
+        /**
+         * Owner user ID.
+         */
+        @Schema(description = "Owner user UUID")
+        private UUID userId;
 
-    /**
-     * Deck title.
-     */
-    @Schema(description = "Deck title", example = "Business Meeting Vocabulary")
-    private String title;
+        /**
+         * Deck title.
+         */
+        @Schema(description = "Deck title", example = "Business Meeting Vocabulary")
+        private String title;
 
-    /**
-     * Deck description.
-     */
-    @Schema(description = "Deck description", 
-            example = "Essential vocabulary for business meetings and presentations")
-    private String description;
+        /**
+         * Deck description.
+         */
+        @Schema(description = "Deck description", example = "Essential vocabulary for business meetings and presentations")
+        private String description;
 
-    /**
-     * Source type: LESSON, AI_GENERATED, or USER_CREATED.
-     */
-    @Schema(description = "How the deck was created",
-            allowableValues = {"LESSON", "AI_GENERATED", "USER_CREATED"})
-    private String sourceType;
+        /**
+         * Source type: LESSON, AI_GENERATED, or USER_CREATED.
+         */
+        @Schema(description = "How the deck was created", allowableValues = { "LESSON", "AI_GENERATED",
+                        "USER_CREATED" })
+        private String sourceType;
 
-    /**
-     * Source lesson ID (if sourceType is LESSON).
-     */
-    @Schema(description = "Source lesson ID (if from lesson)")
-    private Long sourceId;
+        /**
+         * Source lesson ID (if sourceType is LESSON).
+         */
+        @Schema(description = "Source lesson ID (if from lesson)")
+        private Long sourceId;
 
-    /**
-     * Course title (if sourceType is LESSON).
-     */
-    @Schema(description = "Course title (if from lesson)")
-    private String courseTitle;
+        /**
+         * Course title (if sourceType is LESSON).
+         */
+        @Schema(description = "Course title (if from lesson)")
+        private String courseTitle;
 
-    /**
-     * Lesson title (if sourceType is LESSON).
-     */
-    @Schema(description = "Lesson title (if from lesson)")
-    private String lessonTitle;
+        /**
+         * Lesson title (if sourceType is LESSON).
+         */
+        @Schema(description = "Lesson title (if from lesson)")
+        private String lessonTitle;
 
-    /**
-     * CEFR level (A1-C2).
-     */
-    @Schema(description = "CEFR level", 
-            example = "B2",
-            allowableValues = {"A1", "A2", "B1", "B2", "C1", "C2"})
-    private String cefrLevel;
+        /**
+         * CEFR level (A1-C2).
+         */
+        @Schema(description = "CEFR level", example = "B2", allowableValues = { "A1", "A2", "B1", "B2", "C1", "C2" })
+        private String cefrLevel;
 
-    /**
-     * List of flashcards.
-     */
-    @Schema(description = "Flashcards in this deck")
-    private List<FlashcardCardDTO> cards;
+        /**
+         * List of flashcards.
+         */
+        @Schema(description = "Flashcards in this deck")
+        private List<FlashcardCardDTO> cards;
 
-    /**
-     * Number of cards in the deck.
-     */
-    @Schema(description = "Total number of cards", example = "25")
-    private Integer cardCount;
+        /**
+         * Number of cards in the deck.
+         */
+        @Schema(description = "Total number of cards", example = "25")
+        private Integer cardCount;
 
-    /**
-     * Deck creation timestamp.
-     */
-    @Schema(description = "Creation timestamp")
-    private Instant createdAt;
+        /**
+         * Deck creation timestamp.
+         */
+        @Schema(description = "Creation timestamp")
+        private Instant createdAt;
 
-    /**
-     * Last update timestamp.
-     */
-    @Schema(description = "Last update timestamp")
-    private Instant updatedAt;
+        /**
+         * Last update timestamp.
+         */
+        @Schema(description = "Last update timestamp")
+        private Instant updatedAt;
 
-    // ========== Optional Progress Fields ==========
+        // ========== Optional Progress Fields ==========
 
-    /**
-     * Number of cards due for review (if progress is loaded).
-     */
-    @Schema(description = "Cards due for review")
-    private Integer dueCount;
+        /**
+         * Number of cards due for review (if progress is loaded).
+         */
+        @Schema(description = "Cards due for review")
+        private Integer dueCount;
 
-    /**
-     * Number of new cards not yet studied.
-     */
-    @Schema(description = "New cards not yet studied")
-    private Integer newCount;
+        /**
+         * Number of new cards not yet studied.
+         */
+        @Schema(description = "New cards not yet studied")
+        private Integer newCount;
 
-    /**
-     * Number of mastered cards (mastery level >= 4).
-     */
-    @Schema(description = "Mastered cards")
-    private Integer masteredCount;
+        /**
+         * Number of mastered cards (mastery level >= 4).
+         */
+        @Schema(description = "Mastered cards")
+        private Integer masteredCount;
 
-    /**
-     * Overall accuracy percentage.
-     */
-    @Schema(description = "Overall accuracy percentage", example = "85.5")
-    private Double accuracyRate;
+        /**
+         * Overall accuracy percentage.
+         */
+        @Schema(description = "Overall accuracy percentage", example = "85.5")
+        private Double accuracyRate;
+
+        /**
+         * Average mastery level of all cards (0-5).
+         */
+        @Schema(description = "Average mastery level of all cards", example = "3.5")
+        private Double masteryLevel;
+
+        /**
+         * Next review time (earliest nextReviewAt among all cards).
+         * Indicates when the user should review this deck again.
+         */
+        @Schema(description = "Next review timestamp")
+        private Instant nextReview;
+
+        /**
+         * Per-card progress data (if loaded).
+         * Contains mastery level and review stats for each card.
+         */
+        @Schema(description = "Per-card progress data")
+        private java.util.List<FlashcardProgressDTO> cardProgress;
 }

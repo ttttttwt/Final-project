@@ -719,6 +719,54 @@ public class FlashcardServiceImpl implements FlashcardService {
         return getStudySession(deckId, userId, DEFAULT_STUDY_SESSION_SIZE);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public FlashcardStudySessionDTO getPracticeSession(UUID deckId, UUID userId, Integer maxCards) {
+        FlashcardDeck deck = findDeckWithOwnershipCheck(deckId, userId);
+        int sessionSize = maxCards != null ? Math.min(maxCards, DEFAULT_STUDY_SESSION_SIZE * 2)
+                : DEFAULT_STUDY_SESSION_SIZE;
+        Instant now = Instant.now();
+
+        // Get ALL progress records for this deck (not just due ones)
+        List<UserFlashcardProgress> allCards = progressRepository.findByUserIdAndDeckId(userId, deckId);
+
+        // Shuffle for random order
+        Collections.shuffle(allCards);
+
+        // Limit to session size
+        List<UserFlashcardProgress> sessionCards = allCards.stream()
+                .limit(sessionSize)
+                .collect(Collectors.toList());
+
+        // Map to DTOs with card data
+        List<FlashcardProgressDTO> cardsToStudy = sessionCards.stream()
+                .map(progress -> {
+                    FlashcardProgressDTO dto = FlashcardMapper.toProgressDTO(progress);
+                    if (progress.getCardIndex() < deck.getCards().size()) {
+                        FlashcardCard card = deck.getCards().get(progress.getCardIndex());
+                        dto.setCard(FlashcardMapper.toCardDTO(card));
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        // Calculate statistics
+        FlashcardStudySessionDTO.DeckStatsDTO stats = calculateDeckStats(userId, deckId);
+
+        return FlashcardStudySessionDTO.builder()
+                .deckId(deckId)
+                .deckTitle(deck.getTitle())
+                .sessionStartedAt(now)
+                .totalCards(deck.getCardCount())
+                .dueCards(0) // Practice mode ignores due status
+                .newCards(0)
+                .sessionSize(cardsToStudy.size())
+                .cardsToStudy(cardsToStudy)
+                .stats(stats)
+                .isPracticeMode(true) // Flag for frontend
+                .build();
+    }
+
     // ========== Progress & Statistics Methods ==========
 
     @Override
@@ -819,6 +867,22 @@ public class FlashcardServiceImpl implements FlashcardService {
                 dto.setMasteredCount(stats[4] != null ? ((Number) stats[4]).intValue() : 0);
                 dto.setAccuracyRate(stats[7] != null ? ((Number) stats[7]).doubleValue() : 0.0);
             }
+
+            // Calculate average mastery level
+            progressRepository.getAverageMasteryLevel(dto.getUserId(), dto.getId())
+                    .ifPresent(dto::setMasteryLevel);
+
+            // Get next review time (earliest among all cards)
+            progressRepository.findEarliestNextReview(dto.getUserId(), dto.getId())
+                    .ifPresent(dto::setNextReview);
+
+            // Load per-card progress for mastery display
+            List<UserFlashcardProgress> allProgress = progressRepository.findByUserIdAndDeckId(dto.getUserId(),
+                    dto.getId());
+            List<FlashcardProgressDTO> cardProgressList = allProgress.stream()
+                    .map(FlashcardMapper::toProgressDTO)
+                    .collect(Collectors.toList());
+            dto.setCardProgress(cardProgressList);
         } catch (Exception e) {
             log.warn("Failed to fetch progress stats for deck {}: {}", dto.getId(), e.getMessage());
         }

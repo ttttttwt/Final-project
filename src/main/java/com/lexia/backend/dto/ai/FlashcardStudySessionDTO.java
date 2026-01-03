@@ -80,6 +80,13 @@ public class FlashcardStudySessionDTO {
     private DeckStatsDTO stats;
 
     /**
+     * Whether this is a practice session (no progress updates).
+     */
+    @Schema(description = "True if this is a practice session", example = "false")
+    @Builder.Default
+    private Boolean isPracticeMode = false;
+
+    /**
      * Nested DTO for deck statistics.
      */
     @Data

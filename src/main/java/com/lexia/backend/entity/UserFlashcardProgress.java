@@ -12,23 +12,29 @@ import java.util.UUID;
  * Entity tracking user progress for individual flashcards.
  * Implements the SM-2 spaced repetition algorithm for optimal learning.
  * 
- * <p>SM-2 Algorithm Fields:</p>
+ * <p>
+ * SM-2 Algorithm Fields:
+ * </p>
  * <ul>
- *   <li><b>easeFactor</b> - Reflects card difficulty (1.30-2.50+), higher = easier</li>
- *   <li><b>intervalDays</b> - Days until next review</li>
- *   <li><b>masteryLevel</b> - Overall mastery (0-5): New, Learning, Young, Mature, Master, Expert</li>
- *   <li><b>reviewCount</b> - Total times reviewed</li>
- *   <li><b>correctCount</b> - Times answered correctly</li>
+ * <li><b>easeFactor</b> - Reflects card difficulty (1.30-2.50+), higher =
+ * easier</li>
+ * <li><b>intervalDays</b> - Days until next review</li>
+ * <li><b>masteryLevel</b> - Overall mastery (0-5): New, Learning, Young,
+ * Mature, Master, Expert</li>
+ * <li><b>reviewCount</b> - Total times reviewed</li>
+ * <li><b>correctCount</b> - Times answered correctly</li>
  * </ul>
  * 
- * <p>Quality Rating Scale (for SM-2):</p>
+ * <p>
+ * Quality Rating Scale (for SM-2):
+ * </p>
  * <ul>
- *   <li>0 - Complete blackout, total failure to recall</li>
- *   <li>1 - Incorrect, but remembered upon seeing answer</li>
- *   <li>2 - Incorrect, but answer seemed easy to recall</li>
- *   <li>3 - Correct with significant difficulty</li>
- *   <li>4 - Correct after some hesitation</li>
- *   <li>5 - Perfect, instant recall</li>
+ * <li>0 - Complete blackout, total failure to recall</li>
+ * <li>1 - Incorrect, but remembered upon seeing answer</li>
+ * <li>2 - Incorrect, but answer seemed easy to recall</li>
+ * <li>3 - Correct with significant difficulty</li>
+ * <li>4 - Correct after some hesitation</li>
+ * <li>5 - Perfect, instant recall</li>
  * </ul>
  * 
  * @author LEXIA Team
@@ -36,16 +42,13 @@ import java.util.UUID;
  * @see FlashcardDeck
  */
 @Entity
-@Table(name = "user_flashcard_progress", 
-    indexes = {
+@Table(name = "user_flashcard_progress", indexes = {
         @Index(name = "idx_user_flashcard_progress_user_deck", columnList = "user_id, deck_id"),
         @Index(name = "idx_user_flashcard_progress_next_review", columnList = "next_review_at"),
         @Index(name = "idx_user_flashcard_progress_mastery", columnList = "user_id, mastery_level")
-    },
-    uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_deck_card", columnNames = {"user_id", "deck_id", "card_index"})
-    }
-)
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_user_deck_card", columnNames = { "user_id", "deck_id", "card_index" })
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -110,12 +113,12 @@ public class UserFlashcardProgress {
     /**
      * Mastery level from 0 (New) to 5 (Expert).
      * <ul>
-     *   <li>0 - New: Never reviewed</li>
-     *   <li>1 - Learning: Initial reviews, interval < 3 days</li>
-     *   <li>2 - Young: Some familiarity, interval 3-7 days</li>
-     *   <li>3 - Mature: Good retention, interval 7-30 days</li>
-     *   <li>4 - Master: Strong retention, interval 30-90 days</li>
-     *   <li>5 - Expert: Excellent retention, interval > 90 days</li>
+     * <li>0 - New: Never reviewed</li>
+     * <li>1 - Learning: Initial reviews, interval < 3 days</li>
+     * <li>2 - Young: Some familiarity, interval 3-7 days</li>
+     * <li>3 - Mature: Good retention, interval 7-30 days</li>
+     * <li>4 - Master: Strong retention, interval 30-90 days</li>
+     * <li>5 - Expert: Excellent retention, interval > 90 days</li>
      * </ul>
      */
     @Column(name = "mastery_level", nullable = false)
@@ -187,12 +190,12 @@ public class UserFlashcardProgress {
      * Records a review and updates SM-2 parameters.
      * 
      * @param quality User's self-rating (0-5)
-     *        0 = total blackout
-     *        1 = wrong, remembered after seeing answer
-     *        2 = wrong, but answer was easy
-     *        3 = correct with difficulty
-     *        4 = correct after hesitation
-     *        5 = perfect recall
+     *                0 = total blackout
+     *                1 = wrong, remembered after seeing answer
+     *                2 = wrong, but answer was easy
+     *                3 = correct with difficulty
+     *                4 = correct after hesitation
+     *                5 = perfect recall
      */
     public void recordReview(int quality) {
         if (quality < 0 || quality > 5) {
@@ -211,7 +214,7 @@ public class UserFlashcardProgress {
         // Update ease factor: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
         BigDecimal qualityFactor = BigDecimal.valueOf(0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
         easeFactor = easeFactor.add(qualityFactor);
-        
+
         // Ensure minimum ease factor
         if (easeFactor.compareTo(MIN_EASE_FACTOR) < 0) {
             easeFactor = MIN_EASE_FACTOR;
@@ -235,7 +238,15 @@ public class UserFlashcardProgress {
 
         // Update timestamps
         lastReviewedAt = Instant.now();
-        nextReviewAt = lastReviewedAt.plusSeconds((long) intervalDays * 24 * 60 * 60);
+        if (quality < 3) {
+            // Failed: keep it due for immediate re-learning (Anki-like behavior)
+            // This ensures the card stays in the "Due" list until a passing grade is
+            // achieved
+            nextReviewAt = lastReviewedAt;
+        } else {
+            // Passed: schedule for the next interval
+            nextReviewAt = lastReviewedAt.plusSeconds((long) intervalDays * 24 * 60 * 60);
+        }
 
         // Update mastery level based on interval
         updateMasteryLevel();
@@ -260,6 +271,7 @@ public class UserFlashcardProgress {
 
     /**
      * Checks if this card is due for review.
+     * 
      * @return true if nextReviewAt is null or in the past
      */
     public boolean isDue() {
@@ -268,25 +280,30 @@ public class UserFlashcardProgress {
 
     /**
      * Checks if this card is overdue (more than 1 day past scheduled review).
+     * 
      * @return true if more than 24 hours overdue
      */
     public boolean isOverdue() {
-        if (nextReviewAt == null) return true;
+        if (nextReviewAt == null)
+            return true;
         Instant oneDayAgo = Instant.now().minusSeconds(24 * 60 * 60);
         return nextReviewAt.isBefore(oneDayAgo);
     }
 
     /**
      * Gets the accuracy rate as a percentage.
+     * 
      * @return accuracy percentage (0-100), or 0 if no reviews
      */
     public double getAccuracyRate() {
-        if (reviewCount == 0) return 0.0;
+        if (reviewCount == 0)
+            return 0.0;
         return (double) correctCount / reviewCount * 100;
     }
 
     /**
      * Gets the mastery level as a human-readable string.
+     * 
      * @return mastery level name
      */
     public String getMasteryLevelName() {
@@ -303,8 +320,9 @@ public class UserFlashcardProgress {
 
     /**
      * Factory method to create a new progress record for a card.
-     * @param userId the user ID
-     * @param deck the flashcard deck
+     * 
+     * @param userId    the user ID
+     * @param deck      the flashcard deck
      * @param cardIndex the index of the card in the deck
      * @return a new UserFlashcardProgress instance
      */
