@@ -1,14 +1,19 @@
 package com.lexia.backend.controller;
 
 import com.lexia.backend.config.QuotaLimitsConfig;
+import com.lexia.backend.dto.ai.QuotaSummaryStatsDTO;
 import com.lexia.backend.dto.ai.UserAiQuotaDTO;
 import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.service.ai.AIQuotaService;
 import com.lexia.backend.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,8 +37,43 @@ public class AdminAIQuotaController {
     private final com.lexia.backend.repository.UserCustomMaterialRepository customMaterialRepository;
 
     @GetMapping
-    public ResponseEntity<Page<UserAiQuotaDTO>> getAllQuotas(Pageable pageable) {
-        return ResponseEntity.ok(quotaService.getAllQuotas(pageable).map(this::mapToDTO));
+    @Operation(summary = "Get all quotas", description = "List all user quotas with optional search, plan filter, and sorting")
+    public ResponseEntity<Page<UserAiQuotaDTO>> getAllQuotas(
+            @Parameter(description = "Search by email or name") @RequestParam(required = false) String search,
+            @Parameter(description = "Filter by plan type (FREE, PRO, ALL)") @RequestParam(required = false) String planType,
+            @Parameter(description = "Field to sort by") @RequestParam(required = false, defaultValue = "userId") String sortBy,
+            @Parameter(description = "Sort direction (asc or desc)") @RequestParam(required = false, defaultValue = "asc") String sortDir,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(required = false, defaultValue = "10") int size) {
+        
+        // Build sort
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC, mapSortField(sortBy));
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        return ResponseEntity.ok(quotaService.getAllQuotas(search, planType, pageable).map(this::mapToDTO));
+    }
+    
+    /**
+     * Maps frontend sort field names to entity field names.
+     */
+    private String mapSortField(String sortBy) {
+        if (sortBy == null) return "userId";
+        return switch (sortBy) {
+            case "userEmail" -> "userId"; // Will sort by userId since email is in User table
+            case "planType" -> "planType";
+            case "roleplaySessionsUsed" -> "roleplaySessionsUsed";
+            case "grammarExercisesUsed" -> "grammarExercisesUsed";
+            case "flashcardDecksUsed" -> "flashcardDecksUsed";
+            case "customMaterialsUsed" -> "customMaterialsUsed";
+            case "daysUntilReset" -> "quotaResetDate";
+            default -> "userId";
+        };
+    }
+
+    @GetMapping("/summary-stats")
+    @Operation(summary = "Get quota summary statistics", description = "Returns aggregate statistics for all user quotas including total, pro, free, exceeded counts")
+    public ResponseEntity<QuotaSummaryStatsDTO> getQuotaSummaryStats() {
+        return ResponseEntity.ok(quotaService.getQuotaSummaryStats());
     }
 
     @GetMapping("/{userId}")
@@ -120,6 +160,9 @@ public class AdminAIQuotaController {
         // Warning flags
         double warningThreshold = quotaLimitsConfig.getWarningThreshold();
         double criticalThreshold = quotaLimitsConfig.getCriticalThreshold();
+        
+        // Get custom materials effective limit for threshold calculation
+        int effectiveCustomLimit = customLimit != null ? customLimit : 10;
 
         boolean hasWarning = (limits.getRoleplaySessions() > 0
                 && (double) entity.getRoleplaySessionsUsed() / limits.getRoleplaySessions() >= warningThreshold) ||
@@ -127,7 +170,8 @@ public class AdminAIQuotaController {
                         && (double) entity.getFlashcardDecksUsed() / limits.getFlashcardDecks() >= warningThreshold)
                 ||
                 (limits.getGrammarExercises() > 0 && (double) entity.getGrammarExercisesUsed()
-                        / limits.getGrammarExercises() >= warningThreshold);
+                        / limits.getGrammarExercises() >= warningThreshold) ||
+                (effectiveCustomLimit > 0 && (double) customMaterialsUsed / effectiveCustomLimit >= warningThreshold);
 
         boolean hasCritical = (limits.getRoleplaySessions() > 0
                 && (double) entity.getRoleplaySessionsUsed() / limits.getRoleplaySessions() >= criticalThreshold) ||
@@ -135,7 +179,8 @@ public class AdminAIQuotaController {
                         && (double) entity.getFlashcardDecksUsed() / limits.getFlashcardDecks() >= criticalThreshold)
                 ||
                 (limits.getGrammarExercises() > 0 && (double) entity.getGrammarExercisesUsed()
-                        / limits.getGrammarExercises() >= criticalThreshold);
+                        / limits.getGrammarExercises() >= criticalThreshold) ||
+                (effectiveCustomLimit > 0 && (double) customMaterialsUsed / effectiveCustomLimit >= criticalThreshold);
 
         dto.setQuotaWarning(hasWarning);
         dto.setQuotaCritical(hasCritical);

@@ -1,14 +1,18 @@
 package com.lexia.backend.service.ai.impl;
 
+import com.lexia.backend.config.QuotaLimitsConfig;
+import com.lexia.backend.dto.ai.QuotaSummaryStatsDTO;
 import com.lexia.backend.dto.ai.UpdateQuotaRequest;
 import com.lexia.backend.enums.PlanType;
 import com.lexia.backend.exception.ResourceNotFoundException;
 import com.lexia.backend.entity.UserAiQuota;
 import com.lexia.backend.repository.UserAiQuotaRepository;
 import com.lexia.backend.service.ai.AIQuotaService;
+import com.lexia.backend.specification.UserAiQuotaSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +24,61 @@ import java.util.UUID;
 public class AIQuotaServiceImpl implements AIQuotaService {
 
     private final UserAiQuotaRepository quotaRepository;
+    private final QuotaLimitsConfig quotaLimitsConfig;
 
     @Override
     public Page<UserAiQuota> getAllQuotas(Pageable pageable) {
         return quotaRepository.findAll(pageable);
+    }
+    
+    @Override
+    public Page<UserAiQuota> getAllQuotas(String search, String planType, Pageable pageable) {
+        Specification<UserAiQuota> spec = UserAiQuotaSpecification.withSearchAndPlan(search, planType);
+        return quotaRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public QuotaSummaryStatsDTO getQuotaSummaryStats() {
+        long total = quotaRepository.countTotal();
+        long proUsers = quotaRepository.countProUsers();
+        long freeUsers = quotaRepository.countFreeUsers();
+        long unlimitedUsers = quotaRepository.countUnlimitedUsers();
+        
+        // Count users who have exceeded critical threshold
+        // This requires iterating through all quotas which may be slow for large datasets
+        // For better performance, consider adding a database column or scheduled job
+        long quotaExceeded = countQuotaExceededUsers();
+        
+        return QuotaSummaryStatsDTO.builder()
+                .totalUsers(total)
+                .proUsers(proUsers)
+                .freeUsers(freeUsers)
+                .quotaExceeded(quotaExceeded)
+                .unlimitedUsers(unlimitedUsers)
+                .build();
+    }
+    
+    private long countQuotaExceededUsers() {
+        double criticalThreshold = quotaLimitsConfig.getCriticalThreshold();
+        
+        // Count users who have exceeded critical threshold for any quota type
+        return quotaRepository.findAll().stream()
+                .filter(quota -> {
+                    if (quota.getDailyLimit() == Integer.MAX_VALUE) {
+                        return false; // Unlimited users can't exceed
+                    }
+                    QuotaLimitsConfig.QuotaLimits limits = quotaLimitsConfig.getForPlan(quota.getPlanType());
+                    
+                    return (limits.getRoleplaySessions() > 0 && 
+                            (double) quota.getRoleplaySessionsUsed() / limits.getRoleplaySessions() >= criticalThreshold) ||
+                           (limits.getFlashcardDecks() > 0 && 
+                            (double) quota.getFlashcardDecksUsed() / limits.getFlashcardDecks() >= criticalThreshold) ||
+                           (limits.getGrammarExercises() > 0 && 
+                            (double) quota.getGrammarExercisesUsed() / limits.getGrammarExercises() >= criticalThreshold) ||
+                           (limits.getCustomMaterialsLimit() != null && limits.getCustomMaterialsLimit() > 0 &&
+                            (double) quota.getCustomMaterialsUsed() / limits.getCustomMaterialsLimit() >= criticalThreshold);
+                })
+                .count();
     }
 
     @Override

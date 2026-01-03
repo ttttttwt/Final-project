@@ -35,8 +35,9 @@ public class AdminUserController {
     public ResponseEntity<Page<AdminUserDTO>> getAllUsers(
             @Parameter(description = "Search term (email or name)") @RequestParam(required = false) String search,
             @Parameter(description = "Filter by role") @RequestParam(required = false) String role,
+            @Parameter(description = "Filter by plan type (FREE or PRO)") @RequestParam(required = false) String planType,
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(adminUserService.getAllUsers(search, role, pageable));
+        return ResponseEntity.ok(adminUserService.getAllUsers(search, role, planType, pageable));
     }
 
     @GetMapping("/{id}")

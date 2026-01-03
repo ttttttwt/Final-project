@@ -30,4 +30,8 @@ public class MaterialSettingsDTO {
     @Schema(description = "Sync vocabulary to SRS system", example = "false", defaultValue = "false")
     @Builder.Default
     private Boolean syncVocabToSrs = false;
+
+    @Schema(description = "Generate AI images for synced flashcards", example = "false", defaultValue = "false")
+    @Builder.Default
+    private Boolean generateFlashcardImages = false;
 }

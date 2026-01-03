@@ -108,11 +108,24 @@ public class AdminCustomMaterialController {
     // ==================== Job Endpoints ====================
 
     @GetMapping("/jobs")
-    @Operation(summary = "List all processing jobs with pagination and filtering")
+    @Operation(summary = "List all processing jobs with pagination, filtering and sorting")
     public ResponseEntity<Page<AdminJobDTO>> getAllJobs(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Boolean stuckOnly,
-            Pageable pageable) {
+            @RequestParam(required = false, defaultValue = "startedAt") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDir,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+
+        // Build sort - map frontend field names to entity fields
+        String entityField = mapSortField(sortBy);
+        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(
+            sortDir.equalsIgnoreCase("asc") 
+                ? org.springframework.data.domain.Sort.Direction.ASC 
+                : org.springframework.data.domain.Sort.Direction.DESC,
+            entityField
+        );
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
 
         Page<CustomMaterialJob> jobs = jobRepository.findAll(pageable);
         List<AdminJobDTO> dtoList = jobs.getContent().stream()
@@ -129,6 +142,23 @@ public class AdminCustomMaterialController {
                 .toList();
 
         return ResponseEntity.ok(new PageImpl<>(dtoList, pageable, jobs.getTotalElements()));
+    }
+    
+    /**
+     * Maps frontend sort field names to entity field names.
+     */
+    private String mapSortField(String sortBy) {
+        if (sortBy == null) return "startedAt";
+        return switch (sortBy) {
+            case "materialTitle" -> "material.title";
+            case "userEmail" -> "material.user.email";
+            case "status" -> "status";
+            case "progress" -> "progress";
+            case "retryCount" -> "retryCount";
+            case "startedAt" -> "startedAt";
+            case "createdAt" -> "createdAt";
+            default -> "startedAt";
+        };
     }
 
     @GetMapping("/jobs/stats")

@@ -165,7 +165,7 @@ public class UserAiQuota {
      * Number of custom materials generated this month.
      * Each material generation counts as 1.
      */
-    @Column(name = "custom_materials_used_this_month", nullable = false)
+    @Column(name = "custom_materials_used", nullable = false)
     @Builder.Default
     private Integer customMaterialsUsed = 0;
 

@@ -22,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,11 +48,18 @@ public class AdminUserServiceImpl implements AdminUserService {
         private final AIUsageLogRepository aiUsageLogRepository;
         private final QuotaLimitsConfig quotaLimitsConfig;
         private final FlashcardDeckRepository flashcardDeckRepository;
+        private final UserCustomMaterialRepository userCustomMaterialRepository;
 
         @Override
         @Transactional(readOnly = true)
         public Page<AdminUserDTO> getAllUsers(String search, String role, Pageable pageable) {
-                Specification<User> spec = UserSpecification.withSearchAndRole(search, role);
+                return getAllUsers(search, role, null, pageable);
+        }
+        
+        @Override
+        @Transactional(readOnly = true)
+        public Page<AdminUserDTO> getAllUsers(String search, String role, String planType, Pageable pageable) {
+                Specification<User> spec = UserSpecification.withSearchRoleAndPlan(search, role, planType);
                 Page<User> usersPage = userRepository.findAll(spec, pageable);
 
                 return usersPage.map(this::mapToAdminUserDTO);
@@ -181,6 +190,13 @@ public class AdminUserServiceImpl implements AdminUserService {
 
                                         // Get actual flashcard deck count (hard limit, not monthly counter)
                                         long actualDeckCount = flashcardDeckRepository.countByUserId(user.getId());
+                                        
+                                        // Get custom materials count this month
+                                        Instant monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+                                        long customMaterialsUsed = userCustomMaterialRepository.countByUserIdThisMonth(user.getId(), monthStart);
+                                        Integer customMaterialsLimit = q.getCustomMaterialsMonthlyLimit() != null 
+                                                        ? q.getCustomMaterialsMonthlyLimit() 
+                                                        : (limits.getCustomMaterialsLimit() != null ? limits.getCustomMaterialsLimit() : 10);
 
                                         // Calculate days until reset
                                         int daysUntilReset = 30;
@@ -213,6 +229,8 @@ public class AdminUserServiceImpl implements AdminUserService {
                                                         .flashcardDecksLimit(limits.getFlashcardDecks())
                                                         .grammarExercisesUsed(q.getGrammarExercisesUsed())
                                                         .grammarExercisesLimit(limits.getGrammarExercises())
+                                                        .customMaterialsUsed((int) customMaterialsUsed)
+                                                        .customMaterialsLimit(customMaterialsLimit)
                                                         .totalRequestsUsed(q.getMonthlyUsed())
                                                         .totalRequestsLimit(limits.getTotalRequests())
                                                         // Legacy fields

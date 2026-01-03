@@ -102,6 +102,14 @@ public class UserCustomMaterialSettings {
     @Builder.Default
     private Boolean syncVocabToSrs = false;
 
+    /**
+     * Whether to generate AI images for flashcards when syncing vocabulary.
+     * Only applies when syncVocabToSrs is true.
+     */
+    @Column(name = "generate_flashcard_images", nullable = false)
+    @Builder.Default
+    private Boolean generateFlashcardImages = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();

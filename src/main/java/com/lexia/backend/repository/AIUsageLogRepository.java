@@ -228,4 +228,34 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
                @Param("userId") UUID userId,
                @Param("startDate") Instant startDate,
                @Param("endDate") Instant endDate);
+
+       /**
+        * Get daily cost aggregation since a date.
+        * Returns date (as string), totalCost, totalRequests.
+        */
+       @Query(value = "SELECT DATE(created_at) as date, " +
+                      "COALESCE(SUM(estimated_cost_usd), 0) as totalCost, " +
+                      "COUNT(*) as totalRequests, " +
+                      "COALESCE(SUM(CASE WHEN content_type = 'roleplay' THEN estimated_cost_usd ELSE 0 END), 0) as rolePlayCost, " +
+                      "COALESCE(SUM(CASE WHEN content_type = 'grammar' OR content_type = 'grammar_sandbox' THEN estimated_cost_usd ELSE 0 END), 0) as grammarCost, " +
+                      "COALESCE(SUM(CASE WHEN content_type = 'flashcard' OR content_type = 'magic_flashcard' THEN estimated_cost_usd ELSE 0 END), 0) as flashcardCost " +
+                      "FROM ai_usage_logs " +
+                      "WHERE created_at >= :startDate " +
+                      "GROUP BY DATE(created_at) " +
+                      "ORDER BY DATE(created_at)", nativeQuery = true)
+       List<Object[]> getDailyCostsSince(@Param("startDate") Instant startDate);
+
+       /**
+        * Get cost grouped by user plan type since a date.
+        * Returns planType, totalCost, totalRequests, userCount.
+        */
+       @Query(value = "SELECT COALESCE(q.plan_type, 'FREE') as planType, " +
+                      "COALESCE(SUM(l.estimated_cost_usd), 0) as totalCost, " +
+                      "COUNT(*) as totalRequests, " +
+                      "COUNT(DISTINCT l.user_id) as userCount " +
+                      "FROM ai_usage_logs l " +
+                      "LEFT JOIN user_ai_quotas q ON l.user_id = q.user_id " +
+                      "WHERE l.created_at >= :startDate " +
+                      "GROUP BY COALESCE(q.plan_type, 'FREE')", nativeQuery = true)
+       List<Object[]> getCostByPlanSince(@Param("startDate") Instant startDate);
 }

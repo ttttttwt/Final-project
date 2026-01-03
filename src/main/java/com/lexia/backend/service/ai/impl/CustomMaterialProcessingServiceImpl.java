@@ -69,9 +69,11 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final FlashcardService flashcardService;
+    private final com.lexia.backend.service.ai.FlashcardImageService flashcardImageService;
     private final com.lexia.backend.service.ai.AiUsageTracker usageTracker;
     private final ApplicationContext applicationContext;
     private final com.lexia.backend.service.ai.AIConfigService aiConfigService;
+    private final com.lexia.backend.repository.UserProfileRepository userProfileRepository;
 
     @Override
     @Async("aiProcessingExecutor")
@@ -140,7 +142,8 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
             // Step 6: Sync vocabulary to SRS if enabled
             if (settings != null && Boolean.TRUE.equals(settings.getSyncVocabToSrs())) {
-                syncVocabularyToSrs(material, generatedContent, null); // Uses default CEFR level
+                String userCefrLevel = getUserCefrLevel(material.getUserId());
+                syncVocabularyToSrs(material, generatedContent, userCefrLevel, settings);
             }
 
             // Publish success event for notification
@@ -347,9 +350,12 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
         // Calculate dynamic counts
         Map<String, Integer> counts = calculateDynamicCounts(content);
 
+        // Get user's CEFR level from profile, fallback to default
+        String userCefrLevel = getUserCefrLevel(material.getUserId());
+
         Map<String, Object> variables = new HashMap<>(Map.of(
                 "content", content,
-                "cefr_level", DEFAULT_CEFR_LEVEL));
+                "cefr_level", userCefrLevel));
 
         // Inject dynamic counts
         variables.put("vocab_count", counts.get("vocabulary"));
@@ -399,6 +405,25 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
         }
 
         return result;
+    }
+
+    /**
+     * Gets the user's CEFR level from their profile.
+     * Falls back to DEFAULT_CEFR_LEVEL (B1) if not set.
+     *
+     * @param userId the user ID
+     * @return the user's CEFR level or default B1
+     */
+    private String getUserCefrLevel(UUID userId) {
+        try {
+            return userProfileRepository.findById(userId)
+                    .map(profile -> profile.getCurrentLevel())
+                    .filter(level -> level != null && !level.isBlank())
+                    .orElse(DEFAULT_CEFR_LEVEL);
+        } catch (Exception e) {
+            log.debug("Failed to get user CEFR level, using default: {}", e.getMessage());
+            return DEFAULT_CEFR_LEVEL;
+        }
     }
 
     private String cleanJsonResponse(String response) {
@@ -459,10 +484,15 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
     /**
      * Syncs vocabulary from generated content to the Flashcard SRS system.
      * Creates a new Flashcard deck with the extracted vocabulary items.
+     * 
+     * @param material         the custom material being processed
+     * @param generatedContent the AI-generated content containing vocabulary
+     * @param cefrLevel        the CEFR level (nullable, defaults to B1)
+     * @param settings         the user settings (nullable)
      */
     @SuppressWarnings("unchecked")
     private void syncVocabularyToSrs(UserCustomMaterial material, Map<String, Object> generatedContent,
-            String cefrLevel) {
+            String cefrLevel, UserCustomMaterialSettings settings) {
         log.info("Syncing vocabulary to SRS for material {}", material.getId());
 
         try {
@@ -478,9 +508,12 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
                 return;
             }
 
+            // Check if image generation is enabled
+            boolean generateImages = settings != null && Boolean.TRUE.equals(settings.getGenerateFlashcardImages());
+
             // Convert to FlashcardCardDTO list
             List<FlashcardCardDTO> cards = vocabulary.stream()
-                    .map(this::convertToFlashcardCard)
+                    .map(v -> convertToFlashcardCard(v, generateImages))
                     .filter(card -> card != null)
                     .limit(100) // Limit to 100 cards per deck
                     .toList();
@@ -500,9 +533,15 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
                     .build();
 
             // Create the deck
-            flashcardService.createDeck(deckRequest, material.getUserId());
+            var createdDeck = flashcardService.createDeck(deckRequest, material.getUserId());
             log.info("Successfully synced {} vocabulary items to SRS for material {}",
                     cards.size(), material.getId());
+
+            // Generate images if enabled
+            if (settings != null && Boolean.TRUE.equals(settings.getGenerateFlashcardImages()) && createdDeck != null) {
+                log.info("Generating images for synced flashcard deck {}", createdDeck.getId());
+                flashcardImageService.generateImagesForDeck(createdDeck.getId(), material.getUserId());
+            }
 
         } catch (Exception e) {
             log.warn("Failed to sync vocabulary to SRS for material {}: {}",
@@ -513,9 +552,17 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
 
     /**
      * Converts a vocabulary map from generated content to FlashcardCardDTO.
+     * Maps AI response fields to FlashcardCardDTO fields:
+     * - word → front
+     * - ipa (or pronunciation) → pronunciation
+     * - partOfSpeech (or pos) → partOfSpeech
+     * - context → notes
+     *
+     * @param vocabItem       the vocabulary item from AI response
+     * @param setImagePending if true, set imageStatus to PENDING for image
+     *                        generation
      */
-    @SuppressWarnings("unchecked")
-    private FlashcardCardDTO convertToFlashcardCard(Map<String, Object> vocabItem) {
+    private FlashcardCardDTO convertToFlashcardCard(Map<String, Object> vocabItem, boolean setImagePending) {
         try {
             String word = String.valueOf(vocabItem.get("word"));
             String definition = String.valueOf(vocabItem.get("definition"));
@@ -524,12 +571,28 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
                 return null;
             }
 
-            FlashcardBackDTO back = FlashcardBackDTO.builder()
+            // Map pronunciation from either 'ipa' or 'pronunciation' field
+            String pronunciation = vocabItem.get("ipa") != null
+                    ? String.valueOf(vocabItem.get("ipa"))
+                    : (String) vocabItem.get("pronunciation");
+
+            // Map part of speech from either 'partOfSpeech' or 'pos' field
+            String partOfSpeech = vocabItem.get("partOfSpeech") != null
+                    ? String.valueOf(vocabItem.get("partOfSpeech"))
+                    : (String) vocabItem.get("pos");
+
+            FlashcardBackDTO.FlashcardBackDTOBuilder backBuilder = FlashcardBackDTO.builder()
                     .definition(definition)
-                    .partOfSpeech((String) vocabItem.get("pos"))
-                    .pronunciation((String) vocabItem.get("pronunciation"))
-                    .exampleSentence((String) vocabItem.get("example"))
-                    .build();
+                    .partOfSpeech(partOfSpeech)
+                    .pronunciation(pronunciation)
+                    .exampleSentence((String) vocabItem.get("example"));
+
+            // Only set image status to PENDING if image generation is enabled
+            if (setImagePending) {
+                backBuilder.imageStatus("PENDING").imageSource("AI");
+            }
+
+            FlashcardBackDTO back = backBuilder.build();
 
             // Handle synonyms if present
             if (vocabItem.get("synonyms") instanceof List<?> synonymsList) {
@@ -537,6 +600,14 @@ public class CustomMaterialProcessingServiceImpl implements CustomMaterialProces
                         .map(Object::toString)
                         .limit(5)
                         .toList());
+            }
+
+            // Handle context → notes
+            if (vocabItem.get("context") != null) {
+                String context = String.valueOf(vocabItem.get("context"));
+                if (!context.isBlank() && !"null".equals(context)) {
+                    back.setNotes(context);
+                }
             }
 
             return FlashcardCardDTO.builder()

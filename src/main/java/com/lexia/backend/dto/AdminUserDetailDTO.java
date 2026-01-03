@@ -219,6 +219,10 @@ public class AdminUserDetailDTO {
         private Integer grammarExercisesUsed;
         private Integer grammarExercisesLimit;
 
+        /** Custom materials created used/limit for current month */
+        private Integer customMaterialsUsed;
+        private Integer customMaterialsLimit;
+
         /** Total AI requests used/limit for current month */
         private Integer totalRequestsUsed;
         private Integer totalRequestsLimit;

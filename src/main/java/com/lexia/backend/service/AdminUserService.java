@@ -14,6 +14,11 @@ public interface AdminUserService {
      * Get all active (non-deleted) users with search and role filter.
      */
     Page<AdminUserDTO> getAllUsers(String search, String role, Pageable pageable);
+    
+    /**
+     * Get all active (non-deleted) users with search, role, and plan type filter.
+     */
+    Page<AdminUserDTO> getAllUsers(String search, String role, String planType, Pageable pageable);
 
     /**
      * Get user by ID.

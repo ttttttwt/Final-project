@@ -442,22 +442,41 @@ public class FlashcardImageServiceImpl implements FlashcardImageService {
 
     /**
      * Tracks image generation usage for quota management.
+     * Imagen 4 Fast: $0.02/image
+     * Gemini 2.5 flash image (Nano Banana): Uses tokens, not tracked here as
+     * fallback
      */
     private void trackImageUsage(UUID userId, String modelId, boolean success, String errorMessage) {
         try {
+            // Per-image pricing for Imagen models (from Google Cloud pricing)
+            Double imageCost = null;
+            if (modelId != null && modelId.contains("imagen-4.0-fast")) {
+                imageCost = 0.02; // $0.02 per image for Imagen 4 Fast
+            } else if (modelId != null && modelId.contains("imagen-4.0-ultra")) {
+                imageCost = 0.06; // $0.06 per image for Imagen 4 Ultra
+            } else if (modelId != null && modelId.contains("imagen")) {
+                imageCost = 0.04; // $0.04 default for other Imagen models
+            } else if (modelId != null && (modelId.contains("gemini") && modelId.contains("image"))) {
+                // Gemini 2.5 Flash Image generation (Nano Banana fallback)
+                // Estimated cost based on typical usage - no official per-image pricing
+                imageCost = 0.01; // Estimate $0.01 per image for Gemini flash image
+            }
+
             AiUsageTrackingRequest trackingRequest = AiUsageTrackingRequest.builder()
                     .userId(userId)
                     .contentType(CONTENT_TYPE_IMAGE)
                     .modelId(modelId)
                     .inputTokens(0) // Image generation doesn't use token counting
                     .outputTokens(0)
+                    .overrideCostUsd(imageCost)
                     .responseTimeMs(0)
                     .success(success)
                     .errorMessage(errorMessage)
                     .build();
 
             aiUsageTracker.trackUsageAsync(trackingRequest);
-            log.debug("Tracked image generation usage for user {}", userId);
+            log.debug("Tracked image generation usage for user {} - model: {}, cost: ${}",
+                    userId, modelId, imageCost != null ? imageCost : "N/A (token-based)");
         } catch (Exception e) {
             log.warn("Failed to track image usage: {}", e.getMessage());
         }

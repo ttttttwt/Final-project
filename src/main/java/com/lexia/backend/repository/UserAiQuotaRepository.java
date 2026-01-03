@@ -2,6 +2,7 @@ package com.lexia.backend.repository;
 
 import com.lexia.backend.entity.UserAiQuota;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,7 +18,7 @@ import java.util.UUID;
  * Provides methods for managing user AI quotas and usage tracking.
  */
 @Repository
-public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> {
+public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID>, JpaSpecificationExecutor<UserAiQuota> {
 
     /**
      * Finds quota by user ID.
@@ -141,4 +142,36 @@ public interface UserAiQuotaRepository extends JpaRepository<UserAiQuota, UUID> 
     @Query("UPDATE UserAiQuota q SET q.isPremium = :isPremium, q.premiumMultiplier = :multiplier, q.updatedAt = :updatedAt WHERE q.userId = :userId")
     int updatePremiumStatus(@Param("userId") UUID userId, @Param("isPremium") boolean isPremium,
             @Param("multiplier") java.math.BigDecimal multiplier, @Param("updatedAt") java.time.Instant updatedAt);
+
+    // ==================== Quota Summary Statistics ====================
+
+    /**
+     * Counts total quota records.
+     */
+    @Query("SELECT COUNT(q) FROM UserAiQuota q")
+    long countTotal();
+
+    /**
+     * Counts quotas by plan type.
+     */
+    @Query("SELECT COUNT(q) FROM UserAiQuota q WHERE q.planType = :planType")
+    long countByPlanType(@Param("planType") com.lexia.backend.enums.PlanType planType);
+
+    /**
+     * Counts Pro users (MONTHLY or YEARLY plan).
+     */
+    @Query("SELECT COUNT(q) FROM UserAiQuota q WHERE q.planType IN (com.lexia.backend.enums.PlanType.MONTHLY, com.lexia.backend.enums.PlanType.YEARLY)")
+    long countProUsers();
+
+    /**
+     * Counts Free users.
+     */
+    @Query("SELECT COUNT(q) FROM UserAiQuota q WHERE q.planType = com.lexia.backend.enums.PlanType.FREE OR q.planType IS NULL")
+    long countFreeUsers();
+
+    /**
+     * Counts users with unlimited quota.
+     */
+    @Query("SELECT COUNT(q) FROM UserAiQuota q WHERE q.dailyLimit = 2147483647")
+    long countUnlimitedUsers();
 }

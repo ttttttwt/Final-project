@@ -14,13 +14,15 @@ import java.util.UUID;
  * DTO for tracking AI usage requests.
  * Contains all information needed to log an AI API call.
  * 
- * <p>Supports comprehensive tracking including:</p>
+ * <p>
+ * Supports comprehensive tracking including:
+ * </p>
  * <ul>
- *   <li>Token usage (input/output)</li>
- *   <li>Response time metrics</li>
- *   <li>Success/failure status</li>
- *   <li>Flexible metadata (CEFR level, domain, scenario IDs)</li>
- *   <li>Prompt template versioning</li>
+ * <li>Token usage (input/output)</li>
+ * <li>Response time metrics</li>
+ * <li>Success/failure status</li>
+ * <li>Flexible metadata (CEFR level, domain, scenario IDs)</li>
+ * <li>Prompt template versioning</li>
  * </ul>
  * 
  * @see com.lexia.backend.service.ai.AiUsageTracker
@@ -93,6 +95,14 @@ public class AiUsageTrackingRequest {
     private Map<String, Object> metadata = new HashMap<>();
 
     /**
+     * Override cost in USD for fixed-price content (e.g., image generation).
+     * When set to a non-null positive value, this bypasses token-based cost
+     * calculation.
+     * Imagen 4 Fast: $0.02/image, Imagen 4 Ultra: $0.06/image
+     */
+    private Double overrideCostUsd;
+
+    /**
      * Creates a tracking request for a successful AI call.
      */
     public static AiUsageTrackingRequest success(
@@ -136,6 +146,7 @@ public class AiUsageTrackingRequest {
 
     /**
      * Adds a metadata entry.
+     * 
      * @return this instance for chaining
      */
     public AiUsageTrackingRequest withMetadata(String key, Object value) {
@@ -148,6 +159,7 @@ public class AiUsageTrackingRequest {
 
     /**
      * Sets the CEFR level in metadata.
+     * 
      * @return this instance for chaining
      */
     public AiUsageTrackingRequest withCefrLevel(String cefrLevel) {
@@ -156,6 +168,7 @@ public class AiUsageTrackingRequest {
 
     /**
      * Sets the domain in metadata.
+     * 
      * @return this instance for chaining
      */
     public AiUsageTrackingRequest withDomain(String domain) {
@@ -164,6 +177,7 @@ public class AiUsageTrackingRequest {
 
     /**
      * Sets the scenario ID in metadata.
+     * 
      * @return this instance for chaining
      */
     public AiUsageTrackingRequest withScenarioId(UUID scenarioId) {
@@ -172,6 +186,7 @@ public class AiUsageTrackingRequest {
 
     /**
      * Sets the conversation ID in metadata.
+     * 
      * @return this instance for chaining
      */
     public AiUsageTrackingRequest withConversationId(UUID conversationId) {
