@@ -25,68 +25,79 @@ import java.util.List;
 @Schema(description = "Flashcard back content with definition and vocabulary details")
 public class FlashcardBackDTO implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = 1L;
 
-    /**
-     * The main definition of the word/phrase.
-     */
-    @NotBlank(message = "Definition is required")
-    @Schema(description = "Main definition", 
-            example = "to work together with others towards a shared goal")
-    private String definition;
+        /**
+         * The main definition of the word/phrase.
+         */
+        @NotBlank(message = "Definition is required")
+        @Schema(description = "Main definition", example = "to work together with others towards a shared goal")
+        private String definition;
 
-    /**
-     * Part of speech (noun, verb, adjective, etc.).
-     */
-    @Schema(description = "Part of speech", 
-            example = "verb",
-            allowableValues = {"noun", "verb", "adjective", "adverb", "preposition", 
-                             "conjunction", "pronoun", "interjection", "phrase"})
-    private String partOfSpeech;
+        /**
+         * Part of speech (noun, verb, adjective, etc.).
+         */
+        @Schema(description = "Part of speech", example = "verb", allowableValues = { "noun", "verb", "adjective",
+                        "adverb", "preposition",
+                        "conjunction", "pronoun", "interjection", "phrase" })
+        private String partOfSpeech;
 
-    /**
-     * IPA pronunciation notation.
-     */
-    @Schema(description = "IPA pronunciation", 
-            example = "/kəˈlæbəˌreɪt/")
-    private String pronunciation;
+        /**
+         * IPA pronunciation notation.
+         */
+        @Schema(description = "IPA pronunciation", example = "/kəˈlæbəˌreɪt/")
+        private String pronunciation;
 
-    /**
-     * Example sentence demonstrating usage.
-     */
-    @Schema(description = "Example sentence showing word usage",
-            example = "The two departments will collaborate on the new project.")
-    private String exampleSentence;
+        /**
+         * Example sentence demonstrating usage.
+         */
+        @Schema(description = "Example sentence showing word usage", example = "The two departments will collaborate on the new project.")
+        private String exampleSentence;
 
-    /**
-     * List of synonyms.
-     */
-    @Schema(description = "List of synonyms")
-    @Builder.Default
-    private List<String> synonyms = new ArrayList<>();
+        /**
+         * List of synonyms.
+         */
+        @Schema(description = "List of synonyms")
+        @Builder.Default
+        private List<String> synonyms = new ArrayList<>();
 
-    /**
-     * Common collocations (word combinations).
-     */
-    @Schema(description = "Common collocations/word combinations")
-    @Builder.Default
-    private List<String> collocations = new ArrayList<>();
+        /**
+         * Common collocations (word combinations).
+         */
+        @Schema(description = "Common collocations/word combinations")
+        @Builder.Default
+        private List<String> collocations = new ArrayList<>();
 
-    /**
-     * Additional notes or tips.
-     */
-    @Schema(description = "Additional learning notes or tips")
-    private String notes;
+        /**
+         * Additional notes or tips.
+         */
+        @Schema(description = "Additional learning notes or tips")
+        private String notes;
 
-    /**
-     * Image URL for visual learning.
-     */
-    @Schema(description = "Image URL for visual learners", format = "uri")
-    private String imageUrl;
+        /**
+         * Image URL for visual learning.
+         */
+        @Schema(description = "Image URL for visual learners", format = "uri")
+        private String imageUrl;
 
-    /**
-     * Audio URL for pronunciation.
-     */
-    @Schema(description = "Audio URL for pronunciation", format = "uri")
-    private String audioUrl;
+        /**
+         * Audio URL for pronunciation.
+         */
+        @Schema(description = "Audio URL for pronunciation", format = "uri")
+        private String audioUrl;
+
+        /**
+         * Status of AI-generated image.
+         * Values: PENDING, GENERATING, COMPLETED, FAILED
+         */
+        @Schema(description = "Image generation status", allowableValues = { "PENDING", "GENERATING", "COMPLETED",
+                        "FAILED" })
+        private String imageStatus;
+
+        /**
+         * Source of the image.
+         * Values: AI (AI-generated), UPLOAD (user uploaded), NONE (no image)
+         */
+        @Schema(description = "Image source type", allowableValues = { "AI", "UPLOAD", "NONE" })
+        private String imageSource;
 }

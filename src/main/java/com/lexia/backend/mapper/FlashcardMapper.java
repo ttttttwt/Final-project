@@ -26,6 +26,7 @@ public class FlashcardMapper {
 
     /**
      * Converts FlashcardBack entity to FlashcardBackDTO.
+     * 
      * @param back the entity
      * @return the DTO, or null if input is null
      */
@@ -42,12 +43,15 @@ public class FlashcardMapper {
                 .collocations(back.getCollocations() != null ? back.getCollocations() : Collections.emptyList())
                 .notes(back.getNotes())
                 .imageUrl(back.getImageUrl())
+                .imageStatus(back.getImageStatus())
+                .imageSource(back.getImageSource())
                 .audioUrl(back.getAudioUrl())
                 .build();
     }
 
     /**
      * Converts FlashcardBackDTO to FlashcardBack entity.
+     * 
      * @param dto the DTO
      * @return the entity, or null if input is null
      */
@@ -64,6 +68,8 @@ public class FlashcardMapper {
                 .collocations(dto.getCollocations() != null ? dto.getCollocations() : Collections.emptyList())
                 .notes(dto.getNotes())
                 .imageUrl(dto.getImageUrl())
+                .imageStatus(dto.getImageStatus())
+                .imageSource(dto.getImageSource())
                 .audioUrl(dto.getAudioUrl())
                 .build();
     }
@@ -72,6 +78,7 @@ public class FlashcardMapper {
 
     /**
      * Converts FlashcardCard entity to FlashcardCardDTO.
+     * 
      * @param card the entity
      * @return the DTO, or null if input is null
      */
@@ -89,6 +96,7 @@ public class FlashcardMapper {
 
     /**
      * Converts FlashcardCardDTO to FlashcardCard entity.
+     * 
      * @param dto the DTO
      * @return the entity, or null if input is null
      */
@@ -106,6 +114,7 @@ public class FlashcardMapper {
 
     /**
      * Converts list of FlashcardCard entities to DTOs.
+     * 
      * @param cards the entities
      * @return the DTOs, or empty list if input is null
      */
@@ -120,6 +129,7 @@ public class FlashcardMapper {
 
     /**
      * Converts list of FlashcardCardDTOs to entities.
+     * 
      * @param dtos the DTOs
      * @return the entities, or empty list if input is null
      */
@@ -137,6 +147,7 @@ public class FlashcardMapper {
     /**
      * Converts FlashcardDeck entity to FlashcardDeckDTO.
      * Does not include progress information.
+     * 
      * @param deck the entity
      * @return the DTO, or null if input is null
      */
@@ -162,6 +173,7 @@ public class FlashcardMapper {
     /**
      * Converts FlashcardDeck entity to FlashcardDeckDTO without cards.
      * Useful for listing decks.
+     * 
      * @param deck the entity
      * @return the DTO without cards, or null if input is null
      */
@@ -185,6 +197,7 @@ public class FlashcardMapper {
 
     /**
      * Converts list of FlashcardDeck entities to DTOs without cards.
+     * 
      * @param decks the entities
      * @return the DTOs, or empty list if input is null
      */
@@ -199,6 +212,7 @@ public class FlashcardMapper {
 
     /**
      * Creates a FlashcardDeck entity from CreateFlashcardDeckDTO.
+     * 
      * @param dto the create DTO
      * @return new entity
      * @throws IllegalArgumentException if dto is null
@@ -207,14 +221,14 @@ public class FlashcardMapper {
         if (dto == null) {
             throw new IllegalArgumentException("CreateFlashcardDeckDTO cannot be null");
         }
-        
+
         List<FlashcardCard> cards = toCardEntityList(dto.getCards());
-        
+
         return FlashcardDeck.builder()
                 .title(dto.getTitle())
                 .description(dto.getDescription())
-                .sourceType(dto.getSourceType() != null 
-                        ? FlashcardDeck.SourceType.valueOf(dto.getSourceType()) 
+                .sourceType(dto.getSourceType() != null
+                        ? FlashcardDeck.SourceType.valueOf(dto.getSourceType())
                         : FlashcardDeck.SourceType.USER_CREATED)
                 .sourceId(dto.getSourceId())
                 .cefrLevel(dto.getCefrLevel())
@@ -226,8 +240,9 @@ public class FlashcardMapper {
     /**
      * Updates a FlashcardDeck entity from UpdateFlashcardDeckDTO.
      * Only updates non-null fields.
+     * 
      * @param deck the entity to update
-     * @param dto the update data
+     * @param dto  the update data
      * @throws IllegalArgumentException if deck or dto is null
      */
     public static void updateEntityFromDTO(FlashcardDeck deck, UpdateFlashcardDeckDTO dto) {
@@ -257,6 +272,7 @@ public class FlashcardMapper {
 
     /**
      * Converts UserFlashcardProgress entity to FlashcardProgressDTO.
+     * 
      * @param progress the entity
      * @return the DTO, or null if input is null
      */
@@ -282,12 +298,13 @@ public class FlashcardMapper {
 
     /**
      * Converts UserFlashcardProgress entity to FlashcardProgressDTO with card data.
+     * 
      * @param progress the entity
-     * @param card the card data from the deck
+     * @param card     the card data from the deck
      * @return the DTO with card, or null if progress is null
      */
     public static FlashcardProgressDTO toProgressDTOWithCard(
-            UserFlashcardProgress progress, 
+            UserFlashcardProgress progress,
             FlashcardCard card) {
         if (progress == null) {
             return null;
@@ -299,6 +316,7 @@ public class FlashcardMapper {
 
     /**
      * Converts list of UserFlashcardProgress entities to DTOs.
+     * 
      * @param progressList the entities
      * @return the DTOs, or empty list if input is null
      */
@@ -315,16 +333,17 @@ public class FlashcardMapper {
 
     /**
      * Creates a FlashcardStudySessionDTO from deck and progress data.
-     * @param deck the flashcard deck
+     * 
+     * @param deck     the flashcard deck
      * @param dueCards list of due progress records
-     * @param stats array of statistics from repository query
+     * @param stats    array of statistics from repository query
      * @return the study session DTO
      */
     public static FlashcardStudySessionDTO toStudySessionDTO(
             FlashcardDeck deck,
             List<UserFlashcardProgress> dueCards,
             Object[] stats) {
-        
+
         List<FlashcardProgressDTO> cardsToStudy = dueCards.stream()
                 .map(progress -> {
                     FlashcardCard card = deck.getCards().get(progress.getCardIndex());

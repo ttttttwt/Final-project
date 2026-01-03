@@ -91,6 +91,12 @@ public class FlashcardBack implements Serializable {
     private String imageStatus;
 
     /**
+     * Source of the image.
+     * AI = AI-generated, UPLOAD = user uploaded, NONE = no image
+     */
+    private String imageSource;
+
+    /**
      * Audio URL for pronunciation (optional).
      */
     private String audioUrl;

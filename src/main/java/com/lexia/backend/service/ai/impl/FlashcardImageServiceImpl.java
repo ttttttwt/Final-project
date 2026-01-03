@@ -8,6 +8,8 @@ import com.lexia.backend.entity.FlashcardDeck;
 import com.lexia.backend.enums.ImageStatus;
 import com.lexia.backend.repository.FlashcardDeckRepository;
 import com.lexia.backend.service.ai.FlashcardImageService;
+import com.lexia.backend.service.ai.AiUsageTracker;
+import com.lexia.backend.dto.ai.AiUsageTrackingRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,16 +41,21 @@ public class FlashcardImageServiceImpl implements FlashcardImageService {
 
     private static final Logger log = LoggerFactory.getLogger(FlashcardImageServiceImpl.class);
     private static final int MAX_RETRY_ATTEMPTS = 2;
+    private static final String CONTENT_TYPE_IMAGE = "flashcard_image";
 
     private final FlashcardDeckRepository deckRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final AiUsageTracker aiUsageTracker;
 
     @Value("${gemini.api.key:}")
     private String apiKey;
 
-    @Value("${gemini.imagen.api.url:https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict}")
+    @Value("${gemini.imagen.api.url:https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict}")
     private String imagenApiUrl;
+
+    @Value("${gemini.nanobanana.api.url:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent}")
+    private String nanoBananaApiUrl;
 
     @Value("${flashcard.image.upload-dir:./uploads/flashcards}")
     private String uploadDir;
@@ -59,13 +66,18 @@ public class FlashcardImageServiceImpl implements FlashcardImageService {
     @Value("${flashcard.image.height:512}")
     private int imageHeight;
 
+    // Track if Imagen 4 quota is exceeded to skip directly to fallback
+    private volatile boolean imagenQuotaExceeded = false;
+
     public FlashcardImageServiceImpl(
             FlashcardDeckRepository deckRepository,
             RestTemplate restTemplate,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            AiUsageTracker aiUsageTracker) {
         this.deckRepository = deckRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.aiUsageTracker = aiUsageTracker;
     }
 
     @Override
@@ -157,16 +169,43 @@ public class FlashcardImageServiceImpl implements FlashcardImageService {
         String prompt = buildImagePrompt(card.getFront(), back.getDefinition(), back.getExampleSentence());
         log.debug("Generated prompt for card {}: {}", cardIndex, prompt);
 
-        // Generate image with retry
+        // Generate image with retry and fallback
         byte[] imageData = null;
         int attempts = 0;
+        boolean usedFallback = false;
+
         while (imageData == null && attempts < MAX_RETRY_ATTEMPTS) {
             attempts++;
             try {
-                imageData = callImagenApi(prompt);
+                // If quota is known to be exceeded, skip directly to fallback
+                if (imagenQuotaExceeded) {
+                    log.info("Using Nano Banana fallback (Imagen quota previously exceeded)");
+                    imageData = callNanoBananaApi(prompt);
+                    usedFallback = true;
+                } else {
+                    imageData = callImagenApi(prompt);
+                }
             } catch (Exception e) {
-                log.warn("Attempt {} failed for card {}: {}", attempts, cardIndex, e.getMessage());
-                if (attempts >= MAX_RETRY_ATTEMPTS) {
+                String errorMsg = e.getMessage();
+                log.warn("Attempt {} failed for card {}: {}", attempts, cardIndex, errorMsg);
+
+                // Check if this is a quota exceeded error (429)
+                if (errorMsg != null && (errorMsg.contains("429") || errorMsg.contains("RESOURCE_EXHAUSTED")
+                        || errorMsg.contains("quota"))) {
+                    log.warn("Imagen 4 quota exceeded, switching to Nano Banana fallback");
+                    imagenQuotaExceeded = true;
+
+                    // Try with Nano Banana immediately
+                    try {
+                        imageData = callNanoBananaApi(prompt);
+                        usedFallback = true;
+                        log.info("Successfully generated image using Nano Banana fallback");
+                    } catch (Exception fallbackEx) {
+                        log.error("Nano Banana fallback also failed: {}", fallbackEx.getMessage());
+                    }
+                }
+
+                if (imageData == null && attempts >= MAX_RETRY_ATTEMPTS) {
                     updateCardImageStatus(deck, cardIndex, ImageStatus.FAILED, null);
                     return;
                 }
@@ -182,7 +221,11 @@ public class FlashcardImageServiceImpl implements FlashcardImageService {
         try {
             String imagePath = saveImage(imageData, deck.getId(), cardIndex);
             updateCardImageStatus(deck, cardIndex, ImageStatus.COMPLETED, imagePath);
-            log.info("Successfully generated image for card {} in deck {}", cardIndex, deck.getId());
+            log.info("Successfully generated image for card {} in deck {}{}", cardIndex, deck.getId(),
+                    usedFallback ? " (using Nano Banana fallback)" : "");
+
+            // Track image generation in quota
+            trackImageUsage(userId, usedFallback ? "gemini-2.5-flash-image" : "imagen-4.0-fast-generate", true, null);
         } catch (Exception e) {
             log.error("Failed to save image for card {}: {}", cardIndex, e.getMessage());
             updateCardImageStatus(deck, cardIndex, ImageStatus.FAILED, null);
@@ -261,6 +304,68 @@ public class FlashcardImageServiceImpl implements FlashcardImageService {
         return Base64.getDecoder().decode(base64Image);
     }
 
+    /**
+     * Calls Nano Banana (gemini-2.5-flash-image) API as fallback.
+     * Uses generateContent endpoint with different request/response structure.
+     */
+    private byte[] callNanoBananaApi(String prompt) throws Exception {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("Gemini API key not configured");
+        }
+
+        // Build request body for generateContent endpoint
+        String requestBody = String.format("""
+                {
+                    "contents": [
+                        {
+                            "parts": [
+                                {"text": "%s"}
+                            ]
+                        }
+                    ]
+                }
+                """, escapeJson(prompt));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("x-goog-api-key", apiKey);
+
+        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+        String apiUrl = nanoBananaApiUrl + "?key=" + apiKey;
+        ResponseEntity<String> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, String.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Nano Banana API returned: " + response.getStatusCode());
+        }
+
+        // Parse response - generateContent returns candidates with parts containing
+        // inlineData
+        JsonNode root = objectMapper.readTree(response.getBody());
+        JsonNode candidates = root.path("candidates");
+
+        if (candidates.isEmpty() || !candidates.isArray() || candidates.size() == 0) {
+            throw new RuntimeException("No candidates in response");
+        }
+
+        JsonNode parts = candidates.get(0).path("content").path("parts");
+        if (parts.isEmpty() || !parts.isArray()) {
+            throw new RuntimeException("No parts in response");
+        }
+
+        // Find the part with inlineData (image)
+        for (JsonNode part : parts) {
+            if (part.has("inlineData")) {
+                String base64Image = part.path("inlineData").path("data").asText();
+                if (base64Image != null && !base64Image.isBlank()) {
+                    return Base64.getDecoder().decode(base64Image);
+                }
+            }
+        }
+
+        throw new RuntimeException("No image data in Nano Banana response");
+    }
+
     private String saveImage(byte[] imageData, UUID deckId, int cardIndex) throws Exception {
         // Create directory
         Path deckDir = Paths.get(uploadDir, deckId.toString());
@@ -333,5 +438,28 @@ public class FlashcardImageServiceImpl implements FlashcardImageService {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    /**
+     * Tracks image generation usage for quota management.
+     */
+    private void trackImageUsage(UUID userId, String modelId, boolean success, String errorMessage) {
+        try {
+            AiUsageTrackingRequest trackingRequest = AiUsageTrackingRequest.builder()
+                    .userId(userId)
+                    .contentType(CONTENT_TYPE_IMAGE)
+                    .modelId(modelId)
+                    .inputTokens(0) // Image generation doesn't use token counting
+                    .outputTokens(0)
+                    .responseTimeMs(0)
+                    .success(success)
+                    .errorMessage(errorMessage)
+                    .build();
+
+            aiUsageTracker.trackUsageAsync(trackingRequest);
+            log.debug("Tracked image generation usage for user {}", userId);
+        } catch (Exception e) {
+            log.warn("Failed to track image usage: {}", e.getMessage());
+        }
     }
 }

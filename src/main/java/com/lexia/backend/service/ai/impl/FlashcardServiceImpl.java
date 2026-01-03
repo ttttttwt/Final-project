@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lexia.backend.dto.ai.*;
 import com.lexia.backend.entity.*;
 import com.lexia.backend.exception.ResourceNotFoundException;
-import com.lexia.backend.exception.ai.AiRateLimitException;
 import com.lexia.backend.exception.ai.AiServiceException;
 import com.lexia.backend.mapper.FlashcardMapper;
 import com.lexia.backend.repository.FlashcardDeckRepository;
@@ -25,6 +24,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.*;
@@ -116,9 +117,11 @@ public class FlashcardServiceImpl implements FlashcardService {
             TASK: Generate %d vocabulary flashcards about the topic: %s
             CEFR Level: %s
             Focus Areas: %s
+            Additional Context: %s
 
             OUTPUT REQUIREMENTS:
             - Generate flashcards for vocabulary words/phrases commonly used in this topic
+            - Use the additional context to focus on specific aspects of the topic if provided
             - Each card should have: word/phrase, definition, part of speech, pronunciation (IPA), example sentence
             - Include synonyms and collocations where relevant
             - Assign difficulty level (1-5) based on word frequency and complexity
@@ -197,6 +200,9 @@ public class FlashcardServiceImpl implements FlashcardService {
                 .cardCount(cards.size())
                 .build();
 
+        // Set PENDING status on all cards so frontend polling triggers
+        setImageStatusPendingForAllCards(cards);
+
         deck = deckRepository.save(deck);
 
         // Initialize progress records for all cards
@@ -227,12 +233,16 @@ public class FlashcardServiceImpl implements FlashcardService {
                 ? String.join(", ", request.getFocusAreas())
                 : "general vocabulary";
 
+        // Get description for additional context
+        String description = request.getDescription() != null ? request.getDescription() : "";
+
         // Generate flashcards using AI
         List<FlashcardCard> cards;
         boolean usedFallback = false;
 
         try {
-            cards = generateCardsFromTopicWithAI(request.getTopic(), cefrLevel, maxCards, focusAreasStr, userId,
+            cards = generateCardsFromTopicWithAI(request.getTopic(), cefrLevel, maxCards, focusAreasStr, description,
+                    userId,
                     featureConfig);
         } catch (Exception e) {
             log.warn("AI generation from topic failed, using fallback: {}", e.getMessage());
@@ -247,18 +257,21 @@ public class FlashcardServiceImpl implements FlashcardService {
 
         // Create the deck
         String title = request.getEffectiveTitle();
-        String description = request.getDescription() != null ? request.getDescription()
+        String deckDescription = request.getDescription() != null ? request.getDescription()
                 : "AI-generated vocabulary for: " + request.getTopic();
 
         FlashcardDeck deck = FlashcardDeck.builder()
                 .userId(userId)
                 .title(title)
-                .description(description)
+                .description(deckDescription)
                 .sourceType(FlashcardDeck.SourceType.AI_GENERATED)
                 .cefrLevel(cefrLevel)
                 .cards(cards)
                 .cardCount(cards.size())
                 .build();
+
+        // Set PENDING status on all cards so frontend polling triggers
+        setImageStatusPendingForAllCards(cards);
 
         deck = deckRepository.save(deck);
 
@@ -436,14 +449,27 @@ public class FlashcardServiceImpl implements FlashcardService {
         for (UserFlashcardProgress progress : existingProgress) {
             Integer newIndex = oldToNewIndexMap.get(progress.getCardIndex());
             if (newIndex != null) {
-                // Update card index in progress record
-                progress.setCardIndex(newIndex);
-                progressToKeep.add(progress);
+                // Create NEW progress record with updated card index
+                // (we can't reuse the old entity after delete-all as it has stale ID)
+                UserFlashcardProgress newProgress = UserFlashcardProgress.builder()
+                        .userId(userId)
+                        .deck(deck)
+                        .cardIndex(newIndex)
+                        .easeFactor(progress.getEaseFactor())
+                        .intervalDays(progress.getIntervalDays())
+                        .masteryLevel(progress.getMasteryLevel())
+                        .nextReviewAt(progress.getNextReviewAt())
+                        .lastReviewedAt(progress.getLastReviewedAt())
+                        .reviewCount(progress.getReviewCount())
+                        .correctCount(progress.getCorrectCount())
+                        .consecutiveCorrect(progress.getConsecutiveCorrect())
+                        .build();
+                progressToKeep.add(newProgress);
             }
             // Else: progress is for a removed card, don't keep it
         }
 
-        // Delete all old progress and save updated ones
+        // Delete all old progress and save fresh copies
         progressRepository.deleteByUserIdAndDeckId(userId, deckId);
         if (!progressToKeep.isEmpty()) {
             progressRepository.saveAll(progressToKeep);
@@ -465,6 +491,34 @@ public class FlashcardServiceImpl implements FlashcardService {
             progressRepository.saveAll(newProgressRecords);
         }
 
+        // Trigger AI image generation for new cards with imageSource = "AI"
+        List<Integer> cardsToGenerate = new ArrayList<>();
+        for (Integer cardIndex : newCardIndicesNeedingProgress) {
+            FlashcardCard card = newCards.get(cardIndex);
+            FlashcardBack back = card.getBack();
+            if (back != null && "AI".equals(back.getImageSource())) {
+                // Set status to PENDING (will be saved with deck)
+                back.setImageStatus("PENDING");
+                cardsToGenerate.add(cardIndex);
+            }
+        }
+
+        if (!cardsToGenerate.isEmpty()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    for (Integer cardIndex : cardsToGenerate) {
+                        log.info("Triggering AI image generation for deck {} card {}", deckId, cardIndex);
+                        try {
+                            flashcardImageService.generateImageForCard(deckId, cardIndex, userId);
+                        } catch (Exception e) {
+                            log.error("Failed to trigger image generation for card {}", cardIndex, e);
+                        }
+                    }
+                }
+            });
+        }
+
         log.debug("Updated cards for deck {}: preserved {} progress records, created {} new ones",
                 deckId, progressToKeep.size(), newCardIndicesNeedingProgress.size());
     }
@@ -474,15 +528,33 @@ public class FlashcardServiceImpl implements FlashcardService {
      */
     private String getCardSignature(FlashcardCard card) {
         StringBuilder sig = new StringBuilder();
-        sig.append(card.getFront());
+        sig.append(normalizeString(card.getFront()));
         if (card.getBack() != null) {
             FlashcardBack back = card.getBack();
-            sig.append("|def:").append(back.getDefinition());
-            if (back.getPartOfSpeech() != null) {
-                sig.append("|pos:").append(back.getPartOfSpeech());
+            sig.append("|def:").append(normalizeString(back.getDefinition()));
+            // Treat null and empty string as same for optional fields
+            String pos = normalizeString(back.getPartOfSpeech());
+            if (!pos.isEmpty()) {
+                sig.append("|pos:").append(pos);
             }
         }
         return sig.toString();
+    }
+
+    private String normalizeString(String input) {
+        return input == null ? "" : input.trim();
+    }
+
+    /**
+     * Sets PENDING image status for all cards so frontend polling triggers.
+     */
+    private void setImageStatusPendingForAllCards(List<FlashcardCard> cards) {
+        for (FlashcardCard card : cards) {
+            if (card.getBack() != null) {
+                card.getBack().setImageStatus("PENDING");
+                card.getBack().setImageSource("AI");
+            }
+        }
     }
 
     @Override
@@ -886,11 +958,17 @@ public class FlashcardServiceImpl implements FlashcardService {
             String cefrLevel,
             int maxCards,
             String focusAreas,
+            String description,
             UUID userId,
             com.lexia.backend.dto.ai.AIFeatureConfig featureConfig) {
 
+        // Use description for additional context, default to empty if not provided
+        String contextInfo = (description != null && !description.isBlank())
+                ? description
+                : "No additional context provided";
+
         String prompt = String.format(TOPIC_FLASHCARD_GENERATION_PROMPT,
-                maxCards, topic, cefrLevel, focusAreas, maxCards);
+                maxCards, topic, cefrLevel, focusAreas, contextInfo, maxCards);
 
         // Track AI usage
         long startTime = System.currentTimeMillis();
