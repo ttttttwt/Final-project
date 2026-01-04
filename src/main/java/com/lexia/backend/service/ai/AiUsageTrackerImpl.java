@@ -245,6 +245,12 @@ public class AiUsageTrackerImpl implements AiUsageTracker {
      */
     @Transactional
     protected void updateUserQuota(UUID userId, String contentType) {
+        // Skip quota update if userId is null (e.g., scenario generation without user context)
+        if (userId == null) {
+            log.debug("Skipping quota update - no userId provided for contentType: {}", contentType);
+            return;
+        }
+
         try {
             // First try atomic update via native query
             int updated = userAiQuotaRepository.incrementUsage(userId, contentType);

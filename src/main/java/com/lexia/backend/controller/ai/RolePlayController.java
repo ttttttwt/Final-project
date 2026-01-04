@@ -127,7 +127,6 @@ public class RolePlayController {
                         @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
                         @ApiResponse(responseCode = "429", description = "Rate limit exceeded - daily roleplay quota reached (20/day)")
         })
-        @QuotaCheck(contentType = "roleplay", incrementSession = true, sessionType = "roleplay")
         public ResponseEntity<RolePlayScenarioDTO> generateScenario(
                         @AuthenticationPrincipal User user,
                         @Valid @RequestBody RolePlayRequestDTO request) {
@@ -231,6 +230,7 @@ public class RolePlayController {
                         @ApiResponse(responseCode = "401", description = "Unauthorized"),
                         @ApiResponse(responseCode = "404", description = "Scenario not found")
         })
+        @QuotaCheck(contentType = "roleplay", incrementSession = true, sessionType = "roleplay")
         public ResponseEntity<RolePlayConversationDTO> startConversation(
                         @AuthenticationPrincipal User user,
                         @Valid @RequestBody RolePlayStartConversationDTO request) {

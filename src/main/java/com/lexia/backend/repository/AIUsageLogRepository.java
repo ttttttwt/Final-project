@@ -195,6 +195,12 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
                      @Param("date") Instant date);
 
        /**
+        * Count roleplay-related requests (roleplay, roleplay_scenario, roleplay_conversation, etc.) after date
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE (a.contentType = 'roleplay' OR a.contentType LIKE 'roleplay_%') AND a.createdAt >= :date")
+       long countRoleplayRequestsAfter(@Param("date") Instant date);
+
+       /**
         * Count flashcard-related requests (flashcard, magic_flashcard,
         * flashcard_image) after date
         */

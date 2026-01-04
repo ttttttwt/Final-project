@@ -184,6 +184,18 @@ public class RolePlayServiceImpl implements RolePlayService {
             RolePlayScenario entity = RolePlayScenarioMapper.toEntity(generatedDto);
             entity = scenarioRepository.save(entity);
 
+            // Track AI usage for scenario generation (async to avoid transaction issues)
+            AiUsageTrackingRequest trackingRequest = AiUsageTrackingRequest.builder()
+                    .userId(null) // No user context in this method
+                    .contentType(AiUsageTracker.CONTENT_TYPE_ROLEPLAY)
+                    .modelId(response.model())
+                    .inputTokens(response.tokenUsage() != null ? response.tokenUsage().inputTokens() : 0)
+                    .outputTokens(response.tokenUsage() != null ? response.tokenUsage().outputTokens() : 0)
+                    .responseTimeMs((int) response.responseTimeMs())
+                    .success(true)
+                    .build();
+            aiUsageTracker.trackUsageAsync(trackingRequest);
+
             return RolePlayScenarioMapper.toDTO(entity);
         } catch (JsonProcessingException e) {
             log.error("Failed to parse AI generated scenario, falling back to pre-defined scenario", e);

@@ -47,18 +47,17 @@ class AdminAnalyticsServiceTest {
 
     @Test
     void getAnalytics_ShouldReturnData() {
-        // Mock repository calls
+        // Mock repository calls for Overview Stats
         when(userRepository.count()).thenReturn(100L);
         when(userRepository.countActiveUsersAfter(any(LocalDateTime.class))).thenReturn(50L);
         when(userRepository.countUsersCreatedAfter(any(LocalDateTime.class))).thenReturn(10L);
         
-        when(subscriptionRepository.countByStatus(any())).thenReturn(20L);
+        when(subscriptionRepository.countByStatusAndPlanType(any(), any())).thenReturn(20L);
         
         when(paymentRepository.sumTotalRevenue()).thenReturn(BigDecimal.TEN);
         when(paymentRepository.sumRevenueAfter(any(LocalDateTime.class))).thenReturn(BigDecimal.ONE);
         
         when(aiUsageLogRepository.count()).thenReturn(1000L);
-        // This is the critical part: verify it accepts Instant
         when(aiUsageLogRepository.countByCreatedAtAfter(any(Instant.class))).thenReturn(100L);
         
         // For monthly stats
@@ -67,8 +66,14 @@ class AdminAnalyticsServiceTest {
         when(paymentRepository.sumRevenueBetween(any(), any())).thenReturn(BigDecimal.ZERO);
         when(aiUsageLogRepository.countByCreatedAtBetween(any(Instant.class), any(Instant.class))).thenReturn(50L);
 
+        // For user distribution
+        when(userRepository.countByLevel(any())).thenReturn(10L);
+
         // For AI Usage stats
-        when(aiUsageLogRepository.countByFeatureAndCreatedAtAfter(any(), any(Instant.class))).thenReturn(10L);
+        when(aiUsageLogRepository.countRoleplayRequestsAfter(any(Instant.class))).thenReturn(10L);
+        when(aiUsageLogRepository.countGrammarRequestsAfter(any(Instant.class))).thenReturn(15L);
+        when(aiUsageLogRepository.countFlashcardRequestsAfter(any(Instant.class))).thenReturn(20L);
+        when(aiUsageLogRepository.countCustomMaterialRequestsAfter(any(Instant.class))).thenReturn(5L);
         when(aiUsageLogRepository.countBySuccessAndCreatedAtAfter(any(Boolean.class), any(Instant.class))).thenReturn(90L);
         when(aiUsageLogRepository.averageResponseTimeAfter(any(Instant.class))).thenReturn(150.0);
         when(aiUsageLogRepository.sumTokensUsedBetween(any(Instant.class), any(Instant.class))).thenReturn(1000L);

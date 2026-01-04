@@ -154,8 +154,7 @@ public class AdminAnalyticsService {
 
                 long totalRequests = aiUsageLogRepository.countByCreatedAtAfter(thirtyDaysAgoInstant);
                 // Use multi-type count methods to include all variants per feature
-                long roleplayRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("roleplay",
-                                thirtyDaysAgoInstant);
+                long roleplayRequests = aiUsageLogRepository.countRoleplayRequestsAfter(thirtyDaysAgoInstant);
                 long grammarRequests = aiUsageLogRepository.countGrammarRequestsAfter(thirtyDaysAgoInstant);
                 long flashcardRequests = aiUsageLogRepository.countFlashcardRequestsAfter(thirtyDaysAgoInstant);
                 long customMaterialRequests = aiUsageLogRepository.countCustomMaterialRequestsAfter(
