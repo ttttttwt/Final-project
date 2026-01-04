@@ -26,7 +26,7 @@ public class FileValidator {
     private static final Map<FileCategory, Set<String>> ALLOWED_MIME_TYPES = Map.of(
             FileCategory.AVATAR, Set.of("image/jpeg", "image/png", "image/gif", "image/webp"),
             FileCategory.COURSE_THUMBNAIL, Set.of("image/jpeg", "image/png", "image/webp"),
-            FileCategory.LESSON_AUDIO, Set.of("audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-wav"),
+            FileCategory.LESSON_AUDIO, Set.of("audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-wav", "audio/webm"),
             FileCategory.LESSON_IMAGE, Set.of("image/jpeg", "image/png", "image/gif", "image/webp"),
             FileCategory.DOCUMENT, Set.of("application/pdf"),
             FileCategory.CERTIFICATE, Set.of("application/pdf"),
@@ -37,6 +37,7 @@ public class FileValidator {
                     "image/png",
                     "image/webp",
                     "audio/mpeg",
+                    "audio/mp3",
                     "audio/wav",
                     "audio/ogg",
                     "audio/webm",
@@ -115,15 +116,24 @@ public class FileValidator {
 
     /**
      * Validate MIME type against allowed types for the category.
+     * Handles MIME types with parameters (e.g., "audio/webm;codecs=opus").
      */
     private void validateMimeType(MultipartFile file, FileCategory category) {
         String mimeType = file.getContentType();
         Set<String> allowedTypes = ALLOWED_MIME_TYPES.get(category);
 
-        if (mimeType == null || !allowedTypes.contains(mimeType)) {
+        if (mimeType == null) {
+            throw new FileValidationException(
+                    String.format("File type is null. Allowed types: %s", allowedTypes));
+        }
+
+        // Extract base MIME type (before any parameters like ;codecs=opus)
+        String baseMimeType = mimeType.split(";")[0].trim().toLowerCase();
+
+        if (!allowedTypes.contains(baseMimeType)) {
             throw new FileValidationException(
                     String.format("File type '%s' not allowed for category %s. Allowed types: %s",
-                            mimeType, category, allowedTypes));
+                            baseMimeType, category, allowedTypes));
         }
     }
 
