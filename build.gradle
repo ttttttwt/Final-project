@@ -19,6 +19,7 @@ flyway {
 	url = 'jdbc:postgresql://localhost:5432/lexia'
 	user = 'postgres'
 	password = '1234'
+	cleanDisabled = false
 }
 
 group = 'com.lexia'

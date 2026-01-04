@@ -58,7 +58,9 @@ public class AdminAnalyticsService {
         long newUsersThisMonth = userRepository.countUsersCreatedAfter(startOfMonth);
 
         // Count by subscription type
-        long proUsers = subscriptionRepository.countByStatus(SubscriptionStatus.ACTIVE);
+        long monthlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.MONTHLY);
+        long yearlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.YEARLY);
+        long proUsers = monthlyPro + yearlyPro;
         long freeUsers = totalUsers - proUsers;
 
         // Revenue stats from payments table
@@ -117,9 +119,10 @@ public class AdminAnalyticsService {
      * Get user distribution statistics
      */
     public UserDistribution getUserDistribution() {
-        long freeUsers = userRepository.countFreeUsers();
+        long totalUsers = userRepository.count();
         long monthlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.MONTHLY);
         long yearlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.YEARLY);
+        long freeUsers = totalUsers - (monthlyPro + yearlyPro);
 
         // Get users by level
         Map<String, Long> usersByLevel = new HashMap<>();
