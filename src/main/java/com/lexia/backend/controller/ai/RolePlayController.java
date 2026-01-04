@@ -134,7 +134,7 @@ public class RolePlayController {
                 LOG.info("User {} generating roleplay scenario for level {} domain {}",
                                 user.getEmail(), request.getCefrLevel(), request.getDomain());
 
-                RolePlayScenarioDTO scenario = rolePlayService.generateScenario(request);
+                RolePlayScenarioDTO scenario = rolePlayService.generateScenario(request, user.getId());
 
                 LOG.info("User {} generated scenario '{}' (fallback: {})",
                                 user.getEmail(), scenario.getTitle(), scenario.getIsFallback());

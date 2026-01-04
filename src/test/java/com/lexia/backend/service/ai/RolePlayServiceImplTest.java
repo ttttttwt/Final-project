@@ -109,7 +109,8 @@ class RolePlayServiceImplTest {
                                 .thenReturn(RolePlayScenarioDTO.builder().title("Test Scenario").build());
                 when(scenarioRepository.save(any(RolePlayScenario.class))).thenReturn(scenario);
 
-                RolePlayScenarioDTO result = rolePlayService.generateScenario(request);
+                UUID userId = UUID.randomUUID();
+                RolePlayScenarioDTO result = rolePlayService.generateScenario(request, userId);
 
                 assertNotNull(result);
                 assertEquals("Test Scenario", result.getTitle());

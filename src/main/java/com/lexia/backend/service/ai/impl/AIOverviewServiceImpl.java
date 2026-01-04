@@ -34,18 +34,20 @@ public class AIOverviewServiceImpl implements AIOverviewService {
         
         overview.setActiveUsersToday(usageLogRepository.countActiveUsersSince(startOfDay));
         
-        // Top Users
+        // Top Users - filter out null userIds (e.g., scenario generation without user context)
         List<Object[]> topUsersData = usageLogRepository.findTopUsersSince(startOfDay, PageRequest.of(0, 5));
-        List<AIUsageOverview.TopAIUser> topUsers = topUsersData.stream().map(obj -> {
-            AIUsageOverview.TopAIUser user = new AIUsageOverview.TopAIUser();
-            user.setUserId((UUID) obj[0]);
-            user.setTotalRequests((Long) obj[1]);
-            user.setTotalCost((BigDecimal) obj[2]);
-            user.setLastUsedAt((Instant) obj[3]);
-            user.setUserEmail("user-" + user.getUserId().toString().substring(0, 8) + "..."); // Placeholder
-            user.setUserFullName("User " + user.getUserId().toString().substring(0, 8)); // Placeholder
-            return user;
-        }).collect(Collectors.toList());
+        List<AIUsageOverview.TopAIUser> topUsers = topUsersData.stream()
+            .filter(obj -> obj[0] != null) // Skip records with null userId
+            .map(obj -> {
+                AIUsageOverview.TopAIUser user = new AIUsageOverview.TopAIUser();
+                user.setUserId((UUID) obj[0]);
+                user.setTotalRequests((Long) obj[1]);
+                user.setTotalCost((BigDecimal) obj[2]);
+                user.setLastUsedAt((Instant) obj[3]);
+                user.setUserEmail("user-" + user.getUserId().toString().substring(0, 8) + "..."); // Placeholder
+                user.setUserFullName("User " + user.getUserId().toString().substring(0, 8)); // Placeholder
+                return user;
+            }).collect(Collectors.toList());
         overview.setTopUsers(topUsers);
         
         // Recent Alerts

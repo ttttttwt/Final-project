@@ -37,9 +37,10 @@ public interface RolePlayService {
      * Generates a new role-play scenario based on user preferences.
      *
      * @param request the scenario generation request
+     * @param userId the user ID for tracking AI usage (counts toward total AI requests, not session quota)
      * @return the generated scenario
      */
-    RolePlayScenarioDTO generateScenario(RolePlayRequestDTO request);
+    RolePlayScenarioDTO generateScenario(RolePlayRequestDTO request, UUID userId);
 
     /**
      * Retrieves a scenario by ID.

@@ -153,7 +153,7 @@ public class RolePlayServiceImpl implements RolePlayService {
 
     @Override
     @Transactional
-    public RolePlayScenarioDTO generateScenario(RolePlayRequestDTO request) {
+    public RolePlayScenarioDTO generateScenario(RolePlayRequestDTO request, UUID userId) {
         // Check if feature is enabled
         var featureConfig = aiConfigService.getFeatureConfig("roleplay");
         if (!featureConfig.isEnabled()) {
@@ -185,9 +185,10 @@ public class RolePlayServiceImpl implements RolePlayService {
             entity = scenarioRepository.save(entity);
 
             // Track AI usage for scenario generation (async to avoid transaction issues)
+            // This counts toward Total AI Requests but NOT toward roleplay session quota
             AiUsageTrackingRequest trackingRequest = AiUsageTrackingRequest.builder()
-                    .userId(null) // No user context in this method
-                    .contentType(AiUsageTracker.CONTENT_TYPE_ROLEPLAY)
+                    .userId(userId) // Track for total AI requests
+                    .contentType("roleplay_scenario") // Different content type - not counted as session
                     .modelId(response.model())
                     .inputTokens(response.tokenUsage() != null ? response.tokenUsage().inputTokens() : 0)
                     .outputTokens(response.tokenUsage() != null ? response.tokenUsage().outputTokens() : 0)

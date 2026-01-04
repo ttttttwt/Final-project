@@ -171,7 +171,7 @@ class RolePlayControllerTest {
                     .industry("technology")
                     .build();
 
-            when(rolePlayService.generateScenario(any(RolePlayRequestDTO.class)))
+            when(rolePlayService.generateScenario(any(RolePlayRequestDTO.class), any(UUID.class)))
                     .thenReturn(testScenario);
 
             mockMvc.perform(post("/api/v1/ai/roleplay/scenarios")
@@ -184,7 +184,7 @@ class RolePlayControllerTest {
                     .andExpect(jsonPath("$.domain").value("meetings"))
                     .andExpect(jsonPath("$.isFallback").value(false));
 
-            verify(rolePlayService).generateScenario(any(RolePlayRequestDTO.class));
+            verify(rolePlayService).generateScenario(any(RolePlayRequestDTO.class), any(UUID.class));
         }
 
         @Test
