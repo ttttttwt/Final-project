@@ -26,9 +26,9 @@ public enum FileCategory {
      * Lesson audio files for LISTENING lessons
      * Allowed: MP3, WAV, OGG, M4A
      * Max size: 50MB
-     * Access: Private (requires authentication and enrollment)
+     * Access: Public (audio files need to be accessible by browser's audio player)
      */
-    LESSON_AUDIO("lessons/audio", false),
+    LESSON_AUDIO("lessons/audio", true),
 
     /**
      * Lesson images and attachments

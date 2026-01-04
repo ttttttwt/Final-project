@@ -19,6 +19,16 @@
 - 🔄 Grammar exercise generator - **Database Ready**
 - 🔄 Flashcard auto-generation from lessons - **Database Ready**
 - ✅ Web UI for AI features - **100% COMPLETE**
+
+---
+
+## 🐛 Bug Fixes (Post-Sprint 5)
+
+- [x] **B1**: Fix CourseCard description null error (Jan 4)
+  - Fixed `TypeError: Cannot read properties of null (reading 'length')` in `CourseCard.tsx`.
+  - Added null check for `course.description` before truncation logic.
+
+---
 - ⬜ Mobile UI for AI features
 - 🎯 Admin dashboard for AI monitoring (optional)
 

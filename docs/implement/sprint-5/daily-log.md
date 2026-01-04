@@ -2478,6 +2478,57 @@ Time: 16.051 s
 - [x] "Discard" correctly reverts changes using the store's state.
 - [x] Deletion and addition of items (Vocabulary, Quiz, Shadowing) work as expected.
 
+---
+
+## Day 21 (January 4, 2026) - Sunday
+
+### 📋 Tasks Completed
+- [x] **Bug Fix: CourseCard description null error**:
+  - Fixed `TypeError: Cannot read properties of null (reading 'length')` in `CourseCard.tsx`.
+  - Added null check for `course.description` before truncation logic.
+  - Ensured `truncatedDescription` defaults to an empty string if description is missing.
+
+### 📝 Code Changes
+- **Frontend (Web)**:
+  - `lexia-web/components/courses/CourseCard.tsx`: Added null check for `course.description`.
+
+### ✅ Validation
+- [x] `CourseCard` no longer crashes when `course.description` is `null` or `undefined`.
+- [x] Truncation logic works correctly for long descriptions.
+- [x] Empty string is rendered when description is missing.
+
+---
+
+## Day 21 (January 4, 2026) - Sunday (Continued)
+
+### 📋 Tasks Completed
+- [x] **Bug Fix: Course thumbnail image loading issue**:
+  - Fixed Next.js Image component not loading course thumbnails from backend API.
+  - Used `getFileUrl()` utility to convert relative paths to absolute URLs in `[courseId]/page.tsx`.
+  - Added rewrite rule in `next.config.ts` for `/api/v1/files/:path*` proxy.
+  - Disabled image optimization in development mode to allow localhost images.
+
+- [x] **Bug Fix: ContentRenderer null errors**:
+  - Fixed `TypeError: Cannot read properties of undefined (reading 'map')` in `ContentRenderer.tsx`.
+  - Added null checks for `content.passages`, `content.questions`, and `content.prompts` before `.map()` calls.
+  - Applied fixes across all lesson types: READING, LISTENING, QUIZ, SPEAKING.
+
+### 📝 Code Changes
+- **Frontend (Web)**:
+  - `lexia-web/app/courses/[courseId]/page.tsx`: Import and use `getFileUrl()` for `course.thumbnailUrl`.
+  - `lexia-web/next.config.ts`: 
+    - Added `/api/v1/files/:path*` rewrite rule.
+    - Set `unoptimized: process.env.NODE_ENV === "development"` to bypass localhost restrictions.
+  - `lexia-web/components/lessons/ContentRenderer.tsx`: Added null checks for all `.map()` operations on lesson content arrays.
+
+### ✅ Validation
+- [x] Course thumbnails load correctly from backend API.
+- [x] Next.js Image component works with localhost URLs in development.
+- [x] `ContentRenderer` handles missing or empty content arrays gracefully.
+- [x] No more crashes when accessing lessons with incomplete content.
+
+
+
 
 
 

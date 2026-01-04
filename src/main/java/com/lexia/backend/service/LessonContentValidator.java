@@ -163,7 +163,7 @@ public class LessonContentValidator {
      * Required fields:
      * </p>
      * <ul>
-     * <li>audioUrl - valid URL</li>
+     * <li>audioUrl - valid URL (optional during creation, will be set after file upload)</li>
      * <li>duration - positive number (seconds)</li>
      * <li>transcript - non-empty string</li>
      * <li>questions[] - array with at least 1 question</li>
@@ -173,20 +173,21 @@ public class LessonContentValidator {
      * @throws InvalidLessonContentException if validation fails
      */
     private void validateListeningContent(JsonNode content) {
-        // Validate audioUrl
-        if (!content.has("audioUrl")) {
-            throw new InvalidLessonContentException("LISTENING lesson must have 'audioUrl' field");
-        }
-
-        String audioUrl = content.get("audioUrl").asText();
-        if (audioUrl == null || audioUrl.trim().isEmpty()) {
-            throw new InvalidLessonContentException("'audioUrl' cannot be empty");
-        }
-
-        try {
-            new URL(audioUrl);
-        } catch (MalformedURLException e) {
-            throw new InvalidLessonContentException("'audioUrl' must be a valid URL: " + audioUrl);
+        // Validate audioUrl - optional during creation (file will be uploaded after lesson is created)
+        // If audioUrl is provided, it must be a valid URL or relative path
+        if (content.has("audioUrl")) {
+            String audioUrl = content.get("audioUrl").asText();
+            if (audioUrl != null && !audioUrl.trim().isEmpty()) {
+                // Accept both full URLs (http/https) and relative paths (/api/...)
+                if (!audioUrl.startsWith("/")) {
+                    try {
+                        new URL(audioUrl);
+                    } catch (MalformedURLException e) {
+                        throw new InvalidLessonContentException("'audioUrl' must be a valid URL or relative path: " + audioUrl);
+                    }
+                }
+                // Relative paths starting with "/" are valid
+            }
         }
 
         // Validate duration
