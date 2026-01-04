@@ -80,7 +80,7 @@ public class Lesson {
     /**
      * Type of lesson: READING, LISTENING, QUIZ, or SPEAKING.
      * Determines the expected structure of the content field.
-     * Stored as VARCHAR (String) for H2/PostgreSQL compatibility.
+     * Stored as VARCHAR(20) in both PostgreSQL and H2.
      */
     @NotNull(message = "Lesson type is required")
     @Enumerated(EnumType.STRING)
