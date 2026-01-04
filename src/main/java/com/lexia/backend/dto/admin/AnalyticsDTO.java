@@ -59,7 +59,7 @@ public class AnalyticsDTO {
         private long freeUsers;
         private long monthlyProUsers;
         private long yearlyProUsers;
-        private Map<String, Long> usersByLevel; // BEGINNER, INTERMEDIATE, ADVANCED
+        private Map<String, Long> usersByLevel; // A1, A2, B1, B2, C1 (CEFR levels)
     }
 
     /**
@@ -74,7 +74,7 @@ public class AnalyticsDTO {
         private long roleplayRequests;
         private long grammarRequests;
         private long flashcardRequests;
-        private long translationRequests;
+        private long customMaterialRequests;
         private long successRate; // percentage
         private long averageResponseTimeMs;
         private List<DailyAIUsage> dailyUsage;

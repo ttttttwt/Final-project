@@ -75,6 +75,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
+                .id(UUID.randomUUID().toString()) // Unique JWT ID to prevent hash collisions
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .issuer("lexia-backend")

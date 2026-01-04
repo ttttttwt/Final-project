@@ -270,32 +270,14 @@ public class RolePlayServiceImpl implements RolePlayService {
 
         conversation = conversationRepository.save(conversation);
 
-        // Increment roleplay session counter for the user
-        incrementRoleplaySessionCounter(userId);
+        // Note: roleplay session counter is incremented by QuotaCheckAspect
 
         return RolePlayConversationMapper.toDTO(conversation);
     }
 
-    /**
-     * Increments the roleplay session counter for a user.
-     * Called when starting a new conversation.
-     */
-    private void incrementRoleplaySessionCounter(UUID userId) {
-        try {
-            UserAiQuota quota = userAiQuotaRepository.findByUserId(userId).orElse(null);
-            if (quota != null) {
-                int newCount = (quota.getRoleplaySessionsUsed() != null ? quota.getRoleplaySessionsUsed() : 0) + 1;
-                quota.setRoleplaySessionsUsed(newCount);
-                userAiQuotaRepository.save(quota);
-                log.info("Incremented roleplay session counter for user {} to {}", userId, newCount);
-            } else {
-                log.warn("No quota record found for user {} when incrementing roleplay counter", userId);
-            }
-        } catch (Exception e) {
-            log.error("Failed to increment roleplay session counter for user {}: {}", userId, e.getMessage());
-            // Don't fail the conversation start if quota increment fails
-        }
-    }
+    // Note: incrementRoleplaySessionCounter method removed
+    // Quota counting is now handled by QuotaCheckAspect to avoid duplicate
+    // increments
 
     /**
      * Checks if a role name indicates a leadership/initiative role.

@@ -173,32 +173,13 @@ public class GrammarExerciseServiceImpl implements GrammarExerciseService {
         log.info("Successfully generated {} exercises for user {} in {}ms",
                 exerciseSet.getExerciseCount(), userId, responseTimeMs);
 
-        // Increment grammar exercise counter
-        incrementGrammarExerciseCounter(userId);
+        // Note: grammar exercise counter is incremented by QuotaCheckAspect
 
         return GrammarExerciseMapper.toExerciseSetDTO(exerciseSet);
     }
 
-    /**
-     * Increments the grammar exercise counter for a user.
-     * Called when generating a new exercise set.
-     */
-    private void incrementGrammarExerciseCounter(UUID userId) {
-        try {
-            UserAiQuota quota = userAiQuotaRepository.findByUserId(userId).orElse(null);
-            if (quota != null) {
-                int newCount = (quota.getGrammarExercisesUsed() != null ? quota.getGrammarExercisesUsed() : 0) + 1;
-                quota.setGrammarExercisesUsed(newCount);
-                userAiQuotaRepository.save(quota);
-                log.info("Incremented grammar exercise counter for user {} to {}", userId, newCount);
-            } else {
-                log.warn("No quota record found for user {} when incrementing grammar counter", userId);
-            }
-        } catch (Exception e) {
-            log.error("Failed to increment grammar exercise counter for user {}: {}", userId, e.getMessage());
-            // Don't fail the exercise generation if quota increment fails
-        }
-    }
+    // Note: incrementGrammarExerciseCounter method removed
+    // Quota counting is now handled by QuotaCheckAspect to avoid duplicate increments
 
     /**
      * Gets fallback content or generates basic exercises.

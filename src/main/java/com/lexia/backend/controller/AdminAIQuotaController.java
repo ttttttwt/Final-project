@@ -35,6 +35,7 @@ public class AdminAIQuotaController {
     private final UserRepository userRepository;
     private final QuotaLimitsConfig quotaLimitsConfig;
     private final com.lexia.backend.repository.UserCustomMaterialRepository customMaterialRepository;
+    private final com.lexia.backend.repository.FlashcardDeckRepository flashcardDeckRepository;
 
     @GetMapping
     @Operation(summary = "Get all quotas", description = "List all user quotas with optional search, plan filter, and sorting")
@@ -138,7 +139,9 @@ public class AdminAIQuotaController {
         dto.setRoleplaySessionsUsed(entity.getRoleplaySessionsUsed());
         dto.setRoleplaySessionsLimit(limits.getRoleplaySessions());
 
-        dto.setFlashcardDecksUsed(entity.getFlashcardDecksUsed());
+        // Get actual flashcard deck count (hard limit, not monthly counter)
+        long actualDeckCount = flashcardDeckRepository.countByUserId(entity.getUserId());
+        dto.setFlashcardDecksUsed((int) actualDeckCount);
         dto.setFlashcardDecksLimit(limits.getFlashcardDecks());
 
         dto.setGrammarExercisesUsed(entity.getGrammarExercisesUsed());
@@ -167,7 +170,7 @@ public class AdminAIQuotaController {
         boolean hasWarning = (limits.getRoleplaySessions() > 0
                 && (double) entity.getRoleplaySessionsUsed() / limits.getRoleplaySessions() >= warningThreshold) ||
                 (limits.getFlashcardDecks() > 0
-                        && (double) entity.getFlashcardDecksUsed() / limits.getFlashcardDecks() >= warningThreshold)
+                        && (double) actualDeckCount / limits.getFlashcardDecks() >= warningThreshold)
                 ||
                 (limits.getGrammarExercises() > 0 && (double) entity.getGrammarExercisesUsed()
                         / limits.getGrammarExercises() >= warningThreshold) ||
@@ -176,7 +179,7 @@ public class AdminAIQuotaController {
         boolean hasCritical = (limits.getRoleplaySessions() > 0
                 && (double) entity.getRoleplaySessionsUsed() / limits.getRoleplaySessions() >= criticalThreshold) ||
                 (limits.getFlashcardDecks() > 0
-                        && (double) entity.getFlashcardDecksUsed() / limits.getFlashcardDecks() >= criticalThreshold)
+                        && (double) actualDeckCount / limits.getFlashcardDecks() >= criticalThreshold)
                 ||
                 (limits.getGrammarExercises() > 0 && (double) entity.getGrammarExercisesUsed()
                         / limits.getGrammarExercises() >= criticalThreshold) ||

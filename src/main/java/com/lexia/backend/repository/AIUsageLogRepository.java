@@ -195,6 +195,26 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
                      @Param("date") Instant date);
 
        /**
+        * Count flashcard-related requests (flashcard, magic_flashcard,
+        * flashcard_image) after date
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.contentType IN ('flashcard', 'magic_flashcard', 'flashcard_image') AND a.createdAt >= :date")
+       long countFlashcardRequestsAfter(@Param("date") Instant date);
+
+       /**
+        * Count grammar-related requests (grammar, grammar_sandbox) after date
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.contentType IN ('grammar', 'grammar_sandbox') AND a.createdAt >= :date")
+       long countGrammarRequestsAfter(@Param("date") Instant date);
+
+       /**
+        * Count custom material requests (custom_material, cm_content_generation) after
+        * date
+        */
+       @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.contentType IN ('custom_material', 'cm_content_generation') AND a.createdAt >= :date")
+       long countCustomMaterialRequestsAfter(@Param("date") Instant date);
+
+       /**
         * Count successful requests after date
         */
        @Query("SELECT COUNT(a) FROM AIUsageLog a WHERE a.success = :success AND a.createdAt >= :date")
@@ -218,31 +238,36 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
         * Find logs with dynamic filters for export
         */
        @Query("SELECT a FROM AIUsageLog a WHERE " +
-              "(:featureName IS NULL OR a.featureName = :featureName) AND " +
-              "(:userId IS NULL OR a.userId = :userId) AND " +
-              "(:startDate IS NULL OR a.createdAt >= :startDate) AND " +
-              "(:endDate IS NULL OR a.createdAt <= :endDate) " +
-              "ORDER BY a.createdAt DESC")
+                     "(:featureName IS NULL OR a.featureName = :featureName) AND " +
+                     "(:userId IS NULL OR a.userId = :userId) AND " +
+                     "(:startDate IS NULL OR a.createdAt >= :startDate) AND " +
+                     "(:endDate IS NULL OR a.createdAt <= :endDate) " +
+                     "ORDER BY a.createdAt DESC")
        List<AIUsageLog> findWithFilters(
-               @Param("featureName") String featureName,
-               @Param("userId") UUID userId,
-               @Param("startDate") Instant startDate,
-               @Param("endDate") Instant endDate);
+                     @Param("featureName") String featureName,
+                     @Param("userId") UUID userId,
+                     @Param("startDate") Instant startDate,
+                     @Param("endDate") Instant endDate);
 
        /**
         * Get daily cost aggregation since a date.
-        * Returns date (as string), totalCost, totalRequests.
+        * Returns date (as string), totalCost, totalRequests, and cost per feature.
         */
        @Query(value = "SELECT DATE(created_at) as date, " +
-                      "COALESCE(SUM(estimated_cost_usd), 0) as totalCost, " +
-                      "COUNT(*) as totalRequests, " +
-                      "COALESCE(SUM(CASE WHEN content_type = 'roleplay' THEN estimated_cost_usd ELSE 0 END), 0) as rolePlayCost, " +
-                      "COALESCE(SUM(CASE WHEN content_type = 'grammar' OR content_type = 'grammar_sandbox' THEN estimated_cost_usd ELSE 0 END), 0) as grammarCost, " +
-                      "COALESCE(SUM(CASE WHEN content_type = 'flashcard' OR content_type = 'magic_flashcard' THEN estimated_cost_usd ELSE 0 END), 0) as flashcardCost " +
-                      "FROM ai_usage_logs " +
-                      "WHERE created_at >= :startDate " +
-                      "GROUP BY DATE(created_at) " +
-                      "ORDER BY DATE(created_at)", nativeQuery = true)
+                     "COALESCE(SUM(estimated_cost_usd), 0) as totalCost, " +
+                     "COUNT(*) as totalRequests, " +
+                     "COALESCE(SUM(CASE WHEN content_type = 'roleplay' THEN estimated_cost_usd ELSE 0 END), 0) as rolePlayCost, "
+                     +
+                     "COALESCE(SUM(CASE WHEN content_type = 'grammar' OR content_type = 'grammar_sandbox' THEN estimated_cost_usd ELSE 0 END), 0) as grammarCost, "
+                     +
+                     "COALESCE(SUM(CASE WHEN content_type = 'flashcard' OR content_type = 'magic_flashcard' OR content_type = 'flashcard_image' THEN estimated_cost_usd ELSE 0 END), 0) as flashcardCost, "
+                     +
+                     "COALESCE(SUM(CASE WHEN content_type = 'custom_material' OR content_type = 'cm_content_generation' THEN estimated_cost_usd ELSE 0 END), 0) as customMaterialCost "
+                     +
+                     "FROM ai_usage_logs " +
+                     "WHERE created_at >= :startDate " +
+                     "GROUP BY DATE(created_at) " +
+                     "ORDER BY DATE(created_at)", nativeQuery = true)
        List<Object[]> getDailyCostsSince(@Param("startDate") Instant startDate);
 
        /**
@@ -250,12 +275,12 @@ public interface AIUsageLogRepository extends JpaRepository<AIUsageLog, Long>, J
         * Returns planType, totalCost, totalRequests, userCount.
         */
        @Query(value = "SELECT COALESCE(q.plan_type, 'FREE') as planType, " +
-                      "COALESCE(SUM(l.estimated_cost_usd), 0) as totalCost, " +
-                      "COUNT(*) as totalRequests, " +
-                      "COUNT(DISTINCT l.user_id) as userCount " +
-                      "FROM ai_usage_logs l " +
-                      "LEFT JOIN user_ai_quotas q ON l.user_id = q.user_id " +
-                      "WHERE l.created_at >= :startDate " +
-                      "GROUP BY COALESCE(q.plan_type, 'FREE')", nativeQuery = true)
+                     "COALESCE(SUM(l.estimated_cost_usd), 0) as totalCost, " +
+                     "COUNT(*) as totalRequests, " +
+                     "COUNT(DISTINCT l.user_id) as userCount " +
+                     "FROM ai_usage_logs l " +
+                     "LEFT JOIN user_ai_quotas q ON l.user_id = q.user_id " +
+                     "WHERE l.created_at >= :startDate " +
+                     "GROUP BY COALESCE(q.plan_type, 'FREE')", nativeQuery = true)
        List<Object[]> getCostByPlanSince(@Param("startDate") Instant startDate);
 }

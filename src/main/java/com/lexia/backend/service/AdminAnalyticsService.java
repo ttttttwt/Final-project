@@ -26,181 +26,190 @@ import java.util.*;
 @Transactional(readOnly = true)
 public class AdminAnalyticsService {
 
-    private final UserRepository userRepository;
-    private final AIUsageLogRepository aiUsageLogRepository;
-    private final SubscriptionRepository subscriptionRepository;
-    private final PaymentRepository paymentRepository;
+        private final UserRepository userRepository;
+        private final AIUsageLogRepository aiUsageLogRepository;
+        private final SubscriptionRepository subscriptionRepository;
+        private final PaymentRepository paymentRepository;
 
-    /**
-     * Get complete analytics data for dashboard
-     */
-    public AnalyticsResponse getAnalytics() {
-        log.info("Fetching analytics data");
+        /**
+         * Get complete analytics data for dashboard
+         */
+        public AnalyticsResponse getAnalytics() {
+                log.info("Fetching analytics data");
 
-        return AnalyticsResponse.builder()
-                .overview(getOverviewStats())
-                .monthlyStats(getMonthlyStats(6))
-                .userDistribution(getUserDistribution())
-                .aiUsage(getAIUsageStats())
-                .build();
-    }
-
-    /**
-     * Get overview statistics
-     */
-    public OverviewStats getOverviewStats() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime thirtyDaysAgo = now.minusDays(30);
-
-        long totalUsers = userRepository.count();
-        long activeUsers = userRepository.countActiveUsersAfter(thirtyDaysAgo);
-        long newUsersThisMonth = userRepository.countUsersCreatedAfter(startOfMonth);
-
-        // Count by subscription type
-        long monthlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.MONTHLY);
-        long yearlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.YEARLY);
-        long proUsers = monthlyPro + yearlyPro;
-        long freeUsers = totalUsers - proUsers;
-
-        // Revenue stats from payments table
-        BigDecimal totalRevenue = paymentRepository.sumTotalRevenue();
-        BigDecimal revenueThisMonth = paymentRepository.sumRevenueAfter(startOfMonth);
-
-        // AI stats
-        long totalAIRequests = aiUsageLogRepository.count();
-        long aiRequestsThisMonth = aiUsageLogRepository.countByCreatedAtAfter(startOfMonth.atZone(ZoneId.systemDefault()).toInstant());
-
-        return OverviewStats.builder()
-                .totalUsers(totalUsers)
-                .activeUsers(activeUsers)
-                .newUsersThisMonth(newUsersThisMonth)
-                .freeUsers(freeUsers)
-                .proUsers(proUsers)
-                .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
-                .revenueThisMonth(revenueThisMonth != null ? revenueThisMonth : BigDecimal.ZERO)
-                .totalAIRequests(totalAIRequests)
-                .aiRequestsThisMonth(aiRequestsThisMonth)
-                .build();
-    }
-
-    /**
-     * Get monthly statistics for the last N months
-     */
-    public List<MonthlyStats> getMonthlyStats(int months) {
-        List<MonthlyStats> stats = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
-
-        for (int i = months - 1; i >= 0; i--) {
-            YearMonth yearMonth = YearMonth.now().minusMonths(i);
-            LocalDateTime startOfMonth = yearMonth.atDay(1).atStartOfDay();
-            LocalDateTime endOfMonth = yearMonth.atEndOfMonth().atTime(23, 59, 59);
-
-            long newUsers = userRepository.countUsersCreatedBetween(startOfMonth, endOfMonth);
-            long activeUsers = userRepository.countActiveUsersBetween(startOfMonth, endOfMonth);
-            BigDecimal revenue = paymentRepository.sumRevenueBetween(startOfMonth, endOfMonth);
-            long aiRequests = aiUsageLogRepository.countByCreatedAtBetween(
-                    startOfMonth.atZone(ZoneId.systemDefault()).toInstant(),
-                    endOfMonth.atZone(ZoneId.systemDefault()).toInstant());
-
-            stats.add(MonthlyStats.builder()
-                    .month(yearMonth.format(formatter))
-                    .newUsers(newUsers)
-                    .activeUsers(activeUsers)
-                    .revenue(revenue != null ? revenue : BigDecimal.ZERO)
-                    .aiRequests(aiRequests)
-                    .build());
+                return AnalyticsResponse.builder()
+                                .overview(getOverviewStats())
+                                .monthlyStats(getMonthlyStats(6))
+                                .userDistribution(getUserDistribution())
+                                .aiUsage(getAIUsageStats())
+                                .build();
         }
 
-        return stats;
-    }
+        /**
+         * Get overview statistics
+         */
+        public OverviewStats getOverviewStats() {
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+                LocalDateTime thirtyDaysAgo = now.minusDays(30);
 
-    /**
-     * Get user distribution statistics
-     */
-    public UserDistribution getUserDistribution() {
-        long totalUsers = userRepository.count();
-        long monthlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.MONTHLY);
-        long yearlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE, PlanType.YEARLY);
-        long freeUsers = totalUsers - (monthlyPro + yearlyPro);
+                long totalUsers = userRepository.count();
+                long activeUsers = userRepository.countActiveUsersAfter(thirtyDaysAgo);
+                long newUsersThisMonth = userRepository.countUsersCreatedAfter(startOfMonth);
 
-        // Get users by level
-        Map<String, Long> usersByLevel = new HashMap<>();
-        usersByLevel.put("BEGINNER", userRepository.countByLevel("BEGINNER"));
-        usersByLevel.put("ELEMENTARY", userRepository.countByLevel("ELEMENTARY"));
-        usersByLevel.put("INTERMEDIATE", userRepository.countByLevel("INTERMEDIATE"));
-        usersByLevel.put("UPPER_INTERMEDIATE", userRepository.countByLevel("UPPER_INTERMEDIATE"));
-        usersByLevel.put("ADVANCED", userRepository.countByLevel("ADVANCED"));
+                // Count by subscription type
+                long monthlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE,
+                                PlanType.MONTHLY);
+                long yearlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE,
+                                PlanType.YEARLY);
+                long proUsers = monthlyPro + yearlyPro;
+                long freeUsers = totalUsers - proUsers;
 
-        return UserDistribution.builder()
-                .freeUsers(freeUsers)
-                .monthlyProUsers(monthlyPro)
-                .yearlyProUsers(yearlyPro)
-                .usersByLevel(usersByLevel)
-                .build();
-    }
+                // Revenue stats from payments table
+                BigDecimal totalRevenue = paymentRepository.sumTotalRevenue();
+                BigDecimal revenueThisMonth = paymentRepository.sumRevenueAfter(startOfMonth);
 
-    /**
-     * Get AI usage statistics
-     */
-    public AIUsageStats getAIUsageStats() {
-        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        java.time.Instant thirtyDaysAgoInstant = thirtyDaysAgo.atZone(ZoneId.systemDefault()).toInstant();
+                // AI stats
+                long totalAIRequests = aiUsageLogRepository.count();
+                long aiRequestsThisMonth = aiUsageLogRepository
+                                .countByCreatedAtAfter(startOfMonth.atZone(ZoneId.systemDefault()).toInstant());
 
-        long totalRequests = aiUsageLogRepository.countByCreatedAtAfter(thirtyDaysAgoInstant);
-        long roleplayRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("ROLEPLAY", thirtyDaysAgoInstant);
-        long grammarRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("GRAMMAR", thirtyDaysAgoInstant);
-        long flashcardRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("FLASHCARD", thirtyDaysAgoInstant);
-        long translationRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("TRANSLATION", thirtyDaysAgoInstant);
-
-        // Calculate success rate
-        long successfulRequests = aiUsageLogRepository.countBySuccessAndCreatedAtAfter(true, thirtyDaysAgoInstant);
-        long successRate = totalRequests > 0 ? (successfulRequests * 100) / totalRequests : 0;
-
-        // Average response time
-        Double avgResponseTime = aiUsageLogRepository.averageResponseTimeAfter(thirtyDaysAgoInstant);
-
-        // Daily usage for chart (last 14 days)
-        List<DailyAIUsage> dailyUsage = getDailyAIUsage(14);
-
-        return AIUsageStats.builder()
-                .totalRequests(totalRequests)
-                .roleplayRequests(roleplayRequests)
-                .grammarRequests(grammarRequests)
-                .flashcardRequests(flashcardRequests)
-                .translationRequests(translationRequests)
-                .successRate(successRate)
-                .averageResponseTimeMs(avgResponseTime != null ? avgResponseTime.longValue() : 0)
-                .dailyUsage(dailyUsage)
-                .build();
-    }
-
-    /**
-     * Get daily AI usage for the last N days
-     */
-    private List<DailyAIUsage> getDailyAIUsage(int days) {
-        List<DailyAIUsage> usage = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        for (int i = days - 1; i >= 0; i--) {
-            LocalDate date = LocalDate.now().minusDays(i);
-            LocalDateTime startOfDay = date.atStartOfDay();
-            LocalDateTime endOfDay = date.atTime(23, 59, 59);
-
-            long requests = aiUsageLogRepository.countByCreatedAtBetween(
-                    startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
-                    endOfDay.atZone(ZoneId.systemDefault()).toInstant());
-            Long tokens = aiUsageLogRepository.sumTokensUsedBetween(
-                    startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
-                    endOfDay.atZone(ZoneId.systemDefault()).toInstant());
-
-            usage.add(DailyAIUsage.builder()
-                    .date(date.format(formatter))
-                    .requests(requests)
-                    .tokensUsed(tokens != null ? tokens : 0)
-                    .build());
+                return OverviewStats.builder()
+                                .totalUsers(totalUsers)
+                                .activeUsers(activeUsers)
+                                .newUsersThisMonth(newUsersThisMonth)
+                                .freeUsers(freeUsers)
+                                .proUsers(proUsers)
+                                .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
+                                .revenueThisMonth(revenueThisMonth != null ? revenueThisMonth : BigDecimal.ZERO)
+                                .totalAIRequests(totalAIRequests)
+                                .aiRequestsThisMonth(aiRequestsThisMonth)
+                                .build();
         }
 
-        return usage;
-    }
+        /**
+         * Get monthly statistics for the last N months
+         */
+        public List<MonthlyStats> getMonthlyStats(int months) {
+                List<MonthlyStats> stats = new ArrayList<>();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+
+                for (int i = months - 1; i >= 0; i--) {
+                        YearMonth yearMonth = YearMonth.now().minusMonths(i);
+                        LocalDateTime startOfMonth = yearMonth.atDay(1).atStartOfDay();
+                        LocalDateTime endOfMonth = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+
+                        long newUsers = userRepository.countUsersCreatedBetween(startOfMonth, endOfMonth);
+                        long activeUsers = userRepository.countActiveUsersBetween(startOfMonth, endOfMonth);
+                        BigDecimal revenue = paymentRepository.sumRevenueBetween(startOfMonth, endOfMonth);
+                        long aiRequests = aiUsageLogRepository.countByCreatedAtBetween(
+                                        startOfMonth.atZone(ZoneId.systemDefault()).toInstant(),
+                                        endOfMonth.atZone(ZoneId.systemDefault()).toInstant());
+
+                        stats.add(MonthlyStats.builder()
+                                        .month(yearMonth.format(formatter))
+                                        .newUsers(newUsers)
+                                        .activeUsers(activeUsers)
+                                        .revenue(revenue != null ? revenue : BigDecimal.ZERO)
+                                        .aiRequests(aiRequests)
+                                        .build());
+                }
+
+                return stats;
+        }
+
+        /**
+         * Get user distribution statistics
+         */
+        public UserDistribution getUserDistribution() {
+                long totalUsers = userRepository.count();
+                long monthlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE,
+                                PlanType.MONTHLY);
+                long yearlyPro = subscriptionRepository.countByStatusAndPlanType(SubscriptionStatus.ACTIVE,
+                                PlanType.YEARLY);
+                long freeUsers = totalUsers - (monthlyPro + yearlyPro);
+
+                // Get users by level - using correct CEFR format (A1, A2, B1, B2, C1)
+                Map<String, Long> usersByLevel = new HashMap<>();
+                usersByLevel.put("A1", userRepository.countByLevel("A1")); // Beginner
+                usersByLevel.put("A2", userRepository.countByLevel("A2")); // Elementary
+                usersByLevel.put("B1", userRepository.countByLevel("B1")); // Intermediate
+                usersByLevel.put("B2", userRepository.countByLevel("B2")); // Upper Intermediate
+                usersByLevel.put("C1", userRepository.countByLevel("C1")); // Advanced
+
+                return UserDistribution.builder()
+                                .freeUsers(freeUsers)
+                                .monthlyProUsers(monthlyPro)
+                                .yearlyProUsers(yearlyPro)
+                                .usersByLevel(usersByLevel)
+                                .build();
+        }
+
+        /**
+         * Get AI usage statistics
+         */
+        public AIUsageStats getAIUsageStats() {
+                LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+                java.time.Instant thirtyDaysAgoInstant = thirtyDaysAgo.atZone(ZoneId.systemDefault()).toInstant();
+
+                long totalRequests = aiUsageLogRepository.countByCreatedAtAfter(thirtyDaysAgoInstant);
+                // Use multi-type count methods to include all variants per feature
+                long roleplayRequests = aiUsageLogRepository.countByFeatureAndCreatedAtAfter("roleplay",
+                                thirtyDaysAgoInstant);
+                long grammarRequests = aiUsageLogRepository.countGrammarRequestsAfter(thirtyDaysAgoInstant);
+                long flashcardRequests = aiUsageLogRepository.countFlashcardRequestsAfter(thirtyDaysAgoInstant);
+                long customMaterialRequests = aiUsageLogRepository.countCustomMaterialRequestsAfter(
+                                thirtyDaysAgoInstant);
+
+                // Calculate success rate
+                long successfulRequests = aiUsageLogRepository.countBySuccessAndCreatedAtAfter(true,
+                                thirtyDaysAgoInstant);
+                long successRate = totalRequests > 0 ? (successfulRequests * 100) / totalRequests : 0;
+
+                // Average response time
+                Double avgResponseTime = aiUsageLogRepository.averageResponseTimeAfter(thirtyDaysAgoInstant);
+
+                // Daily usage for chart (last 14 days)
+                List<DailyAIUsage> dailyUsage = getDailyAIUsage(14);
+
+                return AIUsageStats.builder()
+                                .totalRequests(totalRequests)
+                                .roleplayRequests(roleplayRequests)
+                                .grammarRequests(grammarRequests)
+                                .flashcardRequests(flashcardRequests)
+                                .customMaterialRequests(customMaterialRequests)
+                                .successRate(successRate)
+                                .averageResponseTimeMs(avgResponseTime != null ? avgResponseTime.longValue() : 0)
+                                .dailyUsage(dailyUsage)
+                                .build();
+        }
+
+        /**
+         * Get daily AI usage for the last N days
+         */
+        private List<DailyAIUsage> getDailyAIUsage(int days) {
+                List<DailyAIUsage> usage = new ArrayList<>();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                for (int i = days - 1; i >= 0; i--) {
+                        LocalDate date = LocalDate.now().minusDays(i);
+                        LocalDateTime startOfDay = date.atStartOfDay();
+                        LocalDateTime endOfDay = date.atTime(23, 59, 59);
+
+                        long requests = aiUsageLogRepository.countByCreatedAtBetween(
+                                        startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
+                                        endOfDay.atZone(ZoneId.systemDefault()).toInstant());
+                        Long tokens = aiUsageLogRepository.sumTokensUsedBetween(
+                                        startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
+                                        endOfDay.atZone(ZoneId.systemDefault()).toInstant());
+
+                        usage.add(DailyAIUsage.builder()
+                                        .date(date.format(formatter))
+                                        .requests(requests)
+                                        .tokensUsed(tokens != null ? tokens : 0)
+                                        .build());
+                }
+
+                return usage;
+        }
 }
